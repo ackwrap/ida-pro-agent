@@ -48,7 +48,7 @@ Run `ida-agent-gateway.exe -web` for the local client configuration manager, or 
 - Pseudocode and semantic analysis require a compatible Hex-Rays decompiler and license. Caller tracing expands known direct callers, defaults to two levels, and permits at most five. Unknown indirect calls, native tail calls, callee-return summaries, and heap aliases are not recovered.
 - Guard evidence is function-local and does not prove safety, exploitability, or complete input validation. General cross-reference tracing is not semantic taint analysis. Results may be partial or truncated.
 - Only supported ChangeSet edits offer preview/apply/rollback. Arbitrary scripts are not sandboxed or automatically reversible.
-- The Windows build configuration uses MSVC 2022 x64, Windows SDK, CMake 3.25+, Ninja, Go 1.23.0+, Python 3.11, and Inno Setup 6. It links public IDA SDK import libraries against Qt 6.8.2 headers; runtime Qt comes from IDA.
+- The Windows build configuration uses MSVC 2022 x64, Windows SDK, CMake 3.25+, Ninja, Go 1.25.0+, Python 3.11, and Inno Setup 6. It links public IDA SDK import libraries against Qt 6.8.2 headers; runtime Qt comes from IDA.
 - CI checks compilation and unit tests. Those checks do not replace live IDA UI or licensed integration testing.
 
 ## 中文
@@ -83,5 +83,5 @@ API Key 和已保存的代理密码使用当前用户文件权限保护，但以
 - 伪代码和语义分析需要对应的 Hex-Rays 反编译器与许可。跨函数追踪只展开已知直接调用者，默认两层、最多五层；不恢复未知间接调用、原生尾调用、被调函数返回值摘要或堆别名。
 - 校验证据仅覆盖函数内部，不能证明安全、可利用性或输入校验完备。普通交叉引用追踪不是语义污点分析，结果可能不完整或被预算截断。
 - 只有支持的 ChangeSet 修改提供预览、应用和回滚；任意脚本没有沙箱，也不会自动回滚。
-- Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.23.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
+- Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
