@@ -43,6 +43,10 @@ API keys and saved proxy passwords are stored as plaintext with current-user fil
 
 Run `ida-agent-gateway.exe -web` for the local client configuration manager, or configure your MCP client to start `ida-agent-gateway.exe` with no arguments for stdio. Keep IDA open with the database loaded. Optional HTTP transport binds only to loopback; authenticated remote hosting is not implemented.
 
+Version 0.3.1 adds ZCode alongside Codex, OpenCode, Claude Code, Antigravity CLI, and Grok Build. ZCode uses the user-level `~/.zcode/cli/config.json` (`mcp.servers`), with optional skills under `~/.zcode/skills/`.
+
+On Windows, the manager also discovers Codex in common npm/Scoop installations and the desktop app's bundled CLI when PATH is outdated. It runs the native executable without requiring Node.js in PATH. For custom installations, set `IDA_AGENT_CODEX_PATH` to the absolute path of `codex.exe` and restart the manager.
+
 ### Limits and build environment
 
 - Pseudocode and semantic analysis require a compatible Hex-Rays decompiler and license. Caller tracing expands known direct callers, defaults to two levels, and permits at most five. Unknown indirect calls, native tail calls, callee-return summaries, and heap aliases are not recovered.
@@ -77,6 +81,10 @@ API Key 和已保存的代理密码使用当前用户文件权限保护，但以
 ### MCP 客户端
 
 运行 `ida-agent-gateway.exe -web` 打开本地配置管理页，或让 MCP 客户端以无参数方式启动 `ida-agent-gateway.exe` 使用 stdio。使用时保持 IDA 与数据库打开。可选 HTTP 模式仅监听本机回环地址，尚未实现带认证的远程服务。
+
+0.3.1 在 Codex、OpenCode、Claude Code、Antigravity CLI、Grok Build 之外新增 ZCode 支持。ZCode 使用用户级 `~/.zcode/cli/config.json` 中的 `mcp.servers`，可选技能位于 `~/.zcode/skills/`。
+
+Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面应用自带的 CLI，避免旧 PATH 导致检测失败；优先运行原生程序，不依赖 PATH 中的 Node.js。自定义安装位置可通过 `IDA_AGENT_CODEX_PATH` 指定 `codex.exe` 的绝对路径，设置后重启管理页。
 
 ### 当前限制与编译环境
 
