@@ -2,13 +2,19 @@
 
 [English](#english) | [中文](#中文)
 
-> **Windows x64 only / 仅支持 Windows x64**
+> **Windows x64, Linux x64 and macOS Universal 2 / Windows、Linux、macOS 三平台发布**
 >
-> Requires **IDA Professional 9.4 for Windows**, with its bundled **Qt 6.8.2**. Linux, macOS, and other IDA/Qt versions are not supported.
+> The Windows packages described below require **IDA Professional 9.4 for Windows**, with its bundled **Qt 6.8.2**. Linux and macOS versions have not been comprehensively tested; please [report bugs](https://github.com/ackwrap/ida-pro-agent/issues). Check each release's assets for available platforms.
 >
-> 需要 **Windows 版 IDA Professional 9.4** 及其自带的 **Qt 6.8.2**。不支持 Linux、macOS 和其他 IDA/Qt 版本。
+> 下文的 Windows 安装包需要 **Windows 版 IDA Professional 9.4** 及其自带的 **Qt 6.8.2**。**Linux 和 macOS 版本尚未经过全面测试，如遇问题请[提交 Bug / Issue](https://github.com/ackwrap/ida-pro-agent/issues)。** 可用平台以各次发布的附件为准。
 
 [Download releases / 下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
+
+| Platform / 平台 | Package / 下载包 |
+| --- | --- |
+| Windows x64 | `*-windows-x64-setup.exe` or `*-windows-x64.zip` |
+| Linux x64, Ubuntu 24.04 baseline | `*-linux-x64.tar.gz`, including full AI Chat / 包含完整 AI Chat |
+| macOS 15+, Intel and Apple Silicon | `*-macos-universal2.dmg` or `*-macos-universal2.zip` |
 
 ## English
 
@@ -21,9 +27,20 @@ This repository hosts public usage documentation and binary releases. Source cod
 1. Download `ida-agent-<version>-windows-x64-setup.exe` from Releases and close IDA before installing or upgrading. The installer installs for the current Windows user and deploys the IDA plugin.
 2. Alternatively, extract `ida-agent-<version>-windows-x64.zip`, then copy `plugins/ida-agent-plugin.dll` into your IDA user plugin directory. Keep the Gateway and skills together in the extracted directory.
 3. Start IDA and load a database. Open **Edit → Plugins → IDA Agent**.
-4. When upgrading from ida-mcp, retire the old `ida_mcp_plugin.dll` before loading the new plugin, and use `ida-agent` for your MCP client entry.
+4. Install the current release as a fresh package after uninstalling the old version and removing its client entry. Configure the `ida-mcp` entry; no legacy aliases are provided.
 
 The installer has a separate `.sha256` file; the portable ZIP includes per-file `SHA256SUMS.txt`. IDA itself and Qt runtime DLLs are not bundled.
+
+For **Linux**, extract the tar.gz, verify `SHA256SUMS.txt`, and copy
+`plugins/ida-agent-plugin.so` into `${IDAUSR:-$HOME/.idapro}/plugins/` with IDA closed.
+Keep `ida-mcp` and `skills/` together. OpenSSL 3 and CA certificates are system
+dependencies; Qt comes from Linux IDA 9.4. See the archive's `README.md`.
+
+For **macOS**, open the DMG and run **IDA Agent Installer.app**. It installs the
+Universal 2 plugin and Gateway for the current user. The `.command` launcher opens
+the configuration manager. macOS uses native networking and needs no OpenSSL.
+The binaries use ad-hoc signatures without Developer ID notarization. See the
+included installation instructions. Close IDA before installing either platform.
 
 ### Configure a provider
 
@@ -41,11 +58,11 @@ API keys and saved proxy passwords are stored as plaintext with current-user fil
 
 ### MCP clients
 
-Run `ida-agent-gateway.exe -web` for the local client configuration manager, or configure your MCP client to start `ida-agent-gateway.exe` with no arguments for stdio. Keep IDA open with the database loaded. Optional HTTP transport binds only to loopback; authenticated remote hosting is not implemented.
+Run `ida-mcp.exe -web` for the local client configuration manager, or configure your MCP client to start `ida-mcp.exe` with no arguments for stdio. Keep IDA open with the database loaded. Optional HTTP transport binds only to loopback; authenticated remote hosting is not implemented.
 
 Version 0.3.1 adds ZCode alongside Codex, OpenCode, Claude Code, Antigravity CLI, and Grok Build. ZCode uses the user-level `~/.zcode/cli/config.json` (`mcp.servers`), with optional skills under `~/.zcode/skills/`.
 
-On Windows, the manager also discovers Codex in common npm/Scoop installations and the desktop app's bundled CLI when PATH is outdated. It runs the native executable without requiring Node.js in PATH. For custom installations, set `IDA_AGENT_CODEX_PATH` to the absolute path of `codex.exe` and restart the manager.
+On Windows, the manager also discovers Codex in common npm/Scoop installations and the desktop app's bundled CLI when PATH is outdated. It runs the native executable without requiring Node.js in PATH. For custom installations, set `IDA_MCP_CODEX_PATH` to the absolute path of `codex.exe` and restart the manager.
 
 ### Limits and build environment
 
@@ -66,9 +83,19 @@ ida-agent 包含 IDA 插件、供外部 AI 客户端使用的 MCP Gateway，以�
 1. 从 Releases 下载 `ida-agent-<版本>-windows-x64-setup.exe`，安装或升级前关闭 IDA。安装器按当前 Windows 用户安装，并部署 IDA 插件。
 2. 也可以解压 `ida-agent-<版本>-windows-x64.zip`，将 `plugins/ida-agent-plugin.dll` 复制到 IDA 用户插件目录。Gateway 与技能目录保留在便携目录中。
 3. 启动 IDA 并加载数据库，在 **Edit → Plugins → IDA Agent** 中使用插件。
-4. 从 ida-mcp 升级时，先停用旧的 `ida_mcp_plugin.dll`，避免重复加载；MCP 客户端条目统一使用 `ida-agent`。
+4. 卸载旧版并移除客户端旧条目后，全新安装当前版本，并添加 `ida-mcp` 条目；本版不提供旧名称兼容入口。
 
 安装器附带独立 `.sha256` 校验文件，便携 ZIP 内含逐文件 `SHA256SUMS.txt`。发布包不包含 IDA 或 Qt 运行时 DLL。
+
+**Linux**：解压 tar.gz，校验 `SHA256SUMS.txt`，关闭 IDA 后将
+`plugins/ida-agent-plugin.so` 放入 `${IDAUSR:-$HOME/.idapro}/plugins/`，保留
+`ida-mcp` 与 `skills/`。系统需安装 OpenSSL 3 和 CA 证书，Qt 使用 Linux IDA 9.4
+自带版本；详细步骤见包内 `README.md`。
+
+**macOS**：打开 DMG，运行 **IDA Agent Installer.app**，按当前用户安装 Intel /
+Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管理页。使用系统
+原生网络接口，无需 OpenSSL；二进制采用临时签名，未做 Developer ID 公证。
+安装前关闭 IDA，详细步骤见包内说明。
 
 ### 配置供应商
 
@@ -80,11 +107,11 @@ API Key 和已保存的代理密码使用当前用户文件权限保护，但以
 
 ### MCP 客户端
 
-运行 `ida-agent-gateway.exe -web` 打开本地配置管理页，或让 MCP 客户端以无参数方式启动 `ida-agent-gateway.exe` 使用 stdio。使用时保持 IDA 与数据库打开。可选 HTTP 模式仅监听本机回环地址，尚未实现带认证的远程服务。
+运行 `ida-mcp.exe -web` 打开本地配置管理页，或让 MCP 客户端以无参数方式启动 `ida-mcp.exe` 使用 stdio。使用时保持 IDA 与数据库打开。可选 HTTP 模式仅监听本机回环地址，尚未实现带认证的远程服务。
 
 0.3.1 在 Codex、OpenCode、Claude Code、Antigravity CLI、Grok Build 之外新增 ZCode 支持。ZCode 使用用户级 `~/.zcode/cli/config.json` 中的 `mcp.servers`，可选技能位于 `~/.zcode/skills/`。
 
-Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面应用自带的 CLI，避免旧 PATH 导致检测失败；优先运行原生程序，不依赖 PATH 中的 Node.js。自定义安装位置可通过 `IDA_AGENT_CODEX_PATH` 指定 `codex.exe` 的绝对路径，设置后重启管理页。
+Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面应用自带的 CLI，避免旧 PATH 导致检测失败；优先运行原生程序，不依赖 PATH 中的 Node.js。自定义安装位置可通过 `IDA_MCP_CODEX_PATH` 指定 `codex.exe` 的绝对路径，设置后重启管理页。
 
 ### 当前限制与编译环境
 
@@ -93,3 +120,11 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - 只有支持的 ChangeSet 修改提供预览、应用和回滚；任意脚本没有沙箱，也不会自动回滚。
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
+
+### Version 0.4.0 / 0.4.0 版本
+
+Fresh installation: the plugin remains `ida-agent`; the Gateway executable and MCP entry are `ida-mcp`. No old-name aliases or automatic MCP configuration migration are provided. Uninstall the old package and remove its client entry before installing this version.
+
+The first debugger request asks for permission in IDA. One approval covers all MCP clients on that IDA instance's current Pipe. The in-memory decision resets when the Pipe is recreated or the database closes. Debugger availability now refreshes without restarting Gateway.
+
+本版按全新安装处理：插件仍叫 `ida-agent`，Gateway 程序和 MCP 配置项统一为 `ida-mcp`。不保留旧名称别名，也不自动迁移 MCP 配置；请先卸载旧包并移除客户端旧条目。首次调试请求在 IDA 弹窗确认，允许后当前 Pipe 的所有 MCP 客户端共享临时权限；Pipe 重建或数据库关闭后失效。调试器可用状态会实时刷新。
