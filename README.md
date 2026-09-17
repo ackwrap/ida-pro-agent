@@ -35,6 +35,8 @@ For **Linux**, extract the tar.gz, verify `SHA256SUMS.txt`, and copy
 `plugins/ida-agent-plugin.so` into `${IDAUSR:-$HOME/.idapro}/plugins/` with IDA closed.
 Keep `ida-mcp` and `skills/` together. OpenSSL 3 and CA certificates are system
 dependencies; Qt comes from Linux IDA 9.4. See the archive's `README.md`.
+For headless use, run `./idat-with-agent /absolute/path/to/ida-9.4/idat` with your
+usual IDA arguments so IDAT can find its matching Qt libraries.
 
 For **macOS**, open the DMG and run **IDA Agent Installer.app**. It installs the
 Universal 2 plugin and Gateway for the current user. The `.command` launcher opens
@@ -91,6 +93,8 @@ ida-agent 包含 IDA 插件、供外部 AI 客户端使用的 MCP Gateway，以�
 `plugins/ida-agent-plugin.so` 放入 `${IDAUSR:-$HOME/.idapro}/plugins/`，保留
 `ida-mcp` 与 `skills/`。系统需安装 OpenSSL 3 和 CA 证书，Qt 使用 Linux IDA 9.4
 自带版本；详细步骤见包内 `README.md`。
+无界面模式使用包内 `idat-with-agent /绝对路径/ida-9.4/idat` 并附加原有 IDA 参数，
+以便 IDAT 加载对应的 Qt 库。
 
 **macOS**：打开 DMG，运行 **IDA Agent Installer.app**，按当前用户安装 Intel /
 Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管理页。使用系统
