@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide describes ida-agent 0.4.4. Use the plugin and Gateway from the same release package.
+This guide describes ida-agent 0.4.5. Use the plugin and Gateway from the same release package.
 
 ## 1. Install and open a database
 
@@ -99,7 +99,7 @@ On Linux/macOS, use `./ida-mcp` with the same arguments. Set the client's MCP UR
 
 ## 3. Discover tools and run an analysis
 
-The Gateway exposes these 11 MCP tools:
+The Gateway exposes 23 MCP tools: 12 [common direct tools](#gateway-compatibility-in-045) and these 11 domain tools:
 
 | Tool | Purpose |
 | --- | --- |
@@ -197,3 +197,56 @@ For upgrades from before the 0.4.0 component rename, remove the old MCP entry an
 | Debugger request fails | Check the IDA permission dialog, selected debugger and process state. |
 
 Report reproducible problems in [Issues](https://github.com/ackwrap/ida-pro-agent/issues) with OS/CPU, IDA and ida-agent versions, steps and relevant logs with credentials removed.
+
+## Gateway compatibility in 0.4.5
+
+These additions are available from 0.4.5. Older v0.4.4 packages expose the original 11 domain tools; check the running `tools/list` response before using a direct tool. Reconnect the client after replacing the Gateway so it refreshes its cached catalog and skills.
+
+The fixed catalog has 23 underscore-named tools: 12 direct tools below and the existing 11 domain tools. Direct tools accept the operation parameters at the top level and return the operation result directly. Domain calls keep their `method`/`result` envelope and `list` → `describe` → `call` workflow. MCP names contain underscores; domain method identifiers keep dots.
+
+| Direct tool / 直接工具 | Method / 方法 |
+| --- | --- |
+| `ida_list_instances` | `ida.instances.list` |
+| `ida_select_instance` | `ida.instances.select` |
+| `ida_database_info` | `database.info` |
+| `ida_get_function` | `function.get` |
+| `ida_search_functions` | `function.search` |
+| `ida_decompile_function` | `function.decompile` |
+| `ida_disassemble_function` | `function.disassemble` |
+| `ida_function_callers` | `function.callers` |
+| `ida_function_callees` | `function.callees` |
+| `ida_query_xrefs` | `xref.query` |
+| `ida_search_strings` | `string.search` |
+| `ida_read_memory` | `memory.read` |
+
+For common reads, use the direct tool's advertised schema. `ida_search_functions` takes `name` (an empty string lists functions); use `ida_get_function` to resolve an address. Advanced analysis, writes, debugging and scripts continue through the domain tools. For memory reads, `bytes`/`string` require `length`, `integer` requires `widthBits`, and `pointer` accepts neither. String `refresh=true` cannot be combined with a cursor.
+
+The following objects are MCP `tools/call` parameters:
+
+```json
+{"name":"ida_list_instances","arguments":{}}
+```
+
+```json
+{"name":"ida_search_functions","arguments":{"name":"main","limit":20}}
+```
+
+```json
+{"name":"ida_decompile_function","arguments":{"address":"0x401000","maxBytes":32768}}
+```
+
+Only direct read tools can use the sole available instance without prior selection. With multiple databases, use `ida_select_instance` or pass a discovered `instanceId`; explicit routing also avoids shared active-instance state in HTTP sessions. The domain workflow still requires selection or an explicit instance. Keep the same instance and filters when continuing pages; aliases use the same method-bound cursors as domain calls.
+
+Tool argument and operation errors return `isError:true`, with matching JSON text and `structuredContent`. Errors include `code`, `message`, `retryable`, `hint`, optional `method`, and up to eight `issues` containing a field, rule and expected contract. For example, an invalid limit identifies `arguments.limit` and its expected integer type without echoing the input value. Correct those fields rather than encoding an object as a JSON string. Unknown tools and malformed JSON-RPC messages remain protocol errors.
+
+Each Gateway keeps two active requests per instance, with a FIFO queue of at most eight waiting requests for at most five seconds. This limit is per Gateway process. Only a read-only, explicitly retryable `IDA_BUSY` gets up to two automatic retries under the same method deadline. Writes, scripts, debugger control and timeouts are not automatically retried. A side-effecting timeout reports `executionState:"unknown"` and `retryable:false`; inspect the IDA state or ChangeSet audit before resubmitting it.
+
+For call diagnostics, add `-diagnostics` to the Gateway arguments:
+
+```powershell
+.\ida-mcp.exe -diagnostics
+```
+
+Diagnostics go to stderr and contain only tool, method, stage, duration, error code and retry count. They exclude input values and result content; stdout remains MCP JSON. To investigate failures, record the Gateway version, client version, tool name and redacted error object. Start by checking `tools/list`, `ida_list_instances`, then `ida_database_info` with an explicit instance. This separates catalog, instance routing and execution failures.
+
+The repository provides `python mcp-test-project/verify_compatibility.py <gateway-executable> --http` for isolated no-IDA protocol checks across four protocol versions and both transports. It checks the catalog, correctable errors, session recovery, text/structured consistency, diagnostics and stdio EOF. This is protocol/SDK validation; it does not prove a particular Agent or model chooses valid calls.

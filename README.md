@@ -134,3 +134,13 @@ Update custom tool allowlists/scripts from names such as `ida.functions` to `ida
 所有客户端现在统一使用 11 个下划线 MCP 工具名，包括 `ida_instances`、`ida_functions` 和 `ida_scripts`。stdio 与 HTTP 默认使用固定目录和原 Grok 兼容行为，无需 `--grok`；旧参数仍作为已弃用的空操作接受。
 
 将自定义工具允许列表、脚本中的 `ida.functions` 等旧工具名改为 `ida_functions`，刷新包内技能，再重启 Gateway 与客户端。`function.search`、`ida.instances.list` 等具体方法标识保留点号。使用 `list` → `describe` → `call`；安装、配置、全部 11 个工具、调用示例和常见问题见[中文使用指南](USAGE.zh-CN.md)。
+
+### Version 0.4.5 / 0.4.5 版本
+
+The Gateway now exposes 23 fixed underscore-named tools: 12 common direct tools plus the existing 11 domain tools. Direct reads use a simple parameter schema and can route to the sole available instance. Argument failures return field-level tool errors and recovery hints. Bounded per-instance waiting and read-only busy retries reduce transient failures; writes, scripts and debugger control are never automatically retried. Optional `-diagnostics` writes metadata to stderr.
+
+Restart the Gateway and reconnect the client to refresh its catalog, skill copies and tool allowlists. Direct tools return the operation result directly; existing domain calls keep their `method`/`result` envelope. See the [English guide](USAGE.md#gateway-compatibility-in-045) and [中文指南](USAGE.zh-CN.md#gateway-兼容性优化045) for examples and timeout recovery.
+
+Gateway 固定目录增加为 23 个下划线工具：12 个常用直接入口及原有 11 个领域入口。直接读取工具使用简单参数 schema，并支持唯一实例自动路由；参数错误包含具体字段与修正提示。每实例有界等待和只读忙碌重试减少瞬时失败；修改、脚本和调试控制不会自动重试。`-diagnostics` 可向 stderr 输出脱敏元数据。
+
+更新后重启 Gateway 并重连客户端，刷新目录、技能和工具允许列表。直接工具返回业务结果，既有领域调用保持 `method`/`result` 包装。超时不代表已启动操作被撤销，恢复方式见使用指南。
