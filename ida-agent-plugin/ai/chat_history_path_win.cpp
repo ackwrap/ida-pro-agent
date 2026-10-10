@@ -29,18 +29,36 @@ private:
 
 std::optional<std::string> NormalizeDatabaseKey(const std::filesystem::path &idb_path)
 {
-  if ( idb_path.empty() )
+  if ( idb_path.empty() || !idb_path.is_absolute() || idb_path.filename().empty() )
     return std::nullopt;
-  WinHandle file(CreateFileW(
+  HANDLE raw_file = CreateFileW(
       idb_path.c_str(),
       FILE_READ_ATTRIBUTES,
       FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
       nullptr,
       OPEN_EXISTING,
       FILE_ATTRIBUTE_NORMAL,
-      nullptr));
-  if ( file.Get() == INVALID_HANDLE_VALUE )
-    return std::nullopt;
+      nullptr);
+  std::wstring unpacked_name;
+  if ( raw_file == INVALID_HANDLE_VALUE )
+  {
+    if ( GetLastError() != ERROR_FILE_NOT_FOUND )
+      return std::nullopt;
+    std::error_code error;
+    if ( std::filesystem::symlink_status(idb_path, error).type()
+        != std::filesystem::file_type::not_found )
+      return std::nullopt;
+    // While IDA is open it may keep only .id0/.id1 files. Resolve the existing
+    // parent so the final IDB name has the same identity before/after packing.
+    raw_file = CreateFileW(
+        idb_path.parent_path().c_str(), FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if ( raw_file == INVALID_HANDLE_VALUE )
+      return std::nullopt;
+    unpacked_name = idb_path.filename().wstring();
+  }
+  WinHandle file(raw_file);
 
   const DWORD flags = FILE_NAME_NORMALIZED | VOLUME_NAME_DOS;
   const DWORD required = GetFinalPathNameByHandleW(file.Get(), nullptr, 0, flags);
@@ -56,6 +74,8 @@ std::optional<std::string> NormalizeDatabaseKey(const std::filesystem::path &idb
     final_path = L"\\\\" + final_path.substr(8);
   else if ( final_path.rfind(L"\\\\?\\", 0) == 0 )
     final_path.erase(0, 4);
+  if ( !unpacked_name.empty() )
+    final_path = (std::filesystem::path(final_path) / unpacked_name).wstring();
 
   const int lowercase_size = LCMapStringEx(
       LOCALE_NAME_INVARIANT,

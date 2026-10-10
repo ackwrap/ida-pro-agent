@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "source_repository": "ackwrap/ida-agent",
-  "source_commit": "a9d16fa06946d5168b86c2e45f6ccbf3846a37f9",
+  "source_commit": "c31669007f4f5256999e4bcedd8be28c3291d6fc",
   "version": "0.4.5",
   "files": [
     ".gitattributes",
@@ -162,6 +162,8 @@
     "ida-agent-plugin/ai/stream_client_linux_websocket.cpp",
     "ida-agent-plugin/ai/stream_client_macos.cpp",
     "ida-agent-plugin/ai/stream_client_win.cpp",
+    "ida-agent-plugin/ai/stream_client_win_async.cpp",
+    "ida-agent-plugin/ai/stream_client_win_async.hpp",
     "ida-agent-plugin/ai/stream_client_win_internal.hpp",
     "ida-agent-plugin/ai/stream_client_win_sse.cpp",
     "ida-agent-plugin/ai/stream_client_win_sse_diagnostics.cpp",

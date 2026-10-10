@@ -16,6 +16,7 @@
 #include <functional>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -281,7 +282,8 @@ void TestSseIncremental()
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: Text/Event-Stream; charset=utf-8\r\n"
         "Connection: close\r\n\r\n");
-    std::this_thread::sleep_for(300ms);
+    // Providers may spend seconds thinking before sending the first token.
+    std::this_thread::sleep_for(1500ms);
     SendAll(socket, ": heartbeat\r");
     std::this_thread::sleep_for(5ms);
     SendAll(socket, "\n" "data: first\r\n" "data: second ");
@@ -311,6 +313,46 @@ void TestSseIncremental()
   allow_close.store(true);
   const auto closed = WaitNextEvent(client, id, "SSE Closed");
   Require(closed.kind == ida_agent::ai::StreamEventKind::Closed, "SSE Closed missing");
+  server.Join();
+}
+
+void TestSseDelayedEvents()
+{
+  std::atomic<bool> allow_close{false};
+  LoopbackServer server([&](SOCKET socket)
+  {
+    ReadHttpHeaders(socket);
+    SendAll(socket, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                    "Transfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\n");
+    const auto send_chunk = [&](std::string_view bytes)
+    {
+      std::ostringstream size;
+      size << std::hex << bytes.size();
+      SendAll(socket, size.str() + "\r\n" + std::string(bytes) + "\r\n");
+    };
+    send_chunk("data: first\n\n");
+    // A pause between tokens must not cancel a request whose idle budget is 5s.
+    std::this_thread::sleep_for(3500ms);
+    send_chunk("data: second\n\n");
+    const auto deadline = std::chrono::steady_clock::now() + 5s;
+    while ( !allow_close.load() && std::chrono::steady_clock::now() < deadline )
+      std::this_thread::sleep_for(2ms);
+    Require(allow_close.load(), "delayed SSE event was not consumed");
+    SendAll(socket, "0\r\n\r\n");
+  });
+  ida_agent::ai::StreamClient client;
+  const auto id = client.OpenSse(MakeLoopbackRequest(server.port(), "/delayed-events"));
+  Require(WaitNextEvent(client, id, "delayed SSE Opened").kind
+              == ida_agent::ai::StreamEventKind::Opened, "delayed SSE Opened missing");
+  const auto first = WaitNextEvent(client, id, "first delayed SSE event");
+  Require(first.kind == ida_agent::ai::StreamEventKind::Sse && first.sse.data == "first",
+          "first delayed SSE event missing");
+  const auto second = WaitNextEvent(client, id, "second delayed SSE event");
+  Require(second.kind == ida_agent::ai::StreamEventKind::Sse && second.sse.data == "second",
+          second.message.empty() ? "second delayed SSE event missing" : second.message.c_str());
+  allow_close.store(true);
+  Require(WaitNextEvent(client, id, "delayed SSE Closed").kind
+              == ida_agent::ai::StreamEventKind::Closed, "delayed SSE Closed missing");
   server.Join();
 }
 
@@ -361,27 +403,66 @@ void TestSseIdleTimeoutMessage()
   server.Join();
 }
 
-void TestActiveStop(bool shutdown_client)
+void TestSseOverallTimeoutMessage()
 {
   LoopbackServer server([](SOCKET socket)
   {
     ReadHttpHeaders(socket);
-    SendAll(
-        socket,
-        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n");
+    SendAll(socket, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                    "Connection: close\r\n\r\n");
+    char byte = 0;
+    Require(recv(socket, &byte, 1, 0) <= 0, "expired SSE connection remained open");
+  });
+  auto request = MakeLoopbackRequest(server.port(), "/overall-timeout");
+  request.overall_timeout_ms = 300;
+  ida_agent::ai::StreamClient client;
+  const auto id = client.OpenSse(std::move(request));
+  Require(WaitNextEvent(client, id, "overall timeout Opened").kind
+              == ida_agent::ai::StreamEventKind::Opened, "overall timeout Opened missing");
+  const auto error = WaitNextEvent(client, id, "overall timeout Error");
+  Require(error.kind == ida_agent::ai::StreamEventKind::Error
+              && error.message == "Stream overall timeout expired.",
+          "SSE overall timeout message was not specific");
+  server.Join();
+}
+
+void TestActiveStop(bool shutdown_client, bool send_headers = true)
+{
+  std::atomic<bool> request_received{false};
+  LoopbackServer server([&](SOCKET socket)
+  {
+    ReadHttpHeaders(socket);
+    if ( send_headers )
+      SendAll(socket, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                      "Connection: close\r\n\r\n");
+    request_received.store(true);
     char byte = 0;
     const int received = recv(socket, &byte, 1, 0);
     Require(received <= 0, "active SSE connection was not interrupted");
   });
   ida_agent::ai::StreamClient client;
-  const auto id = client.OpenSse(MakeLoopbackRequest(server.port(), "/blocking"));
-  Require(WaitNextEvent(client, id, "blocking SSE Opened").kind == ida_agent::ai::StreamEventKind::Opened, "blocking SSE Opened missing");
+  auto request = MakeLoopbackRequest(server.port(), "/blocking");
+  request.idle_timeout_ms = 120000;
+  request.overall_timeout_ms = std::nullopt;
+  const auto id = client.OpenSse(std::move(request));
+  if ( send_headers )
+    Require(WaitNextEvent(client, id, "blocking SSE Opened").kind
+                == ida_agent::ai::StreamEventKind::Opened, "blocking SSE Opened missing");
+  else
+  {
+    const auto deadline = std::chrono::steady_clock::now() + 5s;
+    while ( !request_received.load() && std::chrono::steady_clock::now() < deadline )
+      std::this_thread::sleep_for(2ms);
+    Require(request_received.load(), "blocking handshake request missing");
+  }
+  const auto stop_started = std::chrono::steady_clock::now();
   if ( shutdown_client )
     client.Shutdown();
   else
     client.Cancel(id);
   const auto terminal = WaitNextEvent(client, id, "blocking SSE terminal");
   Require(terminal.kind == ida_agent::ai::StreamEventKind::Cancelled, "active SSE stop did not cancel");
+  Require(std::chrono::steady_clock::now() - stop_started < 1s, "SSE cancellation waited for receive timeout");
   server.Join();
 }
 
@@ -642,10 +723,14 @@ int main()
       }
     };
     run("SSE incremental", TestSseIncremental);
+    run("SSE delayed events", TestSseDelayedEvents);
     run("SSE content type", TestSseContentTypeRejection);
     run("SSE idle timeout", TestSseIdleTimeoutMessage);
+    run("SSE overall timeout", TestSseOverallTimeoutMessage);
     run("SSE cancel", [] { TestActiveStop(false); });
     run("SSE shutdown", [] { TestActiveStop(true); });
+    run("SSE handshake cancel", [] { TestActiveStop(false, false); });
+    run("SSE handshake shutdown", [] { TestActiveStop(true, false); });
     run("terminal queue limit", TestTerminalQueueLimit);
     run("WebSocket", TestWebSocket);
     run("WebSocket local close", TestWebSocketLocalClose);

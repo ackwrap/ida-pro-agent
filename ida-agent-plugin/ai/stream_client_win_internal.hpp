@@ -23,7 +23,6 @@ namespace stream_client_win_internal
 
 constexpr DWORD ErrorBodyReadLimit = 8 * 1024;
 constexpr DWORD WebSocketCloseTimeoutMs = 2000;
-constexpr int SseCancellationPollMs = 250;
 
 std::wstring Utf8ToWide(std::string_view value);
 bool IsValidUtf8(std::string_view value);
@@ -58,8 +57,12 @@ private:
   HINTERNET handle_ = nullptr;
 };
 
+class WinHttpAsyncRequest;
+
 struct RequestHandles
 {
+  // Destroy the request before releasing our callback/buffer owner.
+  std::shared_ptr<WinHttpAsyncRequest> async;
   InternetHandle session;
   InternetHandle connection;
   InternetHandle request;
@@ -148,7 +151,7 @@ private:
       std::string &error);
   static std::string ReadErrorBody(
       State &state,
-      HINTERNET request,
+      stream_client_win_internal::RequestHandles &handles,
       const std::optional<std::chrono::steady_clock::time_point> &deadline);
   static void RunSse(
       State &state,

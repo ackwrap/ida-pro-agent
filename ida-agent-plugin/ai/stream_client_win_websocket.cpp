@@ -175,7 +175,7 @@ void StreamClient::Impl::RunWebSocket(
   if ( handles.status_code != 101 )
   {
     const std::string body = ReadErrorBody(
-        state, handles.request.get(), deadline);
+        state, handles, deadline);
     if ( IsCancelled(state) )
     {
       QueueTerminal(

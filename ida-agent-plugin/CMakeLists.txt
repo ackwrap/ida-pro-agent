@@ -76,6 +76,7 @@ set(IDA_AGENT_STREAM_CLIENT_SOURCES
 if(WIN32)
     list(APPEND IDA_AGENT_STREAM_CLIENT_SOURCES
         ai/stream_client_win.cpp
+        ai/stream_client_win_async.cpp
         ai/stream_client_win_sse.cpp
         ai/stream_client_win_sse_diagnostics.cpp
         ai/stream_client_win_websocket.cpp

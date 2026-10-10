@@ -1,6 +1,7 @@
 #include "ai/stream_client_win_internal.hpp"
 
 #include "ai/network_diagnostics.hpp"
+#include "ai/stream_client_win_async.hpp"
 #include "ai/stream_client_win_sse_diagnostics.hpp"
 
 #include <algorithm>
@@ -215,7 +216,7 @@ bool StreamClient::Impl::OpenHttpRequest(
       access_type,
       proxy_name.empty() ? WINHTTP_NO_PROXY_NAME : proxy_name.c_str(),
       proxy_bypass.empty() ? WINHTTP_NO_PROXY_BYPASS : proxy_bypass.c_str(),
-      0));
+      state.kind == StreamKind::Sse ? WINHTTP_FLAG_ASYNC : 0));
   if ( !handles.session )
   {
     error = "Stream connection setup failed.";
@@ -284,6 +285,21 @@ bool StreamClient::Impl::OpenHttpRequest(
     return false;
   }
 
+  if ( state.kind == StreamKind::Sse )
+  {
+    handles.async = std::make_shared<WinHttpAsyncRequest>();
+    if ( !handles.async->Attach(handles.request.get(), state.request.body, error) )
+      return false;
+  }
+  const auto abort = [&]() -> std::optional<std::string>
+  {
+    if ( IsCancelled(state) || IsCloseRequested(state) )
+      return "Stream operation was interrupted.";
+    if ( DeadlineExpired(deadline) )
+      return "Stream overall timeout expired.";
+    return std::nullopt;
+  };
+
   const std::wstring proxy_username = state.request.proxy.username.empty()
       ? std::wstring{}
       : Utf8ToWide(state.request.proxy.username);
@@ -301,7 +317,13 @@ bool StreamClient::Impl::OpenHttpRequest(
         ? WINHTTP_NO_REQUEST_DATA
         : const_cast<char *>(state.request.body.data());
     const DWORD body_size = static_cast<DWORD>(state.request.body.size());
-    if ( !WinHttpSendRequest(
+    if ( handles.async != nullptr )
+    {
+      if ( !handles.async->Send(handles.request.get(), abort, error)
+          || !handles.async->Receive(handles.request.get(), abort, error) )
+        return false;
+    }
+    else if ( !WinHttpSendRequest(
              handles.request.get(),
              WINHTTP_NO_ADDITIONAL_HEADERS,
              0,
@@ -361,39 +383,56 @@ bool StreamClient::Impl::OpenHttpRequest(
 
 std::string StreamClient::Impl::ReadErrorBody(
     State &state,
-    HINTERNET request,
+    RequestHandles &handles,
     const std::optional<std::chrono::steady_clock::time_point> &deadline)
 {
   std::array<char, 16 * 1024> buffer{};
   std::string body;
   body.reserve(ErrorBodyReadLimit);
+  const auto abort = [&]() -> std::optional<std::string>
+  {
+    if ( IsCancelled(state) )
+      return "Stream was cancelled.";
+    if ( DeadlineExpired(deadline) )
+      return "Stream overall timeout expired.";
+    return std::nullopt;
+  };
   while ( true )
   {
     if ( IsCancelled(state) || DeadlineExpired(deadline) )
       return body;
     int receive_timeout = RemainingReceiveTimeout(state, deadline);
     WinHttpSetOption(
-        request,
+        handles.request.get(),
         WINHTTP_OPTION_RECEIVE_TIMEOUT,
         &receive_timeout,
         sizeof(receive_timeout));
-    DWORD read = 0;
-    if ( !WinHttpReadData(
-             request,
-             buffer.data(),
-             static_cast<DWORD>(buffer.size()),
-             &read)
-        || read == 0 )
+    std::string_view bytes;
+    std::string error;
+    if ( handles.async != nullptr )
+    {
+      if ( !handles.async->Read(handles.request.get(), abort, bytes, error) )
+        return body;
+    }
+    else
+    {
+      DWORD read = 0;
+      if ( !WinHttpReadData(handles.request.get(), buffer.data(),
+               static_cast<DWORD>(buffer.size()), &read) )
+        return body;
+      bytes = std::string_view(buffer.data(), read);
+    }
+    if ( bytes.empty() )
     {
       return body;
     }
     AppendAiNetworkResponseLog(
         state.id,
-        std::string_view(buffer.data(), read));
+        bytes);
     const std::size_t retained = (std::min)(
-        static_cast<std::size_t>(read),
+        bytes.size(),
         ErrorBodyReadLimit - body.size());
-    body.append(buffer.data(), retained);
+    body.append(bytes.data(), retained);
   }
 }
 
@@ -430,7 +469,7 @@ void StreamClient::Impl::RunSse(
   if ( handles.status_code < 200 || handles.status_code >= 300 )
   {
     const std::string body = ReadErrorBody(
-        state, handles.request.get(), deadline);
+        state, handles, deadline);
     if ( IsCancelled(state) )
     {
       timeline.Terminal("cancelled");
@@ -459,7 +498,7 @@ void StreamClient::Impl::RunSse(
   if ( !HasSseContentType(handles.request.get()) )
   {
     const std::string body = ReadErrorBody(
-        state, handles.request.get(), deadline);
+        state, handles, deadline);
     if ( IsCancelled(state) )
     {
       timeline.Terminal("cancelled");
@@ -496,7 +535,16 @@ void StreamClient::Impl::RunSse(
       state.request.max_event_bytes,
       scratch_limit,
   });
-  std::array<char, 16 * 1024> buffer{};
+  const auto abort = [&]() -> std::optional<std::string>
+  {
+    if ( IsCancelled(state) )
+      return "Stream was cancelled.";
+    if ( DeadlineExpired(deadline) )
+      return "Stream overall timeout expired.";
+    if ( timeline.IdleElapsedMs() >= state.request.idle_timeout_ms )
+      return "SSE idle timeout expired.";
+    return std::nullopt;
+  };
   while ( true )
   {
     if ( IsCancelled(state) )
@@ -523,20 +571,19 @@ void StreamClient::Impl::RunSse(
           MakeControlEvent(StreamEventKind::Error, std::string(message)));
       return;
     }
-    int receive_timeout = (std::min)({
+    int receive_timeout = (std::min)(
         RemainingReceiveTimeout(state, deadline),
-        SseCancellationPollMs,
-        static_cast<int>((std::min)(idle_remaining, static_cast<long long>((std::numeric_limits<int>::max)()))),
-    });
+        static_cast<int>((std::min)(idle_remaining, static_cast<long long>((std::numeric_limits<int>::max)()))));
     WinHttpSetOption(
         handles.request.get(),
         WINHTTP_OPTION_RECEIVE_TIMEOUT,
         &receive_timeout,
         sizeof(receive_timeout));
-    DWORD available = 0;
-    if ( !WinHttpQueryDataAvailable(handles.request.get(), &available) )
+    std::string_view bytes;
+    std::string read_error;
+    if ( !handles.async->Read(handles.request.get(), abort, bytes, read_error) )
     {
-      const DWORD receive_error = GetLastError();
+      const DWORD receive_error = handles.async->LastError();
       if ( IsCancelled(state) )
       {
         timeline.Terminal("cancelled");
@@ -551,71 +598,36 @@ void StreamClient::Impl::RunSse(
       {
         timeline.OperationError(
             "sse.receive.wait",
-            "WinHttpQueryDataAvailable",
+            handles.async->LastOperation(),
             receive_error,
             QueryHttp2StreamError(handles.request.get()));
-        continue;
+        constexpr std::string_view message = "SSE idle timeout expired.";
+        timeline.Terminal("idle_timeout", message);
+        QueueTerminal(state, MakeControlEvent(StreamEventKind::Error, std::string(message)));
       }
       else
       {
         const std::optional<DWORD> stream_error =
             QueryHttp2StreamError(handles.request.get());
-        const std::string message = FormatWinHttpSseError(
-            "WinHttpQueryDataAvailable", receive_error, stream_error);
-        timeline.OperationError(
-            "sse.receive.error",
-            "WinHttpQueryDataAvailable",
-            receive_error,
-            stream_error);
-        timeline.Terminal("query_data_error", message);
-        QueueTerminal(state, MakeControlEvent(StreamEventKind::Error, message));
+        if ( receive_error != ERROR_SUCCESS )
+        {
+          read_error = FormatWinHttpSseError(handles.async->LastOperation(), receive_error, stream_error);
+          timeline.OperationError(
+              "sse.receive.error", handles.async->LastOperation(), receive_error, stream_error);
+        }
+        timeline.Terminal("read_error", read_error);
+        QueueTerminal(state, MakeControlEvent(StreamEventKind::Error, read_error));
       }
       return;
     }
-    DWORD read = 0;
-    if ( available != 0 )
+    if ( !bytes.empty() )
     {
-      const DWORD requested = (std::min)(
-          available,
-          static_cast<DWORD>(buffer.size()));
-      if ( !WinHttpReadData(
-               handles.request.get(), buffer.data(), requested, &read) )
-      {
-        const DWORD read_error = GetLastError();
-        if ( IsCancelled(state) )
-        {
-          timeline.Terminal("cancelled");
-          QueueTerminal(state, MakeControlEvent(StreamEventKind::Cancelled, "Stream was cancelled."));
-        }
-        else
-        {
-          const std::optional<DWORD> stream_error =
-              QueryHttp2StreamError(handles.request.get());
-          const std::string message = FormatWinHttpSseError(
-              "WinHttpReadData", read_error, stream_error);
-          timeline.OperationError(
-              "sse.read.error", "WinHttpReadData", read_error, stream_error);
-          timeline.Terminal("read_error", message);
-          QueueTerminal(state, MakeControlEvent(StreamEventKind::Error, message));
-        }
-        return;
-      }
-      if ( read == 0 )
-      {
-        const std::string message =
-            "WinHttpReadData returned zero bytes while data was available.";
-        timeline.Terminal("read_zero", message);
-        QueueTerminal(state, MakeControlEvent(StreamEventKind::Error, message));
-        return;
-      }
-      timeline.Read(read);
-      AppendAiNetworkResponseLog(
-          state.id,
-          std::string_view(buffer.data(), read));
+      timeline.Read(bytes.size());
+      AppendAiNetworkResponseLog(state.id, bytes);
     }
-    SseParseResult parsed = available == 0
+    SseParseResult parsed = bytes.empty()
         ? parser.Finish()
-        : parser.Feed(std::string_view(buffer.data(), read));
+        : parser.Feed(bytes);
     if ( parsed.status == SseParseStatus::Error )
     {
       timeline.Terminal("parse_error", parsed.message);
@@ -634,7 +646,7 @@ void StreamClient::Impl::RunSse(
         return;
       }
     }
-    if ( available == 0 )
+    if ( bytes.empty() )
     {
       timeline.Terminal("closed");
       QueueTerminal(state, MakeControlEvent(StreamEventKind::Closed, "SSE stream closed."));

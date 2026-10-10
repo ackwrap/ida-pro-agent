@@ -125,6 +125,21 @@ int main()
   std::transform(aliased_text.begin(), aliased_text.end(), aliased_text.begin(), towupper);
   const auto canonical_key = NormalizeDatabaseKey(idb_path);
   const auto aliased_key = NormalizeDatabaseKey(std::filesystem::path(aliased_text));
+  const auto unpacked = root / L"Unpacked.i64";
+  const auto before_pack = NormalizeDatabaseKey(unpacked);
+  Require(before_pack.has_value(), "unpacked IDB identity missing");
+  {
+    HANDLE file = CreateFileW(
+        unpacked.c_str(), GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    Require(file != INVALID_HANDLE_VALUE, "packed test IDB was not created");
+    CloseHandle(file);
+  }
+  Require(NormalizeDatabaseKey(unpacked) == before_pack, "packing changed IDB identity");
+  Require(!NormalizeDatabaseKey(root) && !NormalizeDatabaseKey(root / L"missing/sample.i64")
+              && !NormalizeDatabaseKey(L"relative.i64"),
+          "invalid IDB identity accepted");
 #else
   std::ofstream(idb_path).put('x');
   const auto alias = root / "alias.i64";
