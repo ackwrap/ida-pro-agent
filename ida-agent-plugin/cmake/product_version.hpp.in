@@ -1,0 +1,6 @@
+#pragma once
+
+namespace ida_agent
+{
+inline constexpr const char *Version = "@IDA_AGENT_PRODUCT_VERSION@";
+}

@@ -4,6 +4,14 @@
 
 本文对应 ida-agent 0.4.6。插件与 Gateway 请使用同一发布包中的版本。
 
+### 源码构建中的更新检测
+
+Qt 插件和本地 Web 管理页默认在后台检测公开仓库 [`ackwrap/ida-pro-agent` 的正式 Release](https://github.com/ackwrap/ida-pro-agent/releases)，每 24 小时最多自动检查一次。在 IDA 中使用 **Edit → Plugins → IDA Agent → Check for Updates...**，或打开 **Settings... → Software Updates**，可查看当前版本、立即检查、打开发布页面或关闭自动检测；Web 管理页提供相同入口。手动检查间隔为一分钟；断网和 GitHub 限流会显示检查失败，并保留上次查询到的版本信息。
+
+两个界面共享 `update-settings.json` 和 `update-cache.json`：Windows 位于 `%LOCALAPPDATA%\ida-agent\ai`，Linux 位于 `${XDG_CONFIG_HOME:-$HOME/.config}/ida-agent/ai`，macOS 位于 `~/Library/Application Support/ida-agent/ai`。检测请求仅携带软件版本，不携带 IDB、聊天内容或供应商凭据；插件使用已有的系统代理模式，Web 管理器遵循 `HTTPS_PROXY` 和 `NO_PROXY`，无需 GitHub 登录。草稿和预发布版本不参与更新提示。无界面插件、stdio 和 HTTP MCP 进程不执行更新检测。
+
+发现更新后，打开发布页下载对应平台的软件包，关闭 IDA，再一起更新插件与 Gateway。更新检测不会自动安装软件包。已发布的 0.4.6 安装包尚未包含此功能，请使用后续版本或源码构建。
+
 ## 1. 安装并打开数据库
 
 需要对应平台的 IDA Professional 9.4 及其自带的 Qt 6.8.2。伪代码和语义参数分析还需要对应的 Hex-Rays 反编译器与许可。发布包不包含 IDA 或 Qt；Linux 和 macOS 版本尚未经过全面测试。

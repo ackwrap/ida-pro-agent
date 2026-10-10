@@ -9,6 +9,7 @@
 #include "ai/provider_settings_dialog.hpp"
 #include "ai/provider_settings_store.hpp"
 #include "ai/stream_client.hpp"
+#include "ai/update_controller.hpp"
 
 #include <ida.hpp>
 #include <idp.hpp>
@@ -32,6 +33,7 @@ enum class ActionKind
   OpenChat,
   ProviderSettings,
   PluginSettings,
+  CheckUpdates,
   TestProvider,
   NewConversation,
   CancelRequest,
@@ -48,10 +50,11 @@ struct ActionDefinition
   bool popup_only;
 };
 
-constexpr std::array<ActionDefinition, 8> Actions{{
+constexpr std::array<ActionDefinition, 9> Actions{{
     {"ida-agent:ai:open", "Open AI Chat", "Open the IDA Agent AI chat panel", ActionKind::OpenChat, false},
     {"ida-agent:ai:providers", "Provider Settings...", "Configure OpenAI or Claude providers", ActionKind::ProviderSettings, false},
     {"ida-agent:settings", "Settings...", "Configure IDA Agent plugin behavior", ActionKind::PluginSettings, false},
+    {"ida-agent:updates", "Check for Updates...", "Check the public stable release", ActionKind::CheckUpdates, false},
     {"ida-agent:ai:test-provider", "Test Active Provider", "Test the active AI provider", ActionKind::TestProvider, false},
     {"ida-agent:ai:new", "New Conversation", "Start a new AI conversation", ActionKind::NewConversation, false},
     {"ida-agent:ai:cancel", "Cancel Request", "Cancel the active AI request", ActionKind::CancelRequest, false},
@@ -231,6 +234,7 @@ struct AiMenuRegistry::Impl
     controllers.erase(existing);
     if ( controllers.empty() )
     {
+      updates.Stop();
       if ( stream_client != nullptr )
       {
         if ( trace ) trace("ai.stop.stream.shutdown.begin");
@@ -354,6 +358,7 @@ struct AiMenuRegistry::Impl
     if ( !HookPopupMenus() )
       msg("[ida-agent] failed to hook AI viewer popup menus\n");
     ui_registered = true;
+    updates.Start();
     return true;
   }
 
@@ -392,6 +397,7 @@ struct AiMenuRegistry::Impl
       AiActionHandler(ActionKind::OpenChat),
       AiActionHandler(ActionKind::ProviderSettings),
       AiActionHandler(ActionKind::PluginSettings),
+      AiActionHandler(ActionKind::CheckUpdates),
       AiActionHandler(ActionKind::TestProvider),
       AiActionHandler(ActionKind::NewConversation),
       AiActionHandler(ActionKind::CancelRequest),
@@ -400,6 +406,7 @@ struct AiMenuRegistry::Impl
   }};
   PluginSettingsStore settings_store;
   PluginSettings settings;
+  UpdateController updates;
   ProviderSettingsStore provider_settings_store;
   ProviderManagerDraft provider_settings;
   std::uint64_t provider_revision = 1;
@@ -428,6 +435,7 @@ AiMenuRegistry::AiMenuRegistry() : impl_(std::make_unique<Impl>()) {}
 
 AiMenuRegistry::~AiMenuRegistry()
 {
+  impl_->updates.Stop();
   if ( impl_->stream_client != nullptr )
   {
     impl_->stream_client->Shutdown();
@@ -558,6 +566,8 @@ StreamClient &AiMenuRegistry::StreamClientInstance()
   return *impl_->stream_client;
 }
 
+UpdateController &AiMenuRegistry::Updates() { return impl_->updates; }
+
 namespace
 {
 
@@ -574,6 +584,10 @@ int idaapi AiActionHandler::activate(action_activation_ctx_t *ctx)
         controller->ShowProviderSettings();
         break;
       case ActionKind::PluginSettings:
+        controller->ShowPluginSettings();
+        break;
+      case ActionKind::CheckUpdates:
+        AiMenuRegistry::Instance().Updates().CheckNow();
         controller->ShowPluginSettings();
         break;
       case ActionKind::OpenChat:
@@ -625,6 +639,7 @@ action_state_t idaapi AiActionHandler::update(action_update_ctx_t *)
   if ( kind_ == ActionKind::OpenChat
       || kind_ == ActionKind::ProviderSettings
       || kind_ == ActionKind::PluginSettings
+      || kind_ == ActionKind::CheckUpdates
       || kind_ == ActionKind::NewConversation
       || kind_ == ActionKind::SendDisassembly
       || kind_ == ActionKind::SendPseudocode )

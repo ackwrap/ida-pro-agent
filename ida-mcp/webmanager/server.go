@@ -28,6 +28,7 @@ type Server struct {
 	done       chan error
 	version    string
 	cancel     context.CancelFunc
+	updates    *updateManager
 }
 
 type statusResponse struct {
@@ -41,10 +42,10 @@ func Start(version, gatewayPath string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return startServer(version, clients)
+	return startServer(version, clients, newUpdateManager(version, defaultUpdateDirectory()))
 }
 
-func startServer(version string, clients *ClientManager) (*Server, error) {
+func startServer(version string, clients *ClientManager, updates ...*updateManager) (*Server, error) {
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, fmt.Errorf("generate Web manager token: %w", err)
@@ -62,11 +63,16 @@ func startServer(version string, clients *ClientManager) (*Server, error) {
 	}
 	requestContext, cancelRequests := context.WithCancel(context.Background())
 	server.cancel = cancelRequests
+	if len(updates) != 0 {
+		server.updates = updates[0]
+		server.updates.start(requestContext)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", server.serveIndex)
 	mux.HandleFunc("/icon.svg", server.serveIcon)
 	mux.HandleFunc("/favicon.ico", server.serveFavicon)
 	mux.HandleFunc("/api/status", server.serveStatus)
+	mux.HandleFunc("/api/updates", server.serveUpdates)
 	mux.HandleFunc("/api/clients/", server.serveClientAction)
 	server.httpServer = &http.Server{
 		Handler:           server.securityHeaders(mux),

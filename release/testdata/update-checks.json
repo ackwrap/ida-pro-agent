@@ -1,0 +1,29 @@
+{
+  "versions": [
+    {"installed":"0.4.6","tag":"v0.4.7","newer":true},
+    {"installed":"0.4.9","tag":"v0.4.10","newer":true},
+    {"installed":"0.9.99","tag":"v0.10.0","newer":true},
+    {"installed":"0.99.99","tag":"v1.0.0","newer":true},
+    {"installed":"0.4.7","tag":"v0.4.6","newer":false},
+    {"installed":"0.4.6","tag":"v0.4.6","newer":false},
+    {"installed":"0.4.7-rc.1","tag":"v0.4.7","newer":true},
+    {"installed":"0.4.7+build.2","tag":"v0.4.7+build.3","newer":false},
+    {"installed":"0.4.6","tag":"v0.4.7-beta","newer":false},
+    {"installed":"invalid","tag":"v0.4.7","newer":false},
+    {"installed":"0.4.6","tag":"https://example.org","newer":false},
+    {"installed":"0.4.6","tag":"v0.4.07","newer":false},
+    {"installed":"0.4.6","tag":"v0.4.7/../../evil","newer":false},
+    {"installed":"0.4.6","tag":"v2147483648.0.0","newer":false}
+  ],
+  "invalidVersions": ["", "v", "1", "1.2", "1.2.3.4", "01.2.3", "1.+2.3", "1.2.3-", "1.2.3-01", "1.2.3-rc..1", "1.2.3+", "1.2.3+bad/", "1.2.3+one+two", "1.2.3\n", " 1.2.3", "-1.2.3", "2147483648.0.0"],
+  "release": {
+    "tag_name":"v0.4.7",
+    "html_url":"https://github.com/ackwrap/ida-pro-agent/releases/tag/v0.4.7",
+    "draft":false,
+    "prerelease":false,
+    "published_at":"2026-10-10T00:00:00Z",
+    "body":"Release notes are not rendered as HTML by update checks."
+  },
+  "settings":{"version":1,"automatic":false},
+  "cache":{"version":1,"checkedAt":1791590400,"releaseTag":"v0.4.7","error":""}
+}

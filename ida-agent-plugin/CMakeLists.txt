@@ -5,6 +5,11 @@ include("${CMAKE_CURRENT_LIST_DIR}/../ida-sdk/src/cmake/idasdk_init.cmake")
 
 project(ida_agent_plugin LANGUAGES CXX)
 
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../ida-mcp/VERSION")
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../ida-mcp/VERSION" IDA_AGENT_PRODUCT_VERSION LIMIT_COUNT 1)
+configure_file(cmake/product_version.hpp.in generated/product_version.hpp @ONLY)
+
 # Keep build products outside the SDK submodule unless the caller chooses a deployment path.
 if(NOT IDABIN)
     set(IDABIN "${CMAKE_BINARY_DIR}/ida-runtime" CACHE PATH "IDA runtime output directory")
@@ -234,6 +239,10 @@ if(IDA_AGENT_ENABLE_AI)
         ${IDA_AGENT_STREAM_CLIENT_SOURCES}
         ai/plugin_settings.cpp
         ai/plugin_settings_dialog.cpp
+        ai/update_check.cpp
+        ai/update_store.cpp
+        ai/update_controller.cpp
+        ai/update_settings_widget.cpp
         ai/provider_chat.cpp
         ai/provider_chat_wire.cpp
         ai/provider_chat_decode.cpp
@@ -270,7 +279,7 @@ if(APPLE)
         INSTALL_RPATH "@executable_path;@executable_path/../Frameworks"
         INSTALL_RPATH_USE_LINK_PATH FALSE)
 endif()
-target_include_directories(ida_agent_plugin PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(ida_agent_plugin PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(ida_agent_plugin PRIVATE ida_bridge_core ida_semantic_analysis)
 if(IDA_AGENT_ENABLE_QT_AI_CONSOLE)
     target_include_directories(ida_agent_plugin SYSTEM PRIVATE
@@ -319,6 +328,13 @@ if(WIN32 AND IDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN AND CMAKE_BUILD_TYPE STREQUAL "D
 endif()
 
 if(BUILD_TESTING)
+    add_executable(ida_update_check_test
+        tests/unit/ai/update_check_test.cpp ai/update_check.cpp ai/update_store.cpp)
+    target_include_directories(ida_update_check_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(ida_update_check_test PRIVATE ida_bridge_core)
+    target_compile_definitions(ida_update_check_test PRIVATE
+        IDA_AGENT_UPDATE_TESTDATA="${CMAKE_CURRENT_SOURCE_DIR}/../release/testdata/update-checks.json")
+    add_test(NAME ida_update_check COMMAND ida_update_check_test)
     add_executable(ida_semantic_analysis_test
         tests/unit/semantic_analysis/analysis_test.cpp
     )

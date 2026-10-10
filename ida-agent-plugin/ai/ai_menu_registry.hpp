@@ -11,6 +11,7 @@ namespace ida_agent::ai
 class AiMenuController;
 class ProviderClient;
 class StreamClient;
+class UpdateController;
 struct PluginSettings;
 struct ProviderManagerDraft;
 struct ProviderSettingsCommitResult;
@@ -70,6 +71,7 @@ public:
       std::uint64_t expected_revision);
   ProviderClient &ProviderClientInstance() noexcept;
   StreamClient &StreamClientInstance();
+  UpdateController &Updates();
 
 private:
   AiMenuRegistry();

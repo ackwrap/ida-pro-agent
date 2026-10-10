@@ -7,6 +7,7 @@
 #include "ai/plugin_settings_dialog.hpp"
 #include "ai/provider_chat_session.hpp"
 #include "ai/provider_settings_dialog.hpp"
+#include "ai/update_controller.hpp"
 
 #include <ida.hpp>
 #include <kernwin.hpp>
@@ -147,6 +148,8 @@ void AiMenuController::Stop(bool unregister_actions) noexcept
 {
   if ( !started_ )
     return;
+  if ( !unregister_actions )
+    AiMenuRegistry::Instance().Updates().Stop();
   const auto trace = [this](const char *phase) noexcept
   {
     if ( !lifecycle_trace_ )
@@ -499,12 +502,23 @@ void AiMenuController::ShowPluginSettings()
 {
   const PluginSettings previous = AiMenuRegistry::Instance().Settings();
   PluginSettings updated = previous;
+  auto &updates = AiMenuRegistry::Instance().Updates();
+  const bool previous_automatic = updates.Automatic();
+  bool automatic = previous_automatic;
   if ( !ShowPluginSettingsDialog(
           updated,
-          [] { return AiMenuRegistry::Instance().ClearAllChatHistory(); }) )
+          [] { return AiMenuRegistry::Instance().ClearAllChatHistory(); },
+          updates, automatic) )
     return;
+  const bool updates_changed = automatic != previous_automatic;
+  if ( updates_changed && !updates.SetAutomatic(automatic) )
+  {
+    warning("AUTOHIDE NONE\nUnable to save update settings.");
+    return;
+  }
   if ( !AiMenuRegistry::Instance().SaveSettings(updated) )
   {
+    if ( updates_changed ) updates.SetAutomatic(previous_automatic);
     warning("AUTOHIDE NONE\nUnable to save IDA Agent settings.");
     msg("[ida-agent] failed to save plugin settings\n");
     return;

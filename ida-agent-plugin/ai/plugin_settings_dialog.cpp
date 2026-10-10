@@ -1,17 +1,22 @@
 #include "ai/plugin_settings_dialog.hpp"
 #include "ai/file_log.hpp"
+#include "ai/update_settings_widget.hpp"
 #ifndef _WIN32
 #include "ai/application_paths_linux.hpp"
 #endif
 
 #include <QtWidgets>
 
+#include <algorithm>
+
 namespace ida_agent::ai
 {
 
 bool ShowPluginSettingsDialog(
     PluginSettings &settings,
-    const std::function<bool()> &clear_all_history)
+    const std::function<bool()> &clear_all_history,
+    UpdateController &updates,
+    bool &automatic_updates)
 {
   PluginSettings working = settings;
   bool applied = false;
@@ -23,7 +28,14 @@ bool ShowPluginSettingsDialog(
   dialog.setModal(true);
   dialog.setMinimumWidth(500);
 
-  auto *layout = new QT::QVBoxLayout(&dialog);
+  auto *outer = new QT::QVBoxLayout(&dialog);
+  auto *scroll = new QT::QScrollArea(&dialog);
+  scroll->setWidgetResizable(true);
+  scroll->setFrameShape(QT::QFrame::NoFrame);
+  auto *content = new QT::QWidget(scroll);
+  scroll->setWidget(content);
+  outer->addWidget(scroll);
+  auto *layout = new QT::QVBoxLayout(content);
   layout->setContentsMargins(12, 10, 12, 10);
   layout->setSpacing(9);
 
@@ -102,6 +114,8 @@ bool ShowPluginSettingsDialog(
   logging_layout->addWidget(logging_note);
   layout->addWidget(logging_group);
 
+  auto *check_updates = AddUpdateSettings(updates, layout, &dialog);
+
   auto *settings_note = new QT::QLabel(
       "Plugin settings are global and stored outside all IDA databases.",
       &dialog);
@@ -113,7 +127,9 @@ bool ShowPluginSettingsDialog(
           | QT::QDialogButtonBox::Cancel
           | QT::QDialogButtonBox::Apply,
       &dialog);
-  layout->addWidget(buttons);
+  outer->addWidget(buttons);
+  const auto *screen = dialog.screen();
+  dialog.resize(560, screen ? std::min(760, screen->availableGeometry().height() - 80) : 660);
 
   QT::QObject::connect(
       auto_open,
@@ -160,6 +176,7 @@ bool ShowPluginSettingsDialog(
     working.save_chat_history = save_history->isChecked();
     working.debug_logging = debug_logging->isChecked();
     working.network_logging = network_logging->isChecked();
+    automatic_updates = check_updates->isChecked();
     settings = working;
     applied = true;
   };

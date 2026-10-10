@@ -48,6 +48,12 @@
       color: var(--muted); font-size: 13px;
     }
     .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 5px rgba(65,226,235,.09); }
+    .updates { margin-bottom: 22px; padding: 20px 24px; background: var(--panel); border: 1px solid var(--line); }
+    .updates.available { border-color: var(--orange); }
+    .updates h2 { margin: 0; font-size: 20px; }
+    .updates p { margin: 10px 0; color: #adbec3; font-size: 13px; line-height: 1.6; }
+    .updates label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .release-link { align-self: center; color: var(--cyan); font-size: 13px; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
     .card {
       position: relative; overflow: hidden; min-height: 294px; padding: 24px;
@@ -81,6 +87,7 @@
     }
     button:hover:not(:disabled) { transform: translateY(-1px); background: #ffad4d; }
     button.secondary { background: transparent; border-color: var(--line); color: #a9bbc0; }
+    button.secondary:hover:not(:disabled) { color: #15100a; }
     button:disabled { cursor: wait; opacity: .45; }
     .notice { display: none; margin-top: 18px; padding: 12px 14px; border-left: 3px solid var(--danger); background: rgba(255,107,95,.08); color: #ffc2bc; font-size: 13px; }
     footer { margin-top: 24px; color: #61767d; font-size: 11px; line-height: 1.6; }
@@ -106,6 +113,16 @@
     </header>
     <p class="intro">Connect Codex, OpenCode, Antigravity CLI, Claude Code, Grok Build, and ZCode to the local IDA bridge and share its packaged analysis knowledge. Changes are limited to fixed <code style="display:inline">ida-mcp</code> entries and never expose this page beyond loopback.</p>
     <div class="statusbar"><span class="pulse"></span><span id="gateway">Reading local configuration...</span></div>
+    <section id="updates" class="updates" aria-labelledby="updates-title">
+      <h2 id="updates-title">Software updates</h2>
+      <p id="update-status" role="status">Reading update status...</p>
+      <label><input id="automatic-updates" type="checkbox" disabled> Check for stable releases automatically (once a day)</label>
+      <div class="actions">
+        <button id="check-updates" class="secondary" disabled>Check now</button>
+        <a id="release-link" class="release-link" target="_blank" rel="noopener noreferrer" hidden>Open release page</a>
+      </div>
+      <p>Updates come from ackwrap/ida-pro-agent. Install the matching plugin and Gateway package with IDA closed. This preference is shared with the IDA plugin.</p>
+    </section>
     <section id="clients" class="grid" aria-live="polite"></section>
     <div id="notice" class="notice" role="alert"></div>
     <footer>After a configuration change, restart the affected AI client. The tray process can stay open or be exited from its menu.</footer>
@@ -115,6 +132,52 @@
     const clients = document.getElementById('clients');
     const notice = document.getElementById('notice');
     const gateway = document.getElementById('gateway');
+    const updateStatus = document.getElementById('update-status');
+    const automaticUpdates = document.getElementById('automatic-updates');
+    const checkUpdates = document.getElementById('check-updates');
+    const releaseLink = document.getElementById('release-link');
+    let updateActionPending = false;
+
+    function renderUpdates(data) {
+      updateStatus.textContent = data.message;
+      document.getElementById('updates').classList.toggle('available', data.available);
+      automaticUpdates.checked = data.automatic;
+      automaticUpdates.disabled = updateActionPending;
+      checkUpdates.disabled = data.checking || updateActionPending;
+      releaseLink.hidden = !data.releaseURL;
+      if (data.releaseURL) releaseLink.href = data.releaseURL;
+    }
+
+    async function loadUpdates() {
+      if (updateActionPending) return;
+      const response = await fetch('/api/updates', {headers: {'X-IDA-AGENT-Token': token}});
+      if (!response.ok) throw new Error('Unable to read update status.');
+      const data = await response.json();
+      if (!updateActionPending) renderUpdates(data);
+    }
+
+    async function changeUpdates(action) {
+      updateActionPending = true;
+      automaticUpdates.disabled = true;
+      checkUpdates.disabled = true;
+      try {
+        const response = await fetch('/api/updates', {
+          method: 'POST', headers: {'X-IDA-AGENT-Token': token, 'Content-Type': 'application/json'},
+          body: JSON.stringify(action)
+        });
+        if (!response.ok) throw new Error('Unable to update software update preferences.');
+        updateActionPending = false;
+        renderUpdates(await response.json());
+      } catch (error) {
+        updateActionPending = false;
+        await loadUpdates().catch(() => {});
+        updateStatus.textContent = error.message;
+      }
+    }
+    checkUpdates.addEventListener('click', () => changeUpdates({action: 'check'}));
+    automaticUpdates.addEventListener('change', () => changeUpdates({action: 'configure', automatic: automaticUpdates.checked}));
+    loadUpdates().catch(error => { updateStatus.textContent = error.message; });
+    setInterval(() => loadUpdates().catch(() => {}), 2000);
 
     function escapeHTML(value) {
       return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -159,7 +222,7 @@
       const button = event.target.closest('button[data-client]');
       if (!button) return;
       notice.style.display = 'none';
-      document.querySelectorAll('button').forEach(item => item.disabled = true);
+      clients.querySelectorAll('button').forEach(item => item.disabled = true);
       try {
         const scope = button.dataset.scope ? `/${button.dataset.scope}` : '';
         const response = await fetch(`/api/clients/${encodeURIComponent(button.dataset.client)}${scope}/${button.dataset.action}`, {

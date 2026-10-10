@@ -6,6 +6,10 @@ local Linux environment; no test requires WSL, a Windows mount, a particular
 username, or a private machine address.
 
 - Protocol tests use the shared fixtures in `protocol/testdata`.
+- `ida_update_check` and Go Web manager tests share `release/testdata/update-checks.json`
+  for version ordering, stable-release metadata, and the update preferences/cache
+  schema. Go loopback tests also cover opt-out, manual checking, cancellation,
+  response limits, and the authenticated update routes without contacting GitHub.
 - Storage and file tests create isolated temporary directories.
 - Network tests start their own loopback HTTP/SSE/WebSocket servers on dynamically
   assigned ports and generate temporary TLS certificates. No provider account,
