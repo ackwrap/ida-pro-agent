@@ -101,7 +101,9 @@
 & "$env:LOCALAPPDATA\Programs\ida-agent\ida-mcp.exe" -web
 ```
 
-便携安装时，在解压目录运行 `ida-mcp.exe -web`。本地页面可配置 Codex、OpenCode、Claude Code、Antigravity CLI、Grok Build 和 ZCode，并链接可选的 `ida-reverse-analysis`、`idapython` 技能。修改配置后需要重启客户端。
+便携安装时，在解压目录运行 `ida-mcp.exe -web`。本地页面可配置 Codex、OpenCode 2、Claude Code、Antigravity CLI、Grok Build 和 ZCode，并链接可选的 `ida-reverse-analysis`、`idapython` 技能。修改配置后需要重启客户端。
+
+先安装 OpenCode 2：Windows 使用 Scoop 时，依次执行 `scoop bucket add versions` 和 `scoop install versions/opencode2`；使用 npm 时执行 `npm install -g @opencode/cli@2`。启动命令仍为 `opencode`。管理页的 **Install MCP** 按钮写入 OpenCode 2 的 `mcp.servers.ida-mcp`，仅升级旧的 IDA 条目，并保留其他配置与注释。详见 [OpenCode 2 安装说明](release/public/USAGE.zh-CN.md#opencode-2-安装与配置)。
 
 Windows 下，如果管理页继承的 `PATH` 尚未更新，程序也会检查常见 npm/Scoop 安装位置，以及 Codex 桌面应用自带的 CLI。npm 启动脚本会解析到原生 `codex.exe`，检测和 MCP 配置不依赖 `PATH` 中的 Node.js。自定义安装位置可通过 `IDA_MCP_CODEX_PATH` 指定 `codex.exe` 的绝对路径，设置后重启管理页。
 

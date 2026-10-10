@@ -219,7 +219,7 @@ func (manager *ClientManager) configureCodex(ctx context.Context, enabled bool) 
 
 func (manager *ClientManager) openCodeConfigPath() string {
 	directory := manager.openCodeDirectory()
-	for _, name := range []string{"opencode.jsonc", "opencode.json", "config.json"} {
+	for _, name := range []string{"opencode.jsonc", "opencode.json"} {
 		path := filepath.Join(directory, name)
 		if info, err := os.Stat(path); err == nil && info.Mode().IsRegular() {
 			return path
@@ -405,44 +405,98 @@ func directoryLinkState(path, expectedTarget string) (linkState, error) {
 
 func (manager *ClientManager) openCodeStatus() ClientStatus {
 	path := manager.openCodeConfigPath()
-	status := ClientStatus{ID: "opencode", Name: "OpenCode", Available: true, ConfigPath: path}
+	status := ClientStatus{ID: "opencode", Name: "OpenCode 2", Available: true, ConfigPath: path}
 	_, root, err := readOpenCodeConfig(path)
 	if errors.Is(err, os.ErrNotExist) {
-		status.Detail = "ida-mcp is not configured."
+		status.Detail = "Install OpenCode 2 (Scoop: versions/opencode2; npm: @opencode/cli@2), then add the ida-mcp configuration."
 		return status
 	}
 	if err != nil {
 		status.Detail = "The OpenCode global configuration is invalid and was not changed."
 		return status
 	}
-	mcp, ok := root["mcp"].(map[string]any)
-	if !ok {
+	mcp, servers, err := openCodeMCPObjects(root)
+	if err != nil {
+		status.Detail = err.Error()
+		return status
+	}
+	_, legacy := mcp[serverName]
+	value, native := servers[serverName]
+	status.Configured = legacy || native
+	if !status.Configured {
 		status.Detail = "ida-mcp is not configured."
 		return status
 	}
-	entry, ok := mcp[serverName].(map[string]any)
-	if !ok {
-		status.Detail = "ida-mcp is not configured."
+	entry, ok := value.(map[string]any)
+	if !native || !ok {
+		status.Detail = "Update the ida-mcp entry to the OpenCode 2 configuration format."
 		return status
 	}
-	status.Configured = true
 	command, commandOK := entry["command"].([]any)
-	enabled, enabledOK := entry["enabled"].(bool)
-	if !enabledOK {
-		enabled = true
-	}
+	disabled, disabledOK := entry["disabled"].(bool)
+	_, disabledExists := entry["disabled"]
+	codemode, codemodeOK := entry["codemode"].(bool)
+	protocol, protocolExists := entry["protocol"]
+	_, legacyEnabled := entry["enabled"]
 	typeName, _ := entry["type"].(string)
-	status.Current = typeName == "local" && enabled && commandOK && len(command) == 1
+	status.Current = !legacy && !legacyEnabled && typeName == "local" && commandOK && len(command) == 1 &&
+		(!disabledExists || disabledOK && !disabled) && codemodeOK && !codemode &&
+		(!protocolExists || protocol == "legacy")
+	if timeout, exists := entry["timeout"]; exists {
+		status.Current = status.Current && validOpenCode2Timeout(timeout)
+	}
 	if status.Current {
 		configuredPath, ok := command[0].(string)
 		status.Current = ok && samePath(configuredPath, manager.gatewayPath)
 	}
 	if status.Current {
-		status.Detail = "Ready. Restart OpenCode after changing this configuration."
+		status.Detail = "OpenCode 2 configuration is ready. Restart OpenCode after changing this configuration."
 	} else {
 		status.Detail = "An ida-mcp entry exists but does not match this Gateway."
 	}
 	return status
+}
+
+func validOpenCode2Timeout(value any) bool {
+	values, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	for key, value := range values {
+		if key != "startup" && key != "catalog" && key != "execution" {
+			return false
+		}
+		milliseconds, ok := value.(float64)
+		if !ok || milliseconds <= 0 || milliseconds > 9007199254740991 ||
+			milliseconds != float64(int64(milliseconds)) {
+			return false
+		}
+	}
+	return true
+}
+
+func openCodeMCPObjects(root map[string]any) (map[string]any, map[string]any, error) {
+	value, exists := root["mcp"]
+	if !exists {
+		return nil, nil, nil
+	}
+	mcp, ok := value.(map[string]any)
+	if !ok {
+		return nil, nil, fmt.Errorf("OpenCode mcp configuration must be an object")
+	}
+	value, exists = mcp["servers"]
+	if !exists {
+		return mcp, nil, nil
+	}
+	servers, ok := value.(map[string]any)
+	if !ok {
+		return nil, nil, fmt.Errorf("OpenCode 2 mcp.servers configuration must be an object")
+	}
+	// A V1 server named "servers" occupies the V2 namespace. Do not overwrite it.
+	if _, hasType := servers["type"].(string); hasType {
+		return nil, nil, fmt.Errorf("Rename the legacy MCP server named servers before configuring OpenCode 2")
+	}
+	return mcp, servers, nil
 }
 
 func readOpenCodeConfig(path string) (*hujson.Value, map[string]any, error) {
@@ -480,27 +534,37 @@ func (manager *ClientManager) configureOpenCode(enabled bool) error {
 		expected = document.Pack()
 	}
 
-	patch := make([]map[string]any, 0, 1)
+	mcp, servers, err := openCodeMCPObjects(root)
+	if err != nil {
+		return err
+	}
+	patch := make([]map[string]any, 0, 2)
 	if enabled {
 		entry := map[string]any{
-			"type": "local", "command": []string{manager.gatewayPath}, "enabled": true, "timeout": 120000,
+			"type": "local", "command": []string{manager.gatewayPath}, "disabled": false,
+			"codemode": false, "protocol": "legacy",
+			"timeout": map[string]int{"catalog": 120000, "execution": 120000},
 		}
-		if existing, exists := root["mcp"]; !exists {
-			patch = append(patch, map[string]any{"op": "add", "path": "/mcp", "value": map[string]any{serverName: entry}})
-		} else if _, ok := existing.(map[string]any); ok {
-			patch = append(patch, map[string]any{"op": "add", "path": "/mcp/" + serverName, "value": entry})
-		} else {
-			return fmt.Errorf("OpenCode mcp configuration must be an object")
+		switch {
+		case mcp == nil:
+			patch = append(patch, map[string]any{"op": "add", "path": "/mcp", "value": map[string]any{
+				"servers": map[string]any{serverName: entry},
+			}})
+		case servers == nil:
+			patch = append(patch, map[string]any{"op": "add", "path": "/mcp/servers", "value": map[string]any{serverName: entry}})
+		default:
+			patch = append(patch, map[string]any{"op": "add", "path": "/mcp/servers/" + serverName, "value": entry})
 		}
 	} else {
-		mcp, ok := root["mcp"].(map[string]any)
-		if !ok {
-			return nil
+		if _, exists := servers[serverName]; exists {
+			patch = append(patch, map[string]any{"op": "remove", "path": "/mcp/servers/" + serverName})
 		}
-		if _, exists := mcp[serverName]; !exists {
-			return nil
-		}
+	}
+	if _, exists := mcp[serverName]; exists {
 		patch = append(patch, map[string]any{"op": "remove", "path": "/mcp/" + serverName})
+	}
+	if len(patch) == 0 {
+		return nil
 	}
 
 	encodedPatch, err := json.Marshal(patch)

@@ -120,8 +120,17 @@ class AgentEvidenceTests(unittest.TestCase):
                 elif client == "claude":
                     self.assertIn("--strict-mcp-config", args)
                 else:
+                    self.assertIn("--standalone", args)
                     config = json.loads(Path(env["OPENCODE_CONFIG"]).read_text())
-                    self.assertEqual(config["mcp"]["ida_regression"]["command"][0], "python path")
+                    entry = config["mcp"]["servers"]["ida_regression"]
+                    self.assertEqual(entry["command"], ["python path", "proxy path", "--", "gateway path"])
+                    self.assertFalse(entry["disabled"])
+                    self.assertFalse(entry["codemode"])
+                    self.assertEqual(entry["protocol"], "legacy")
+                    self.assertEqual(entry["timeout"], {"catalog": 20000, "execution": 20000})
+                    self.assertEqual(config["permissions"], [
+                        {"action": "*", "resource": "*", "effect": "deny"},
+                        {"action": "ida_regression_*", "resource": "*", "effect": "allow"}])
 
     def test_proxy_forwards_invalid_json_and_non_object_messages_unchanged(self):
         # A byte-echo subprocess, not an MCP server or an Agent.

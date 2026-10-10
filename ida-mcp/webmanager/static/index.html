@@ -111,7 +111,7 @@
       </div>
       <span class="version">v{{.Version}}</span>
     </header>
-    <p class="intro">Connect Codex, OpenCode, Antigravity CLI, Claude Code, Grok Build, and ZCode to the local IDA bridge and share its packaged analysis knowledge. Changes are limited to fixed <code style="display:inline">ida-mcp</code> entries and never expose this page beyond loopback.</p>
+    <p class="intro">Connect Codex, OpenCode 2, Antigravity CLI, Claude Code, Grok Build, and ZCode to the local IDA bridge and share its packaged analysis knowledge. Changes are limited to fixed <code style="display:inline">ida-mcp</code> entries and never expose this page beyond loopback.</p>
     <div class="statusbar"><span class="pulse"></span><span id="gateway">Reading local configuration...</span></div>
     <section id="updates" class="updates" aria-labelledby="updates-title">
       <h2 id="updates-title">Software updates</h2>
@@ -188,12 +188,13 @@
       clients.innerHTML = data.clients.map(client => {
         const css = client.current ? 'current' : (client.configured ? 'mismatch' : '');
         const state = client.current ? 'connected' : (client.configured ? 'update needed' : 'not configured');
-        const primary = client.current ? 'Update' : 'Install';
+        const primary = client.configured ? 'Update MCP' : 'Install MCP';
         const skillState = client.skills.conflict ? 'conflict' : (client.skills.current ? 'linked' : (client.skills.configured ? 'partial' : 'not linked'));
         const skillClass = client.skills.conflict ? 'conflict' : (client.skills.current ? 'ready' : '');
         return `<article class="card ${css}">
           <div class="card-head"><div><div class="client-id">${escapeHTML(client.id)}</div><h2>${escapeHTML(client.name)}</h2></div><span class="state">${state}</span></div>
           <p class="detail">${escapeHTML(client.detail)}</p>
+          ${client.id === 'opencode' ? '<p class="detail">Install OpenCode 2 first: Scoop <code style="display:inline">versions/opencode2</code> or npm <code style="display:inline">@opencode/cli@2</code>. Launch it with <code style="display:inline">opencode</code>.</p>' : ''}
           <div class="path-label">Configuration</div><code>${escapeHTML(client.configPath)}</code>
           <div class="actions">
             <button data-client="${escapeHTML(client.id)}" data-action="install" ${client.available ? '' : 'disabled'}>${primary}</button>

@@ -41,8 +41,10 @@ Fresh installation:
   and remove its MCP client entries. No legacy aliases or automatic migration
   are provided. Install the matching Plugin and Gateway from this package.
   For portable use, copy plugins/ida-agent-plugin.dll to the IDA plugins directory.
-  Run ida-mcp.exe -web to add the ida-mcp entry for Codex, OpenCode, Claude Code,
+  Run ida-mcp.exe -web to add the ida-mcp entry for Codex, OpenCode 2, Claude Code,
   Antigravity CLI, Grok Build, or ZCode. Restart the client after configuration.
+  Install OpenCode 2 with Scoop versions/opencode2 or npm @opencode/cli@2.
+  The launch command remains opencode; the manager configures mcp.servers.ida-mcp.
 
 Debugger:
   Select and configure the debugger in IDA or through the MCP debugger tools.

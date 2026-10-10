@@ -44,10 +44,13 @@ def configuration(client, proxy_command, directory, model=None):
     else:
         path = directory / "opencode.json"
         path.write_text(json.dumps({"$schema": "https://opencode.ai/config.json",
-            "mcp": {server: {"type": "local", "command": proxy_command, "enabled": True, "timeout": 20000}},
-            "permission": {"*": "deny", f"{server}_*": "allow"}}, indent=2))
+            "mcp": {"servers": {server: {"type": "local", "command": proxy_command,
+                "disabled": False, "codemode": False, "protocol": "legacy",
+                "timeout": {"catalog": 20000, "execution": 20000}}}},
+            "permissions": [{"action": "*", "resource": "*", "effect": "deny"},
+                {"action": f"{server}_*", "resource": "*", "effect": "allow"}]}, indent=2))
         environment["OPENCODE_CONFIG"] = str(path)
-        args = ["run", "--format", "json"]
+        args = ["run", "--standalone", "--format", "json"]
     if model:
         args += ["--model", model]
     return args, environment

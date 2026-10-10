@@ -1,5 +1,11 @@
 # Installing and upgrading ida-agent / 安装与升级 ida-agent
 
+## OpenCode 2 client setup / OpenCode 2 客户端配置
+
+The manager targets OpenCode 2. Install Scoop's `versions/opencode2` or npm's `@opencode/cli@2`, then launch it with `opencode`. Use **Install MCP** / **Update MCP** to write `mcp.servers.ida-mcp`; an old `mcp.ida-mcp` entry is migrated without changing unrelated configuration. The manager only writes the client configuration. See the [setup guide](../release/public/USAGE.md#opencode-2-setup).
+
+管理页默认面向 OpenCode 2。先安装 Scoop 的 `versions/opencode2` 或 npm 的 `@opencode/cli@2`，启动命令仍为 `opencode`。点击 **Install MCP** / **Update MCP** 写入 `mcp.servers.ida-mcp`；旧的 `mcp.ida-mcp` 会迁移，其他配置继续保留。管理页只写入客户端配置，详见[安装说明](../release/public/USAGE.zh-CN.md#opencode-2-安装与配置)。
+
 ## Component names / 组件名称
 
 | Component / 组件 | Name / 名称 |

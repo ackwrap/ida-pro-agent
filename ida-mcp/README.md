@@ -149,15 +149,21 @@ ida-mcp.exe -web
 ```
 
 该模式自动打开带 ida-agent 图标的本地配置页，并提供系统托盘的 Open/Exit 菜单。页面支持 Codex、
-OpenCode、Antigravity CLI 与 Claude Code 的检测、安装/更新和移除：Codex 通过官方
-`codex mcp list/add/remove` CLI 维护 `~/.codex/config.toml`；OpenCode 只对最高优先级的全局
-`opencode.jsonc/json` 执行结构化 patch，并保留其他字段和注释；Antigravity CLI 维护
+OpenCode 2、Antigravity CLI 与 Claude Code 的检测、安装/更新和移除：Codex 通过官方
+`codex mcp list/add/remove` CLI 维护 `~/.codex/config.toml`；OpenCode 2 只对最高优先级的全局
+`opencode.jsonc/json` 执行结构化 patch，将 IDA 条目写入 `mcp.servers.ida-mcp`，使用
+`disabled: false`、`codemode: false`、`protocol: "legacy"` 和分别设置的 catalog/execution 超时。
+旧 `mcp.ida-mcp` 仅在更新 IDA 配置时迁移；移除时清除两种格式的 IDA 条目，并保留其他字段和注释。Antigravity CLI 维护
 `~/.gemini/config/mcp_config.json`；Claude Code 维护 `~/.claude.json`，设置
 `CLAUDE_CONFIG_DIR` 时改用该目录下的 `.claude.json`。后两者只修改顶层 `mcpServers` 中固定的
 `ida-agent` entry，并保留其他字段（包括 Claude Code 的 `projects`）。所有 Web API 仅监听
 `127.0.0.1` 随机端口，写操作同时要求进程随机 token 与同源请求。直接写入的配置在写回前会检测
 外部修改并在冲突时拒绝覆盖；不遵守文件协作锁的外部进程仍可能在检查与原子替换之间产生极窄竞态。
 修改配置后需要重启对应 AI Client。
+
+OpenCode 2 先通过 Scoop 的 `versions/opencode2` 或 npm 的 `@opencode/cli@2` 安装，启动命令
+仍为 `opencode`。管理页的 **Install MCP** 负责写入 MCP 配置。详见
+[OpenCode 2 安装说明](../release/public/USAGE.zh-CN.md#opencode-2-安装与配置)。
 
 Grok Build 同样支持 MCP 安装/更新、移除和 Skills 链接。需要先安装 CLI 并加入 PATH；
 管理器依次检测 `gork`、`agent`、`grok` 可执行文件。
@@ -185,16 +191,21 @@ Skills 链接位于 `~/.grok/skills`，配置及 Skills 路径均支持 `GROK_HO
 管理器不会覆盖已有真实目录或其他链接，移除及卸载也只删除精确指向当前 ida-agent 安装目录的
 junction。
 
-OpenCode 项目配置示例：
+OpenCode 2 项目配置示例：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "ida-mcp": {
-      "type": "local",
-      "command": ["D:/tools/ida-mcp.exe"],
-      "enabled": true
+    "servers": {
+      "ida-mcp": {
+        "type": "local",
+        "command": ["D:/tools/ida-mcp.exe"],
+        "disabled": false,
+        "codemode": false,
+        "protocol": "legacy",
+        "timeout": {"catalog": 120000, "execution": 120000}
+      }
     }
   }
 }

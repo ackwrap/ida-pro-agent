@@ -71,12 +71,30 @@ Windows 可打开安装后的快捷方式，或运行：
 
 Windows 便携包在解压目录运行 `ida-mcp.exe -web`。Linux 运行 `./ida-mcp -web`，保持终端打开，并访问日志中的本地网址。macOS 双击 Gateway 所在目录的 **Open IDA Agent.command**，再打开终端中显示的本地网址。
 
-管理页支持 Codex、OpenCode、Claude Code、Antigravity CLI、Grok Build 和 ZCode。在对应客户端卡片中安装或更新 `ida-mcp` 配置；提供技能链接的卡片还可安装：
+管理页支持 Codex、OpenCode 2、Claude Code、Antigravity CLI、Grok Build 和 ZCode。在对应客户端卡片点击 **Install MCP** / **Update MCP** 安装或更新 `ida-mcp` 配置；提供技能链接的卡片还可安装：
 
 - `ida-reverse-analysis`：方法发现、逆向分析流程与证据解释。
 - `idapython`：通过 `ida_scripts` 工具执行 IDAPython 脚本。
 
 修改配置或技能后重启客户端。`-web` 模式负责配置管理，每个配置完成的客户端会启动自己的 stdio Gateway。
+
+### OpenCode 2 安装与配置
+
+Windows 已安装 Scoop 时，从 versions bucket 安装 v2 包：
+
+```powershell
+scoop bucket add versions
+scoop install versions/opencode2
+opencode --version
+```
+
+若已安装 Scoop 的 v1 `opencode` 包，先关闭 OpenCode 并执行 `scoop uninstall opencode`。保留配置，参考[官方迁移说明](https://opencode.ai/v2/docs/migrate-v1/)。两个版本的启动命令都为 `opencode`，版本输出应显示 `2.x`。包信息见 [Scoop v2 manifest](https://github.com/ScoopInstaller/Versions/blob/master/bucket/opencode2.json)。
+
+也可以使用 `npm install -g @opencode/cli@2` 安装 v2；切换前移除旧的 npm `opencode-ai` 安装。详见 [OpenCode 2 官方安装文档](https://opencode.ai/v2/docs/)。
+
+打开管理页，在 **OpenCode 2** 卡片点击 **Install MCP** / **Update MCP**。管理器写入优先级最高的全局 `~/.config/opencode/opencode.jsonc` 或 `opencode.json`，支持 `OPENCODE_CONFIG_DIR`。配置采用 `mcp.servers.ida-mcp`、`disabled: false` 和分别设置的目录读取、工具执行超时；`codemode: false` 直接暴露 IDA 的 23 个工具，`protocol: "legacy"` 使用经典 MCP 握手。格式见 [OpenCode 2 MCP 文档](https://opencode.ai/v2/docs/mcp-servers/)。
+
+已有 v1 IDA 条目会显示 **update needed**；更新时只将 `mcp.ida-mcp` 移入 v2 的服务器对象，保留其他服务器、设置和注释。**Remove** 同时移除两种格式中的 IDA 条目。技能目录仍为 `~/.config/opencode/skills`。若后台服务正在运行，执行 `opencode reload` 重新加载配置，再执行 `opencode mcp list` 检查连接。
 
 ### 手动配置 stdio
 

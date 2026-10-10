@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "source_repository": "ackwrap/ida-agent",
-  "source_commit": "2f54bbc3b1e6a240bc636cab2ef25b640fc6f565",
+  "source_commit": "e0778ccefa1bcb785e0d0d2ab445945adc6d0084",
   "version": "0.4.7",
   "files": [
     ".gitattributes",
@@ -667,6 +667,7 @@
     "ida-mcp/webmanager/icon.go",
     "ida-mcp/webmanager/json_mcp_servers.go",
     "ida-mcp/webmanager/json_mcp_servers_test.go",
+    "ida-mcp/webmanager/opencode_test.go",
     "ida-mcp/webmanager/secure_file_other.go",
     "ida-mcp/webmanager/secure_file_windows.go",
     "ida-mcp/webmanager/secure_file_windows_test.go",

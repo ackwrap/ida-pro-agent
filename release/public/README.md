@@ -62,7 +62,9 @@ API keys and saved proxy passwords are stored as plaintext with current-user fil
 
 Run `ida-mcp.exe -web` for the local client configuration manager, or configure your MCP client to start `ida-mcp.exe` with no arguments for stdio. Keep IDA open with the database loaded. Optional HTTP transport binds only to loopback; authenticated remote hosting is not implemented.
 
-The configuration manager supports Codex, OpenCode, Claude Code, Antigravity CLI, Grok Build, and ZCode. ZCode uses the user-level `~/.zcode/cli/config.json` (`mcp.servers`), with optional skills under `~/.zcode/skills/`.
+The configuration manager supports Codex, OpenCode 2, Claude Code, Antigravity CLI, Grok Build, and ZCode. ZCode uses the user-level `~/.zcode/cli/config.json` (`mcp.servers`), with optional skills under `~/.zcode/skills/`.
+
+For OpenCode 2, use Scoop `versions/opencode2` or npm `@opencode/cli@2`; launch it with `opencode`. The manager installs its MCP configuration under `mcp.servers.ida-mcp`, preserving unrelated settings and upgrading only the old IDA entry. See the [OpenCode 2 setup guide](USAGE.md#opencode-2-setup).
 
 On Windows, the manager also discovers Codex in common npm/Scoop installations and the desktop app's bundled CLI when PATH is outdated. It runs the native executable without requiring Node.js in PATH. For custom installations, set `IDA_MCP_CODEX_PATH` to the absolute path of `codex.exe` and restart the manager.
 
@@ -113,7 +115,9 @@ API Key 和已保存的代理密码使用当前用户文件权限保护，但以
 
 运行 `ida-mcp.exe -web` 打开本地配置管理页，或让 MCP 客户端以无参数方式启动 `ida-mcp.exe` 使用 stdio。使用时保持 IDA 与数据库打开。可选 HTTP 模式仅监听本机回环地址，尚未实现带认证的远程服务。
 
-配置管理页支持 Codex、OpenCode、Claude Code、Antigravity CLI、Grok Build 和 ZCode。ZCode 使用用户级 `~/.zcode/cli/config.json` 中的 `mcp.servers`，可选技能位于 `~/.zcode/skills/`。
+配置管理页支持 Codex、OpenCode 2、Claude Code、Antigravity CLI、Grok Build 和 ZCode。ZCode 使用用户级 `~/.zcode/cli/config.json` 中的 `mcp.servers`，可选技能位于 `~/.zcode/skills/`。
+
+OpenCode 2 使用 Scoop 的 `versions/opencode2` 或 npm 的 `@opencode/cli@2`，启动命令仍为 `opencode`。管理页将 MCP 配置写入 `mcp.servers.ida-mcp`，保留其他设置，只升级旧的 IDA 条目。详见 [OpenCode 2 安装说明](USAGE.zh-CN.md#opencode-2-安装与配置)。
 
 Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面应用自带的 CLI，避免旧 PATH 导致检测失败；优先运行原生程序，不依赖 PATH 中的 Node.js。自定义安装位置可通过 `IDA_MCP_CODEX_PATH` 指定 `codex.exe` 的绝对路径，设置后重启管理页。
 

@@ -1,14 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "ida-mcp": {
-      "type": "local",
-      "command": ["go", "-C", "../ida-mcp", "run", "."],
-      "enabled": true,
-      "environment": {
-        "IDA_AGENT_INSTANCE_DIR": "{env:IDA_AGENT_INSTANCE_DIR}"
-      },
-      "timeout": 45000
+    "servers": {
+      "ida-mcp": {
+        "type": "local",
+        "command": ["go", "-C", "../ida-mcp", "run", "."],
+        "disabled": false,
+        "codemode": false,
+        "protocol": "legacy",
+        "environment": {
+          "IDA_AGENT_INSTANCE_DIR": "{env:IDA_AGENT_INSTANCE_DIR}"
+        },
+        "timeout": {"catalog": 45000, "execution": 45000}
+      }
     }
   }
 }

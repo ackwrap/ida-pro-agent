@@ -101,7 +101,9 @@ For the default installer location, run:
 & "$env:LOCALAPPDATA\Programs\ida-agent\ida-mcp.exe" -web
 ```
 
-For a portable installation, run `ida-mcp.exe -web` from its extracted directory. The local page can configure Codex, OpenCode, Claude Code, Antigravity CLI, Grok Build, and ZCode, and link the optional `ida-reverse-analysis` and `idapython` skills. Restart the client after changing its configuration.
+For a portable installation, run `ida-mcp.exe -web` from its extracted directory. The local page can configure Codex, OpenCode 2, Claude Code, Antigravity CLI, Grok Build, and ZCode, and link the optional `ida-reverse-analysis` and `idapython` skills. Restart the client after changing its configuration.
+
+Install OpenCode 2 first: on Windows with Scoop, use `scoop bucket add versions` followed by `scoop install versions/opencode2`; with npm, use `npm install -g @opencode/cli@2`. The command remains `opencode`. The manager's **Install MCP** button writes the OpenCode 2 `mcp.servers.ida-mcp` entry and upgrades only the old IDA entry, preserving other configuration and comments. See the [OpenCode 2 setup guide](release/public/USAGE.md#opencode-2-setup).
 
 On Windows, Codex detection also checks common npm/Scoop installations and the Codex desktop app's bundled CLI when the manager's inherited `PATH` is stale. npm launchers are resolved to their native `codex.exe`, so detection and MCP configuration do not depend on Node.js being in `PATH`. For a custom installation, set `IDA_MCP_CODEX_PATH` to the absolute path of `codex.exe` and restart the manager.
 

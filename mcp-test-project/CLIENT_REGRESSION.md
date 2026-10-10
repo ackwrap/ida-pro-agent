@@ -91,19 +91,19 @@ runs the production executable with the Unix mock on Linux/macOS. The Unix fixtu
 resolves macOS's `/tmp` symlink before publishing registry/socket paths, as required by
 the production directory walker.
 
-Replace `--client codex` with `--client claude` or `--client opencode`; use `--executable`
+Replace `--client codex` with `--client claude` or `--client opencode` (OpenCode 2); use `--executable`
 for a CLI outside PATH and `--model provider/model` for OpenCode. CLI/model credentials
 use normal client configuration; the harness never reads, copies or saves credentials.
 Codex uses command-line MCP overrides and `--ignore-user-config` (auth still uses the
 normal Codex home), Claude uses `--strict-mcp-config`, and OpenCode uses an isolated
-working directory plus `OPENCODE_CONFIG`. OpenCode can still merge global/provider
+working directory plus `OPENCODE_CONFIG` and `--standalone` to avoid reusing a background server. OpenCode can still merge global/provider
 configuration; only `ida_regression_*` tools are allowed in the generated permission
 policy. Pin client versions; later CLI versions may need adapter updates.
 
 Command shapes were checked against installed `codex exec --help` and official docs:
 [Claude CLI](https://code.claude.com/docs/en/cli-reference),
-[OpenCode CLI](https://docs.opencode.ai/docs/cli/),
-[OpenCode MCP](https://docs.opencode.ai/docs/mcp-servers/).
+[OpenCode 2 CLI](https://opencode.ai/v2/docs/cli/commands/),
+[OpenCode 2 MCP](https://opencode.ai/v2/docs/mcp-servers/).
 These documents are configuration references, not evidence that those clients passed.
 
 ### Real IDA follow-up

@@ -71,12 +71,30 @@ On Windows, open the installed shortcut or run:
 
 For portable Windows use, run `ida-mcp.exe -web` from the extracted directory. On Linux, run `./ida-mcp -web`; keep the terminal open and use the local URL printed in its log. On macOS, open **Open IDA Agent.command** beside the installed Gateway, then open the local URL shown in Terminal.
 
-The manager supports Codex, OpenCode, Claude Code, Antigravity CLI, Grok Build and ZCode. Use the relevant client card to install/update the `ida-mcp` entry. Where available, link the optional skills:
+The manager supports Codex, OpenCode 2, Claude Code, Antigravity CLI, Grok Build and ZCode. Use **Install MCP** / **Update MCP** on the relevant client card to install/update the `ida-mcp` entry. Where available, link the optional skills:
 
 - `ida-reverse-analysis`: method discovery, analysis workflows and evidence interpretation.
 - `idapython`: IDAPython scripting through the `ida_scripts` tool.
 
 Restart the client after changing its configuration or skills. The manager's `-web` mode configures clients; each configured client launches its own stdio Gateway.
+
+### OpenCode 2 setup
+
+With Scoop already installed on Windows, install the v2 package from the versions bucket:
+
+```powershell
+scoop bucket add versions
+scoop install versions/opencode2
+opencode --version
+```
+
+If Scoop's v1 `opencode` package is installed, close OpenCode and run `scoop uninstall opencode` first. Keep your configuration and follow the [official migration guide](https://opencode.ai/v2/docs/migrate-v1/). Both versions use the `opencode` command; the version output should show `2.x`. See the [Scoop v2 manifest](https://github.com/ScoopInstaller/Versions/blob/master/bucket/opencode2.json).
+
+Alternatively, install v2 with `npm install -g @opencode/cli@2`. Remove a previous npm `opencode-ai` installation before switching. See the [official OpenCode 2 installation guide](https://opencode.ai/v2/docs/).
+
+Open the manager and use **Install MCP** / **Update MCP** on **OpenCode 2**. The manager writes the highest-priority global `~/.config/opencode/opencode.jsonc` or `opencode.json`, honoring `OPENCODE_CONFIG_DIR`. It uses `mcp.servers.ida-mcp`, `disabled: false`, separate catalog/execution timeouts, and `codemode: false` so the 23 IDA tools appear directly. The classic MCP handshake uses `protocol: "legacy"`. See the [OpenCode 2 MCP reference](https://opencode.ai/v2/docs/mcp-servers/).
+
+Existing v1 IDA entries show **update needed**. Updating moves only `mcp.ida-mcp` into the v2 server map and preserves other servers, settings, and comments. **Remove** clears the IDA entry in both formats. Skills remain under `~/.config/opencode/skills`. If a background server is running, use `opencode reload` to reload its configuration, then use `opencode mcp list` to verify the connection.
 
 ### Manual stdio configuration
 
