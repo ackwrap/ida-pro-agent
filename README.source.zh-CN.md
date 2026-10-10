@@ -54,6 +54,8 @@
 
 0.4.0 按全新安装处理：先卸载旧包、移除客户端中的旧 MCP 条目，再安装本版并添加 `ida-mcp`。Plugin 与 Gateway 必须成套安装，详见[安装说明](docs/UPGRADING.md)。
 
+0.4.7 新增自动更新检测：Qt 插件和本地 `-web` 管理页默认每 24 小时查询公开仓库的正式 Release。使用 **Edit → Plugins → IDA Agent → Check for Updates...**，或 **Settings... → Software Updates**，可手动检查、关闭自动检测并打开下载页面。插件和 Web 管理页共享 IDB 之外的设置与缓存；检测请求不携带数据库、聊天内容或供应商凭据。发现新版本后，关闭 IDA 并成套更新插件与 Gateway。无界面插件、stdio 和 HTTP MCP 进程不执行更新检测。
+
 ## 配置 AI 供应商
 
 这里配置的是 **IDA 内置 AI Console**。外部 MCP 客户端使用各自的模型供应商配置。

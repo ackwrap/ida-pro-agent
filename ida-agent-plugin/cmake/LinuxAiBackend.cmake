@@ -79,6 +79,9 @@ if(BUILD_TESTING)
         message(FATAL_ERROR "Linux stream tests require python3-websockets (legacy server API).")
     endif()
     add_executable(ida_ai_linux_stream_test tests/unit/ai/linux_stream_test.cpp)
+    # Observe queue completion without consuming events; match every Impl translation unit.
+    target_sources(ida_ai_linux_stream_test PRIVATE ${IDA_AGENT_STREAM_SOURCES})
+    target_compile_definitions(ida_ai_linux_stream_test PRIVATE IDA_AGENT_STREAM_CLIENT_TESTING)
     target_link_libraries(ida_ai_linux_stream_test PRIVATE ida_ai_backend)
     add_test(NAME ida_ai_linux_stream COMMAND "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/ai/run_linux_stream.py" "$<TARGET_FILE:ida_ai_linux_stream_test>"

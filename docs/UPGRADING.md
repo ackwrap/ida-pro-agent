@@ -1,4 +1,4 @@
-# Installing ida-agent 0.4.0 / 安装 ida-agent 0.4.0
+# Installing and upgrading ida-agent / 安装与升级 ida-agent
 
 ## Component names / 组件名称
 
@@ -54,3 +54,9 @@ The 0.4.5 Gateway adds 12 direct tools while keeping the 11 domain tools and exi
 Close IDA, install the complete 0.4.6 package, and restart IDA and MCP clients. The release fixes WinHTTP request-state error 12019 during delayed streamed responses and supports external history before the database is packed. Provider settings and external history remain in their existing user directories. The MCP catalog remains 23 tools, with the same RPC contracts as 0.4.5.
 
 关闭 IDA 后安装完整的 0.4.6 发布包，再重启 IDA 与 MCP 客户端。本版修复流式响应延迟期间的 WinHTTP 请求状态错误 12019，并支持数据库打包前保存外部聊天历史。供应商配置和外部历史继续使用现有用户目录。MCP 目录保留 23 个工具，RPC 合同与 0.4.5 一致。
+
+## Automatic update checks in 0.4.7 / 0.4.7 的自动更新检测
+
+Close IDA, install the complete 0.4.7 package, and restart IDA and MCP clients. The Qt plugin and local Web manager enable automatic stable-release checks by default, with a shared 24-hour cache. Use **Edit → Plugins → IDA Agent → Check for Updates...**, **Settings... → Software Updates**, or the Web manager to check manually, open the release page, or disable automatic checks. Settings and cache remain outside the IDB; existing provider settings and history are retained. Update checks open the download page; installation remains manual. Headless plugins and stdio/HTTP MCP processes do not check for updates.
+
+关闭 IDA、安装完整的 0.4.7 发布包，再重启 IDA 与 MCP 客户端。Qt 插件和本地 Web 管理页默认启用正式版更新检测，共享 24 小时检查缓存。使用 **Edit → Plugins → IDA Agent → Check for Updates...**、**Settings... → Software Updates** 或 Web 管理页，可手动检查、打开发布页面或关闭自动检测。设置与缓存保存在 IDB 之外，现有供应商配置和聊天历史继续保留。检测仅提供下载页面，安装仍由用户手动完成。无界面插件、stdio 和 HTTP MCP 进程不执行更新检测。

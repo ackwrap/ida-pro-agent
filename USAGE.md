@@ -2,15 +2,15 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide describes ida-agent 0.4.6. Use the plugin and Gateway from the same release package.
+This guide describes ida-agent 0.4.7. Use the plugin and Gateway from the same release package.
 
-### Update checks in source builds
+### Automatic update checks
 
 The Qt plugin and local Web manager check the public [`ackwrap/ida-pro-agent` stable releases](https://github.com/ackwrap/ida-pro-agent/releases) in the background, at most once every 24 hours. In IDA, use **Edit → Plugins → IDA Agent → Check for Updates...**, or **Settings... → Software Updates**, to see the installed version, check now, open the release page, or disable automatic checks. The Web manager has the same controls. Manual checks have a one-minute cooldown; network failures preserve the previous release information and permit later retries.
 
 The two interfaces share `update-settings.json` and `update-cache.json` in `%LOCALAPPDATA%\ida-agent\ai` on Windows, `${XDG_CONFIG_HOME:-$HOME/.config}/ida-agent/ai` on Linux, and `~/Library/Application Support/ida-agent/ai` on macOS. These files are separate from IDBs and provider credentials. Drafts and prereleases are ignored. Requests contain the application version, without database or chat contents. The plugin uses its existing system proxy mode; the Web manager follows `HTTPS_PROXY` and `NO_PROXY`. Checks do not require a GitHub account. Headless plugins and stdio/HTTP MCP processes do not run update checks.
 
-For an available update, open the release page, choose your platform package, close IDA, and install the matching plugin and Gateway together. Update checks do not install packages automatically. Released 0.4.6 packages predate this feature; use a later release or build from source.
+For an available update, open the release page, choose your platform package, close IDA, and install the matching plugin and Gateway together. Update checks do not install packages automatically. This feature is included in 0.4.7 and later packages.
 
 ## 1. Install and open a database
 

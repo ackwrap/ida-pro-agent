@@ -125,11 +125,11 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
-### Source builds / 源码构建
+### Version 0.4.7 / 0.4.7 版本
 
-Source builds add automatic stable-release checks to the Qt plugin and local Web manager, with shared daily caching, an opt-out, manual checks, and a release-page link. See the [usage guide](USAGE.md#update-checks-in-source-builds). Published 0.4.6 binaries predate this feature.
+Version 0.4.7 adds automatic stable-release checks to the Qt plugin and local Web manager, with shared daily caching, an opt-out, manual checks, and a release-page link. Close IDA and install the complete 0.4.7 package to enable these controls. See the [usage guide](USAGE.md#automatic-update-checks) and [release notes](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.7.md).
 
-源码构建新增正式版自动更新检测：Qt 插件和本地 Web 管理页共享每日检查缓存，支持关闭自动检测、手动检查和打开下载页面。详见[使用指南](USAGE.zh-CN.md#源码构建中的更新检测)。已发布的 0.4.6 安装包尚未包含此功能。
+0.4.7 新增正式版自动更新检测：Qt 插件和本地 Web 管理页共享每日检查缓存，支持关闭自动检测、手动检查和打开下载页面。关闭 IDA 并安装完整的 0.4.7 发布包即可使用。详见[使用指南](USAGE.zh-CN.md#自动更新检测)和[发布说明](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.7.md)。
 
 ### Version 0.4.6 / 0.4.6 版本
 

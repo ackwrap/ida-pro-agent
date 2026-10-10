@@ -186,6 +186,8 @@ async def websocket_handler(ws, path):
     elif path == "/idle":
         await ws.wait_closed()
     elif path == "/flood":
+        # Exceed the former fixed startup sleep before producing queued data.
+        await asyncio.sleep(0.4)
         for _ in range(1500):
             await ws.send("x")
     elif path == "/ping-upload":

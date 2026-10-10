@@ -106,6 +106,8 @@ public:
   void Cancel(StreamId stream_id);
 #ifdef IDA_AGENT_STREAM_CLIENT_TESTING
   void SetWorkerExitDelayForTesting(std::uint32_t delay_ms);
+  // Observe completion without consuming events in queue-bound tests.
+  bool HasTerminalEventForTesting(StreamId stream_id);
 #endif
   void Shutdown();
 

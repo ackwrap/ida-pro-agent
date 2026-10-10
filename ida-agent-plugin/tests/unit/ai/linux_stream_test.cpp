@@ -60,6 +60,14 @@ void Opened(StreamClient &client, StreamClient::StreamId id)
   auto event = Next(client, id);
   if (event.kind != StreamEventKind::Opened) throw std::runtime_error("stream did not open: " + event.message);
 }
+void WaitForTerminal(StreamClient &client, StreamClient::StreamId id)
+{
+  Require(id != 0, "stream was not allocated");
+  const auto deadline = Clock::now() + 6s;
+  while (!client.HasTerminalEventForTesting(id) && Clock::now() < deadline)
+    std::this_thread::sleep_for(2ms);
+  Require(client.HasTerminalEventForTesting(id), "stream did not terminate with its queue undrained");
+}
 void Echo(StreamClient &client, StreamRequest request, bool large = false)
 {
   auto id = client.OpenWebSocket(request);
@@ -187,13 +195,13 @@ int main(int argc, char **argv)
     Drain(client, client.OpenSse(request), StreamEventKind::Error);
     request = Request(http + "/flood");
     auto id = client.OpenSse(request);
-    std::this_thread::sleep_for(250ms);
+    WaitForTerminal(client, id);
     events = Drain(client, id, StreamEventKind::Error);
     Require(events.size() <= StreamHardMaxQueuedEvents, "SSE queue event bound exceeded");
     request = Request(http + "/byte-flood");
     request.max_event_bytes = request.max_queued_bytes = 32;
     id = client.OpenSse(request);
-    std::this_thread::sleep_for(150ms);
+    WaitForTerminal(client, id);
     events = Drain(client, id, StreamEventKind::Error);
     Require(events.size() == 3, "SSE queue byte bound was not enforced");
     Drain(client, client.OpenSse(Request(http + "/truncated")), StreamEventKind::Error);
@@ -257,9 +265,12 @@ int main(int argc, char **argv)
     request = Request(ws + "/flood");
     request.max_message_bytes = request.max_queued_bytes = 16;
     id = client.OpenWebSocket(request);
-    std::this_thread::sleep_for(250ms);
+    WaitForTerminal(client, id);
     events = Drain(client, id, StreamEventKind::Error);
-    Require(events.size() <= 18, "WebSocket queue byte bound exceeded");
+    Require(events.size() == 18 && events.front().kind == StreamEventKind::Opened
+        && std::all_of(events.begin() + 1, events.end() - 1, [](const StreamEvent &event) {
+          return event.kind == StreamEventKind::WebSocketText && event.payload == "x";
+        }), "WebSocket queue byte bound was not enforced");
     request = Request(ws + "/idle");
     request.idle_timeout_ms = 2000;
     request.overall_timeout_ms = 100;

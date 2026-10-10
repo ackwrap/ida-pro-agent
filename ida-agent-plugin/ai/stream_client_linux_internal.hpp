@@ -62,6 +62,7 @@ struct StreamClient::Impl final
   void Cancel(StreamId stream_id);
 #ifdef IDA_AGENT_STREAM_CLIENT_TESTING
   void SetWorkerExitDelayForTesting(std::uint32_t delay_ms);
+  bool HasTerminalEventForTesting(StreamId stream_id);
 #endif
   void Shutdown();
 

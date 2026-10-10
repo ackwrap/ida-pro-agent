@@ -240,6 +240,15 @@ void StreamClient::Impl::SetWorkerExitDelayForTesting(std::uint32_t delay_ms)
   std::lock_guard<std::mutex> lock(mutex_);
   worker_exit_delay_ms_ = delay_ms;
 }
+
+bool StreamClient::Impl::HasTerminalEventForTesting(StreamId stream_id)
+{
+  const auto state = Find(stream_id);
+  if ( state == nullptr )
+    return false;
+  std::lock_guard<std::mutex> lock(state->mutex);
+  return state->terminal_queued;
+}
 #endif
 
 void StreamClient::Impl::Shutdown()
@@ -463,6 +472,11 @@ void StreamClient::Cancel(StreamId stream_id)
 void StreamClient::SetWorkerExitDelayForTesting(std::uint32_t delay_ms)
 {
   impl_->SetWorkerExitDelayForTesting(delay_ms);
+}
+
+bool StreamClient::HasTerminalEventForTesting(StreamId stream_id)
+{
+  return impl_->HasTerminalEventForTesting(stream_id);
 }
 #endif
 
