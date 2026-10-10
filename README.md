@@ -125,6 +125,16 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
+### Version 0.4.6 / 0.4.6 版本
+
+Windows streamed chat now waits asynchronously through delayed headers and SSE frames, fixing the request-state failure that could produce WinHTTP error 12019. External history also works before an IDB's `.i64` is packed and retains the same database identity afterward. Install the complete package with IDA closed and restart IDA.
+
+This version adds official Python SDK regression tests across Windows/Linux/macOS and reproducible Codex, Claude Code and OpenCode test entry points. SDK runs use simulated RPC peers; actual Agent/model and licensed IDA results are recorded separately. The 23-tool catalog and existing RPC contracts are preserved. See the [release notes](release/notes/0.4.6.md) and [client regression guide](mcp-test-project/CLIENT_REGRESSION.md).
+
+Windows 流式聊天改为异步等待延迟响应头及 SSE 数据，修复可能触发 WinHTTP 12019 的请求状态错误。数据库 `.i64` 尚未打包时也能保存外部聊天历史，打包后仍使用同一数据库标识。升级时关闭 IDA、安装完整发布包，再重启 IDA。
+
+本版增加 Windows/Linux/macOS 官方 Python SDK 回归，以及 Codex、Claude Code、OpenCode 的可复现测试入口。SDK 使用模拟 RPC 后端；真实 Agent/模型和需要许可的 IDA 结果单独记录。23 个工具及既有 RPC 合同保持兼容，详见[发布说明](release/notes/0.4.6.md)和[客户端回归说明](mcp-test-project/CLIENT_REGRESSION.md)。
+
 ### Version 0.4.4 / 0.4.4 版本
 
 All clients now use the same 11 underscore-named MCP tools, including `ida_instances`, `ida_functions`, and `ida_scripts`. The fixed catalog and former Grok compatibility behavior are defaults in both stdio and HTTP; no `--grok` flag is needed. Existing flags are accepted as a deprecated no-op.

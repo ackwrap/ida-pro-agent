@@ -1,0 +1,59 @@
+name: Agent client regression infrastructure
+
+on:
+  push:
+    paths: ['ida-mcp/**', 'mcp-test-project/**', 'protocol/**', '.github/workflows/agent-client-regression.yml']
+  pull_request:
+    paths: ['ida-mcp/**', 'mcp-test-project/**', 'protocol/**', '.github/workflows/agent-client-regression.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sdk-simulated-ida:
+    name: Official SDK + simulated IDA (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ida-mcp/go.mod
+          cache-dependency-path: ida-mcp/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build test-only gateway
+        shell: bash
+        run: go -C ida-mcp build -o ../build/ida-agent-client-fixture.exe ./cmd/ida-agent-client-fixture
+      - name: Install pinned SDK and test oracle
+        shell: bash
+        run: |
+          python -m pip install -r mcp-test-project/requirements-clients.txt
+          python -m pip freeze > build/client-dependencies.txt
+          python -m unittest discover -s mcp-test-project -p 'test_agent_evidence.py' -v
+      - name: Official SDK integration (not an Agent/model test)
+        shell: bash
+        run: |
+          python mcp-test-project/verify_client_sdk.py build/ida-agent-client-fixture.exe --backend simulated_ida_inmemory_rpc --report build/sdk-report.json
+          go -C ida-mcp test ./ida -run '^TestAdmissionQueueWaitExpiresWithoutLeakingSlot$'
+      - name: Production gateway with simulated Unix IDA (not real IDA)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          go -C ida-mcp build -o ../build/ida-mcp .
+          python mcp-test-project/verify_client_sdk.py build/ida-mcp --backend simulated_ida_unix_rpc --report build/sdk-unix-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sdk-simulated-${{ matrix.os }}
+          path: |
+            build/sdk-report.json
+            build/sdk-unix-report.json
+            build/client-dependencies.txt

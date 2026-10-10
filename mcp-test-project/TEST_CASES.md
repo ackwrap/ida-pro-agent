@@ -68,3 +68,11 @@ MCP 输出允许 PID 和业务实例信息，但禁止 token、Pipe locator、�
 运行 `python mcp-test-project/verify_compatibility.py <gateway-executable> --http`。脚本使用隔离实例目录，在四个 MCP 协议版本上检查 stdio/HTTP、23 个工具的简单公开 schema、字段错误与会话恢复、JSON 文本/结构化结果一致性、脱敏诊断与 stdio EOF。另运行 `verify_stdio.py` 做基础生命周期验收。
 
 直接工具测试应覆盖单实例自动路由、多实例显式选择、全部固定别名及分页；队列测试覆盖 FIFO、满队列、取消和授权槽竞争；重试测试覆盖相同总期限及写入/脚本/调试控制单次执行。协议/SDK 自动化不等同于实际 Agent/模型测试；真实 IDA 和客户端链路需独立记录。
+
+## 9. 实际 Agent 客户端回归
+
+参见 [CLIENT_REGRESSION.md](CLIENT_REGRESSION.md)。`run_agent_clients.py` 直接启动已安装的
+Codex、Claude Code 或 OpenCode，用透明 stdio tee 记录实际工具发现、调用及响应。
+判定来自 MCP wire evidence 和模拟 RPC trace，不采用模型自述、CLI 退出码或静态配置作为成功证据。
+`verify_client_sdk.py` 使用固定版本的官方 Python MCP SDK，属于跨进程 SDK 集成测试，不能记为
+真实 Agent 测试。所有模拟 IDA、真实 IDA、客户端未启动或未观察到并发的结果分开记录。

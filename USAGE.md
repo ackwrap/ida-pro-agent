@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide describes ida-agent 0.4.5. Use the plugin and Gateway from the same release package.
+This guide describes ida-agent 0.4.6. Use the plugin and Gateway from the same release package.
 
 ## 1. Install and open a database
 
@@ -193,10 +193,20 @@ For upgrades from before the 0.4.0 component rename, remove the old MCP entry an
 | Client still shows dotted tool names | Stop the old Gateway and reconnect/restart the client. Update custom tool allowlists. Refreshing the configuration page does not replace an existing client process. |
 | Method or argument rejected | Use `list` and `describe` on the correct domain tool; keep dotted method identifiers and match the returned schema. |
 | Provider test succeeds but chat fails | Check API mode, Base URL prefix, exact model ID, streaming/tool support and proxy settings. |
+| Windows chat reports `WinHttpQueryDataAvailable` error 12019 | Upgrade to 0.4.6 and restart IDA. This release fixes request cancellation during gaps in streamed responses; configured idle and overall deadlines still apply. |
+| External history cannot be saved before the database is packed | Upgrade to 0.4.6. Windows now resolves an unpacked database through its existing parent directory; also check access to the external history directory. |
 | Pseudocode unavailable | Verify the required Hex-Rays decompiler/license and the target architecture. |
 | Debugger request fails | Check the IDA permission dialog, selected debugger and process state. |
 
 Report reproducible problems in [Issues](https://github.com/ackwrap/ida-pro-agent/issues) with OS/CPU, IDA and ida-agent versions, steps and relevant logs with credentials removed.
+
+## Chat fixes and client regression in 0.4.6
+
+Install the complete 0.4.6 package with IDA closed, then restart IDA and reconnect MCP clients. Windows streamed chat now waits asynchronously across delayed response headers and SSE frames, while cancellation, idle deadlines and overall deadlines remain effective. This fixes the request-state failure that could surface as WinHTTP error 12019.
+
+Windows can also save external chat history while a database's `.i64` file has not yet been packed. The history key remains consistent after packing, and chat history stays outside the IDB.
+
+The [client regression guide](mcp-test-project/CLIENT_REGRESSION.md) documents the official Python SDK tests and reproducible Codex, Claude Code and OpenCode entry points. CI exercises SDK calls against simulated RPC peers on Windows, Linux and macOS. Actual Agent/model calls and licensed IDA integration require separate evidence. The public catalog remains the same 23 tools introduced in 0.4.5.
 
 ## Gateway compatibility in 0.4.5
 

@@ -48,3 +48,9 @@ stdio 和 HTTP 模式的 11 个对外领域工具现在统一使用下划线名�
 The 0.4.5 Gateway adds 12 direct tools while keeping the 11 domain tools and existing RPC protocol. Older v0.4.4 packages retain the domain-only catalog. Reconnect clients after replacing the Gateway and refresh skill copies/tool allowlists. Argument errors now return structured tool failures instead of SDK schema protocol failures. See [Gateway compatibility details](../ida-mcp/README.md#agent-compatibility).
 
 0.4.5 增加 12 个常用直接工具，保留 11 个领域工具和既有 RPC 协议。旧版 v0.4.4 仅提供领域入口。更新 Gateway 后重连客户端并刷新技能、工具允许列表；参数错误现在返回结构化工具错误。参见 [Gateway 兼容性说明](../ida-mcp/README.md#agent-compatibility)。
+
+## Windows chat fixes in 0.4.6 / 0.4.6 的 Windows 聊天修复
+
+Close IDA, install the complete 0.4.6 package, and restart IDA and MCP clients. The release fixes WinHTTP request-state error 12019 during delayed streamed responses and supports external history before the database is packed. Provider settings and external history remain in their existing user directories. The MCP catalog remains 23 tools, with the same RPC contracts as 0.4.5.
+
+关闭 IDA 后安装完整的 0.4.6 发布包，再重启 IDA 与 MCP 客户端。本版修复流式响应延迟期间的 WinHTTP 请求状态错误 12019，并支持数据库打包前保存外部聊天历史。供应商配置和外部历史继续使用现有用户目录。MCP 目录保留 23 个工具，RPC 合同与 0.4.5 一致。

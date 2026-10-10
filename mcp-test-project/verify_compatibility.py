@@ -76,19 +76,20 @@ class Stdio:
 
 
 class HTTP:
-    def __init__(self, gateway, directory):
+    def __init__(self, gateway, directory, gateway_args=None, stderr=None):
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         self.endpoint = f"http://127.0.0.1:{port}/mcp"
         self.session = None
         self.version = None
+        prefix = gateway_args if gateway_args is not None else ["-instance-dir", directory]
         self.process = subprocess.Popen(
-            [str(gateway), "-instance-dir", directory, "-transport", "http", "-listen", f"127.0.0.1:{port}"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, encoding="utf-8",
+            [str(gateway), *prefix, "-transport", "http", "-listen", f"127.0.0.1:{port}"],
+            stdout=subprocess.DEVNULL, stderr=stderr or subprocess.PIPE, text=True, encoding="utf-8",
         )
         self.stderr = []
-        self.logger = threading.Thread(target=lambda: self.stderr.extend(self.process.stderr), daemon=True)
+        self.logger = threading.Thread(target=lambda: self.stderr.extend(self.process.stderr or []), daemon=True)
         self.logger.start()
         deadline = time.monotonic() + 8
         while True:

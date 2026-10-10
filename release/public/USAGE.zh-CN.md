@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
 
-本文对应 ida-agent 0.4.5。插件与 Gateway 请使用同一发布包中的版本。
+本文对应 ida-agent 0.4.6。插件与 Gateway 请使用同一发布包中的版本。
 
 ## 1. 安装并打开数据库
 
@@ -193,10 +193,20 @@ stdio 与 HTTP 默认均使用固定工具目录和原 Grok 兼容行为，无�
 | 客户端仍显示点号工具名 | 停止旧 Gateway，重新连接或重启客户端，并更新自定义允许列表。刷新配置页不能替换现有客户端进程。 |
 | 方法或参数被拒绝 | 在正确领域工具中使用 `list`、`describe`，保留点号方法标识，并严格匹配返回的 schema。 |
 | 供应商测试通过但聊天失败 | 检查 API 模式、Base URL 前缀、准确模型 ID、流式输出、工具支持和代理设置。 |
+| Windows 聊天出现 `WinHttpQueryDataAvailable` 错误 12019 | 升级到 0.4.6 并重启 IDA。本版修复流式响应间隔期间请求被取消的问题；配置的空闲期限和总期限仍然有效。 |
+| 数据库尚未打包时无法保存外部聊天记录 | 升级到 0.4.6。Windows 现在通过已存在的父目录解析未打包数据库路径；同时检查外部历史目录的访问权限。 |
 | 无法获取伪代码 | 检查对应的 Hex-Rays 反编译器、许可与目标架构。 |
 | 调试请求失败 | 检查 IDA 授权弹窗、已选择的调试器与进程状态。 |
 
 可在 [Issues](https://github.com/ackwrap/ida-pro-agent/issues) 提交问题，附上系统/CPU、IDA 与 ida-agent 版本、复现步骤及已移除凭据的相关日志。
+
+## 0.4.6 聊天修复与客户端回归
+
+关闭 IDA 后安装完整的 0.4.6 发布包，随后重启 IDA 并重连 MCP 客户端。Windows 流式聊天改为异步等待延迟响应头和 SSE 数据，取消、空闲期限和总期限继续生效，修复可能表现为 WinHTTP 12019 的请求状态错误。
+
+数据库的 `.i64` 尚未打包到磁盘时，Windows 也能保存外部聊天历史；打包前后的历史键保持一致，聊天记录仍保存在 IDB 之外。
+
+[客户端回归说明](mcp-test-project/CLIENT_REGRESSION.md) 提供官方 Python SDK 测试，以及 Codex、Claude Code 和 OpenCode 的可复现运行入口。CI 在 Windows、Linux、macOS 上使用模拟 RPC 后端验证 SDK 调用；真实 Agent/模型与需要许可的 IDA 联调仍需单独记录证据。公开目录继续使用 0.4.5 引入的 23 个工具。
 
 ## Gateway 兼容性优化（0.4.5）
 
