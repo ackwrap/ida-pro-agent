@@ -12,6 +12,7 @@ import (
 	"net"
 	"time"
 
+	"ida-mcp/ida/diagnostics"
 	"ida-mcp/ida/rpc"
 	"ida-mcp/ida/transport"
 )
@@ -61,7 +62,9 @@ func (client *Client) Call(
 
 	callContext, cancelCall := context.WithDeadline(ctx, deadline)
 	defer cancelCall()
+	connected := diagnostics.Measure(ctx, "connect")
 	connection, err := client.dial(callContext, instance.Locator())
+	connected()
 	if err != nil {
 		return rpc.Response{}, err
 	}
@@ -83,7 +86,10 @@ func (client *Client) Call(
 		case <-cancelWatcherDone:
 		}
 	}()
-	if err := client.handshake(connection, instance); err != nil {
+	handshaken := diagnostics.Measure(ctx, "handshake")
+	handshakeError := client.handshake(connection, instance)
+	handshaken()
+	if err := handshakeError; err != nil {
 		if callContext.Err() != nil {
 			return rpc.Response{}, callContext.Err()
 		}
@@ -93,6 +99,7 @@ func (client *Client) Call(
 		}
 		return rpc.Response{}, err
 	}
+	defer diagnostics.Measure(ctx, "rpc")()
 	if _, err := io.Copy(connection, bytes.NewReader(frame)); err != nil {
 		if callContext.Err() != nil {
 			return rpc.Response{}, callContext.Err()

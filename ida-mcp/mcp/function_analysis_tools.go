@@ -160,7 +160,7 @@ func (registry *toolRegistry) prepareFunctionAnalysis(
 		return ctx, ida.FunctionPageParams{}, "", func() {}, err
 	}
 	requestContext, cancel := context.WithTimeout(ctx, readToolTimeout)
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		cancel()
 		return ctx, ida.FunctionPageParams{}, "", func() {}, err

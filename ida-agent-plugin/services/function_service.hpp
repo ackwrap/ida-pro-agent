@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -237,6 +238,11 @@ public:
   FunctionCalleesOutcome Callees(const FunctionPageQuery &query) const;
   FunctionCallersOutcome Callers(const FunctionPageQuery &query) const;
   FunctionCallGraphOutcome CallGraph(const CallGraphQuery &query) const;
+
+private:
+  struct PageCache;
+  PageCache &Pages() const;
+  mutable std::shared_ptr<PageCache> page_cache_;
 };
 
 nlohmann::json ToJson(const FunctionInfo &info);

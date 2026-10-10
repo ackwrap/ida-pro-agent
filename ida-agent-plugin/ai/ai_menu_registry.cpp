@@ -515,6 +515,11 @@ bool AiMenuRegistry::ClearAllChatHistory()
       return false;
   }
   ChatHistoryStore store;
+  for ( const auto &[context_id, controller] : impl_->controllers )
+  {
+    (void)context_id;
+    if ( controller != nullptr ) controller->history_writer_.Drain();
+  }
   if ( !store.ClearAll() )
     return false;
   for ( const auto &[context_id, controller] : impl_->controllers )

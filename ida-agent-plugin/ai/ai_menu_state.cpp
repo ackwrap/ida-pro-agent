@@ -70,6 +70,7 @@ std::optional<std::string> ResolveSessionSelector(
 
 bool AiMenuController::OpenHistoryStore()
 {
+  history_writer_.Drain();
   history_store_opened_ = history_store_.Open(CurrentDatabaseKey());
   return history_store_opened_;
 }
@@ -99,6 +100,7 @@ void AiMenuController::StartRuntimeConversationSession()
 
 void AiMenuController::OnAllHistoryCleared() noexcept
 {
+  history_writer_.TakeFailure();
   history_store_.ResetActiveSession();
   history_write_blocked_ = false;
   persistence_warning_shown_ = false;
@@ -215,7 +217,8 @@ bool AiMenuController::PersistTranscript()
     }
     return false;
   }
-  if ( history_store_.Save(chat_panel_.Entries()) )
+  if ( ( !history_store_.ActiveSessionId().empty() || history_store_.StartNew() )
+      && history_writer_.Submit(history_store_.ForBackgroundSave(), chat_panel_.Entries()) )
   {
     const std::string &stored_session_id = history_store_.ActiveSessionId();
     if ( !stored_session_id.empty()
@@ -238,6 +241,8 @@ bool AiMenuController::PersistTranscript()
 
 void AiMenuController::StartNewConversation()
 {
+  history_writer_.Drain();
+  PollHistoryWrite();
   agent_loop_.Reset();
   ClearCompactionState();
   context_usage_ = {};
@@ -273,6 +278,8 @@ void AiMenuController::StartNewConversation()
 
 void AiMenuController::ClearCurrentConversation()
 {
+  history_writer_.Drain();
+  PollHistoryWrite();
   agent_loop_.Reset();
   ClearCompactionState();
   context_usage_ = {};
@@ -306,6 +313,8 @@ void AiMenuController::SelectConversation(std::string_view selector)
         "Cancel the active request before switching conversations.");
     return;
   }
+  history_writer_.Drain();
+  PollHistoryWrite();
   if ( !history_store_opened_ && !OpenHistoryStore() )
   {
     chat_panel_.AppendSystem("Conversation history is unavailable.");
@@ -333,6 +342,16 @@ void AiMenuController::SelectConversation(std::string_view selector)
   history_write_blocked_ = false;
   persistence_warning_shown_ = false;
   chat_panel_.AppendSystem("Switched to conversation " + id->substr(0, 8) + ".");
+}
+
+void AiMenuController::PollHistoryWrite()
+{
+  if ( history_writer_.TakeFailure() && !persistence_warning_shown_ )
+  {
+    persistence_warning_shown_ = true;
+    chat_panel_.AppendSystem("External AI history could not be saved; the latest conversation remains in memory.");
+    msg("[ida-agent] background AI history save failed\n");
+  }
 }
 
 } // namespace ida_agent::ai

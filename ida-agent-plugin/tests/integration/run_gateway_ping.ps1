@@ -14,6 +14,8 @@ param(
 
     [int]$TimeoutSeconds = 120,
 
+    [string]$PythonExecutable = "python",
+
     [switch]$KeepArtifacts
 )
 
@@ -127,6 +129,10 @@ try {
     [System.IO.File]::Copy($instanceFile, $registryEvidence, $true)
     $descriptor = [System.IO.File]::ReadAllText($registryEvidence) | ConvertFrom-Json
     $readyInfo = [System.IO.File]::ReadAllText($readyFile) | ConvertFrom-Json
+    & $PythonExecutable (Join-Path $PSScriptRoot "function_pagination_checks.py") --instance-file $registryEvidence --ready-file $readyFile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Function pagination/cache integration failed"
+    }
     $functionAddress = [string]$readyInfo.functionAddress
     $nonFunctionAddress = [string]$readyInfo.nonFunctionAddress
     $xrefAddress = [string]$readyInfo.xrefAddress
@@ -334,7 +340,7 @@ try {
     }
     foreach ($marker in @(
         "[ida-agent] plugin loaded",
-        "pipe=$([string]$descriptor.pipe)",
+        "endpoint=$([string]$descriptor.pipe)",
         "[ida-agent] plugin is active",
         "[ida-agent-test] bridge ready",
         "[ida-agent] plugin unloaded"

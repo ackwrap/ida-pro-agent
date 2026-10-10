@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -60,8 +61,14 @@ public:
   ChatSessionListResult ListSessions() const;
   ChatHistoryLoadResult SelectSession(std::string_view session_id);
   const std::string &ActiveSessionId() const noexcept;
+  // Immutable database/session binding for a background writer. Its SQLite
+  // connection is private to the worker and reused across saves.
+  ChatHistoryStore ForBackgroundSave() const;
+  bool SameSaveTarget(const ChatHistoryStore &other) const noexcept;
 
 private:
+  struct SaveConnection;
+  std::shared_ptr<SaveConnection> save_connection_;
   std::filesystem::path database_path_;
   std::string database_key_;
   std::string active_session_id_;

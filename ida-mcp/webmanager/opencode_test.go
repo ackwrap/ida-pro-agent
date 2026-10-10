@@ -183,7 +183,7 @@ func TestOpenCode2RemovalDeletesBothManagedFormats(t *testing.T) {
 	}
 }
 
-func TestOpenCode2UsesSupportedGlobalFiles(t *testing.T) {
+func TestOpenCode2GlobalFilePrecedenceAndConfigFallback(t *testing.T) {
 	manager, path := openCodeTestManager(t, "")
 	legacyPath := filepath.Join(filepath.Dir(path), "config.json")
 	if err := os.WriteFile(legacyPath, []byte(`{"model":"legacy/model"}`), 0o600); err != nil {
@@ -192,8 +192,16 @@ func TestOpenCode2UsesSupportedGlobalFiles(t *testing.T) {
 	if err := manager.configureOpenCode(true); err != nil {
 		t.Fatal(err)
 	}
-	if contents, err := os.ReadFile(legacyPath); err != nil || string(contents) != `{"model":"legacy/model"}` {
-		t.Fatalf("obsolete config.json changed: %v\n%s", err, contents)
+	_, root, err := readOpenCodeConfig(legacyPath)
+	if err != nil || root["model"] != "legacy/model" {
+		t.Fatalf("fallback lost unrelated settings: %v, %#v", err, root)
+	}
+	assertOpenCode2Entry(t, manager, legacyPath)
+	if manager.openCodeConfigPath() != legacyPath {
+		t.Fatal("existing config.json fallback was not selected")
+	}
+	if err := os.WriteFile(path, []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
 	}
 	if manager.openCodeConfigPath() != path {
 		t.Fatalf("global path = %s, want %s", manager.openCodeConfigPath(), path)

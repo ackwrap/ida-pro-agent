@@ -253,7 +253,7 @@ func (registry *toolRegistry) prepareMutation(ctx context.Context, instance *str
 	if !ok {
 		return nil, "", ctx, func() {}, ida.NewError(ida.ErrorCapabilityUnavailable, "mutation backend is unavailable", false)
 	}
-	instanceID, err := registry.instances.resolve(instance)
+	instanceID, err := registry.instances.resolve(ctx, instance)
 	if err != nil {
 		return nil, "", ctx, func() {}, err
 	}

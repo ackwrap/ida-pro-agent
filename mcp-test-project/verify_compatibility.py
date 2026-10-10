@@ -67,7 +67,10 @@ class Stdio:
             if check:
                 for line in self.stderr:
                     entry = json.loads(line)
-                    assert set(entry) <= {"tool", "method", "stage", "durationMs", "code", "retries"}, entry
+                    assert set(entry) <= {"tool", "method", "stage", "durationMs", "code", "retries", "phaseMs"}, entry
+                    phases = entry.get("phaseMs", {})
+                    assert set(phases) <= {"execute", "admission", "resolve", "discovery", "connect", "handshake", "rpc"}, entry
+                    assert all(isinstance(value, (int, float)) and value >= 0 for value in phases.values()), entry
                 assert "SECRET-input" not in "".join(self.stderr)
         finally:
             if self.process.poll() is None:

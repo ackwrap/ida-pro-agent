@@ -314,7 +314,7 @@ func (registry *toolRegistry) catalogInstance(ctx context.Context, requested *st
 		return ctx, "", func() {}, err
 	}
 	requestContext, cancel := context.WithTimeout(ctx, timeout)
-	instanceID, err := registry.instances.resolve(requested)
+	instanceID, err := registry.instances.resolve(ctx, requested)
 	if err != nil {
 		cancel()
 		return ctx, "", func() {}, err

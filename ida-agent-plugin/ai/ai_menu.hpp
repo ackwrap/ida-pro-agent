@@ -3,6 +3,7 @@
 #include "ai/chat_panel.hpp"
 #include "ai/chat_context.hpp"
 #include "ai/chat_history_store.hpp"
+#include "ai/chat_history_writer.hpp"
 #include "ai/agent_effect_coordinator.hpp"
 #include "ai/agent_effect_policy.hpp"
 #include "ai/agent_loop.hpp"
@@ -77,6 +78,7 @@ private:
   void InitializeHistory();
   bool OpenHistoryStore();
   bool PersistTranscript();
+  void PollHistoryWrite();
   void StartNewConversation();
   void ClearCurrentConversation();
   void SelectConversation(std::string_view selector);
@@ -126,6 +128,7 @@ private:
   std::string conversation_session_id_ = "runtime-1";
   std::uint64_t next_runtime_session_id_ = 2;
   ChatHistoryStore history_store_;
+  ChatHistoryWriter history_writer_;
   std::function<void(const char *)> lifecycle_trace_;
   std::ptrdiff_t database_context_id_ = -1;
   bool started_ = false;

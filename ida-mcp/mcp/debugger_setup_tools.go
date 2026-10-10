@@ -44,7 +44,7 @@ func (registry *toolRegistry) prepareDebuggerSetup(ctx context.Context, instance
 	if !ok {
 		return nil, "", ctx, func() {}, ida.NewError(ida.ErrorCapabilityUnavailable, "debugger setup backend is unavailable", false)
 	}
-	instanceID, err := registry.instances.resolve(instance)
+	instanceID, err := registry.instances.resolve(ctx, instance)
 	if err != nil {
 		return nil, "", ctx, func() {}, err
 	}

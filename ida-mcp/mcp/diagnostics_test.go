@@ -67,7 +67,7 @@ func TestHTTPArgumentRecoveryAndPrivateDiagnostics(t *testing.T) {
 		}
 		for key := range decoded {
 			switch key {
-			case "tool", "method", "stage", "durationMs", "code", "retries":
+			case "tool", "method", "stage", "durationMs", "code", "retries", "phaseMs":
 			default:
 				t.Fatalf("unexpected diagnostic field %s", key)
 			}
@@ -75,5 +75,14 @@ func TestHTTPArgumentRecoveryAndPrivateDiagnostics(t *testing.T) {
 	}
 	if !strings.Contains(entries[2], `"retries":1`) || strings.Contains(log.String(), "SECRET-data") || strings.Contains(log.String(), testInstanceA) || strings.Contains(log.String(), "0x401000") {
 		t.Fatalf("private or incomplete diagnostics: %s", log.String())
+	}
+	var timed struct {
+		PhaseMs map[string]float64 `json:"phaseMs"`
+	}
+	if err := json.Unmarshal([]byte(entries[2]), &timed); err != nil {
+		t.Fatal(err)
+	}
+	if timed.PhaseMs["execute"] < 100 {
+		t.Fatalf("retry wait missing from execute timing: %+v", timed)
 	}
 }

@@ -78,6 +78,7 @@ AiMenuController::AiMenuController(
   {
     try
     {
+      PollHistoryWrite();
       PollChatRequest();
     }
     catch ( ... )
@@ -170,6 +171,9 @@ void AiMenuController::Stop(bool unregister_actions) noexcept
   }
   AdvanceEffectGeneration();
   CancelActive();
+  trace("ai.stop.history.begin");
+  history_writer_.Drain();
+  trace("ai.stop.history.end");
   agent_loop_.Reset();
   chat_panel_.ClearTransientStatus();
   chat_panel_.DiscardAssistantPreview();

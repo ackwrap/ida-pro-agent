@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"ida-mcp/ida"
+	"ida-mcp/ida/diagnostics"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -17,9 +18,13 @@ type boundaryHandler func(context.Context, *mcp.CallToolRequest) (any, error)
 // failures as protocol errors before a typed handler can make them actionable.
 func (registry *toolRegistry) addBoundaryTool(server *mcp.Server, tool *mcp.Tool, handler boundaryHandler) {
 	server.AddTool(tool, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		ctx = registry.instances.withSession(ctx, request.Session)
 		started := time.Now()
 		trace := &callTrace{stage: "validate"}
 		ctx = context.WithValue(ctx, callTraceKey{}, trace)
+		if registry.diagnostics.writer != nil {
+			ctx = diagnostics.WithRecorder(ctx, trace.recordPhase)
+		}
 		code := ida.ErrorCode("OK")
 		defer func() { registry.diagnostics.record(tool.Name, trace, time.Since(started), code) }()
 		output, err := handler(ctx, request)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"ida-mcp/ida/bridge"
+	"ida-mcp/ida/diagnostics"
 	"ida-mcp/ida/rpc"
 )
 
@@ -22,6 +23,10 @@ var instanceIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3
 
 type InstanceSource interface {
 	List(context.Context) ([]rpc.InstanceDescriptor, error)
+}
+
+type InstanceResolver interface {
+	Resolve(context.Context, string) (rpc.InstanceDescriptor, error)
 }
 
 type BridgeClient interface {
@@ -326,6 +331,7 @@ func (backend *BridgeBackend) DecompileFunction(
 }
 
 func (backend *BridgeBackend) beginRequest(ctx context.Context, instanceID string) (func(), error) {
+	defer diagnostics.Measure(ctx, "admission")()
 	if !instanceIDPattern.MatchString(instanceID) {
 		return nil, NewError(ErrorInvalidArgument, "instanceId is invalid", false)
 	}
@@ -342,8 +348,22 @@ func (backend *BridgeBackend) resolve(
 	ctx context.Context,
 	instanceID string,
 ) (rpc.InstanceDescriptor, error) {
+	defer diagnostics.Measure(ctx, "resolve")()
+	if backend == nil || backend.instances == nil || backend.client == nil {
+		return rpc.InstanceDescriptor{}, NewError(ErrorInternal, "IDA backend is unavailable", false)
+	}
 	if !instanceIDPattern.MatchString(instanceID) {
 		return rpc.InstanceDescriptor{}, NewError(ErrorInvalidArgument, "instanceId is invalid", false)
+	}
+	if resolver, ok := backend.instances.(InstanceResolver); ok {
+		descriptor, err := resolver.Resolve(ctx, instanceID)
+		if err != nil {
+			return rpc.InstanceDescriptor{}, normalizeBridgeError(err)
+		}
+		if descriptor.InstanceID != instanceID || descriptor.Validate() != nil {
+			return rpc.InstanceDescriptor{}, NewError(ErrorInternal, "IDA registry identity is invalid", false)
+		}
+		return descriptor, nil
 	}
 	sessions, err := backend.list(ctx)
 	if err != nil {
@@ -370,6 +390,7 @@ func (backend *BridgeBackend) resolve(
 }
 
 func (backend *BridgeBackend) list(ctx context.Context) ([]rpc.InstanceDescriptor, error) {
+	defer diagnostics.Measure(ctx, "discovery")()
 	if backend == nil || backend.instances == nil || backend.client == nil {
 		return nil, NewError(ErrorInternal, "IDA backend is unavailable", false)
 	}

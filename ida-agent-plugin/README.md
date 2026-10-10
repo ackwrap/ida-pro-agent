@@ -44,6 +44,11 @@ result 有界返回，timeout 不会中断已开始的脚本。
 只读 function analysis RPC 包含 `function.disassemble`、`function.basic_blocks` 和
 `function.callees`。它们的参数解析、handler 与错误映射位于独立的
 `bridge/function_analysis_handlers.cpp`，`FunctionService` 行为和 Plugin/Gateway 进程边界未变。
+连续反汇编分页复用下一条指令位置；基本块与 callee 分页复用有界快照，并在 IDB 或引用修改时失效。
+
+AI 流式事件按每次最多 64 条、8 ms 的预算消费，工具参数片段也会继续推进队列。
+聊天记录的编码和 SQLite 写入在专用后台线程执行，100 ms 窗口内合并同一会话的最新快照；
+切换、清空会话及正常关闭前会等待待写入记录完成，写入失败在面板提示。
 
 正常卸载时先 signal/cancel/close Pipe workers，再关闭持有的 registry handle。Registry 使用
 临时文件完整写入、flush、同目录原子 rename，再立即持有 `FILE_FLAG_DELETE_ON_CLOSE` lease；
@@ -78,6 +83,7 @@ apply/rollback、数据库保存、无进程 Debugger 错误路径，以及 Gate
 11 个领域入口调用全部 98 个 callable method。另有 `/Od` 和 `/O2` 固定样本验证调用参数回溯和
 校验证据，以及跨函数的两层参数来源、多调用者和递归边界；测试中的类型声明仅写入隔离 IDB。缺少 IDA/Hex-Rays 许可时仍应运行全部纯单元测试
 并明确报告真实集成缺口。
+Gateway 联调还覆盖逐条/随机分页、重命名与引用增删后的缓存失效、函数边界调整和共享尾块续页。
 
 ### 真实调试功能验收
 

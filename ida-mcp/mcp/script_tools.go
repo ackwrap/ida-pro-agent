@@ -52,7 +52,7 @@ func (registry *toolRegistry) scriptExecute(ctx context.Context, _ *mcp.CallTool
 	if err != nil {
 		return nil, ida.ScriptExecutionResult{}, err
 	}
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, ida.ScriptExecutionResult{}, err
 	}

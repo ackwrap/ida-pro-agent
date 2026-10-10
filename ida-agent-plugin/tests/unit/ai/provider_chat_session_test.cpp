@@ -211,11 +211,17 @@ ProviderChatSessionEvent WaitEvent(ProviderChatSession &session)
   while ( std::chrono::steady_clock::now() < deadline )
   {
     ProviderChatSessionEvent event = session.Poll();
-    if ( event.kind != ProviderChatSessionEventKind::None )
+    if ( event.kind != ProviderChatSessionEventKind::None
+        && event.kind != ProviderChatSessionEventKind::Progress )
       return event;
     std::this_thread::sleep_for(2ms);
   }
   throw std::runtime_error("session event wait timed out");
+}
+
+bool IsPending(ProviderChatSessionEventKind kind)
+{
+  return kind == ProviderChatSessionEventKind::None || kind == ProviderChatSessionEventKind::Progress;
 }
 
 void SendSseHeaders(SOCKET socket)
@@ -278,7 +284,7 @@ void TestOpenAIChunkedCompletion()
   while ( !disconnected.load()
       && std::chrono::steady_clock::now() < disconnect_deadline )
   {
-    Require(session.Poll().kind == ProviderChatSessionEventKind::None,
+    Require(IsPending(session.Poll().kind),
             "codec completion published before transport terminal");
     std::this_thread::sleep_for(2ms);
   }
@@ -287,7 +293,7 @@ void TestOpenAIChunkedCompletion()
   const auto retirement_delay = std::chrono::steady_clock::now() + 100ms;
   while ( std::chrono::steady_clock::now() < retirement_delay )
   {
-    Require(session.Poll().kind == ProviderChatSessionEventKind::None,
+    Require(IsPending(session.Poll().kind),
             "terminal published before deterministic retirement");
     Require(session.IsActive(), "session became inactive before retirement");
     std::this_thread::sleep_for(2ms);
@@ -359,6 +365,8 @@ void TestToolCall()
             "\"id\":\"1\",\"function\":{\"name\":\"up\","
             "\"arguments\":\"\\\"main\\\"}\"}}]},"
             "\"finish_reason\":null}]}\n\n");
+    for ( int index = 0; index < 128; ++index )
+      SendAll(socket, "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\" \"}}]},\"finish_reason\":null}]}\n\n");
     SendAll(socket,
             "data: {\"choices\":[{\"delta\":{\"tool_calls\":["
             "{\"index\":1,\"id\":\"call-2\",\"type\":\"function\",\"function\":{\"name\":\"lookup\",\"arguments\":\"{}\"}},"
@@ -389,18 +397,22 @@ void TestToolCall()
               && delta.text_delta == "checking",
           "tool-call text delta was lost");
   const auto disconnect_deadline = std::chrono::steady_clock::now() + 5s;
+  std::size_t progress_count = 0;
   while ( !disconnected.load()
       && std::chrono::steady_clock::now() < disconnect_deadline )
   {
-    Require(session.Poll().kind == ProviderChatSessionEventKind::None,
+    const auto kind = session.Poll().kind;
+    if ( kind == ProviderChatSessionEventKind::Progress ) ++progress_count;
+    Require(IsPending(kind),
             "tool calls published before transport terminal");
-    std::this_thread::sleep_for(2ms);
+    if ( kind == ProviderChatSessionEventKind::None ) std::this_thread::sleep_for(2ms);
   }
   Require(disconnected.load(), "tool-call transport remained open");
+  Require(progress_count >= 128, "tool argument fragments were reported as an empty queue");
   const auto retirement_delay = std::chrono::steady_clock::now() + 100ms;
   while ( std::chrono::steady_clock::now() < retirement_delay )
   {
-    Require(session.Poll().kind == ProviderChatSessionEventKind::None,
+    Require(IsPending(session.Poll().kind),
             "tool calls published before retirement");
     Require(session.IsActive(), "tool session retired nondeterministically");
     std::this_thread::sleep_for(2ms);
@@ -411,7 +423,7 @@ void TestToolCall()
   Require(event.calls.size() == 6
               && event.calls.front().id == "call-1"
               && event.calls.front().name == "lookup"
-              && event.calls.front().arguments_json == R"({"name":"main"})"
+              && event.calls.front().arguments_json == std::string(R"({"name":"main"})") + std::string(128, ' ')
               && event.calls.back().id == "call-6",
           "accumulated tool call mismatch");
   Require(event.assistant_text == "checking",

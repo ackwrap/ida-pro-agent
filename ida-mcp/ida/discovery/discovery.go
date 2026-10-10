@@ -61,10 +61,10 @@ type probeResult struct {
 	err        error
 }
 
-func (discovery *Discovery) List(ctx context.Context) ([]rpc.InstanceDescriptor, error) {
+func (discovery *Discovery) candidates(ctx context.Context, instanceID string) ([]candidate, error) {
 	entries, err := os.ReadDir(discovery.Directory)
 	if errors.Is(err, os.ErrNotExist) {
-		return []rpc.InstanceDescriptor{}, nil
+		return []candidate{}, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("read instance directory: %w", err)
@@ -82,6 +82,9 @@ func (discovery *Discovery) List(ctx context.Context) ([]rpc.InstanceDescriptor,
 			return nil, err
 		}
 		if entry.Type()&os.ModeSymlink != 0 || entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		if instanceID != "" && !strings.HasSuffix(entry.Name(), "-"+instanceID[:8]+".json") {
 			continue
 		}
 		path := filepath.Join(discovery.Directory, entry.Name())
@@ -103,12 +106,43 @@ func (discovery *Discovery) List(ctx context.Context) ([]rpc.InstanceDescriptor,
 			discovery.report(fmt.Errorf("registry filename %s does not match identity", entry.Name()))
 			continue
 		}
+		if instanceID != "" && descriptor.InstanceID != instanceID {
+			continue
+		}
 		if !discovery.processAlive(descriptor.PID, publishedAt) {
 			removeStaleEndpoint(descriptor)
 			_ = os.Remove(path)
 			continue
 		}
 		candidates = append(candidates, candidate{descriptor: descriptor, path: path})
+	}
+	return candidates, nil
+}
+
+// Resolve reads only the selected registry. The business RPC performs the
+// identity handshake itself; a 250ms UI health probe must not gate that call.
+// Registry and process identity are revalidated on every call, not cached.
+func (discovery *Discovery) Resolve(ctx context.Context, instanceID string) (rpc.InstanceDescriptor, error) {
+	if len(instanceID) != 36 {
+		return rpc.InstanceDescriptor{}, &rpc.ResponseError{Code: rpc.ErrorInvalidArgument, Message: "invalid instanceId"}
+	}
+	candidates, err := discovery.candidates(ctx, instanceID)
+	if err != nil {
+		return rpc.InstanceDescriptor{}, err
+	}
+	if len(candidates) == 0 {
+		return rpc.InstanceDescriptor{}, &rpc.ResponseError{Code: rpc.ErrorNotFound, Message: "IDA instance was not found"}
+	}
+	if len(candidates) != 1 {
+		return rpc.InstanceDescriptor{}, &rpc.ResponseError{Code: rpc.ErrorConflict, Message: "instanceId identifies multiple instances"}
+	}
+	return candidates[0].descriptor, nil
+}
+
+func (discovery *Discovery) List(ctx context.Context) ([]rpc.InstanceDescriptor, error) {
+	candidates, err := discovery.candidates(ctx, "")
+	if err != nil {
+		return nil, err
 	}
 
 	results := make(chan probeResult, len(candidates))

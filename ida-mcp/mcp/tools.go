@@ -125,7 +125,7 @@ func (registry *toolRegistry) databaseInfo(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, databaseInfoOutput{}, err
 	}
@@ -159,7 +159,7 @@ func (registry *toolRegistry) functionGet(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, functionInfoOutput{}, err
 	}
@@ -184,7 +184,7 @@ func (registry *toolRegistry) functionSearch(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, functionSearchOutput{}, err
 	}
@@ -241,7 +241,7 @@ func (registry *toolRegistry) xrefQuery(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, xrefQueryOutput{}, err
 	}
@@ -305,7 +305,7 @@ func (registry *toolRegistry) memoryRead(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, memoryReadOutput{}, err
 	}
@@ -343,7 +343,7 @@ func (registry *toolRegistry) functionDecompile(
 	}
 	ctx, cancel := context.WithTimeout(ctx, decompileToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, decompileOutput{}, err
 	}

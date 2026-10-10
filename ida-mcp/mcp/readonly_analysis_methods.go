@@ -250,7 +250,7 @@ func (registry *toolRegistry) analysisWait(ctx context.Context, _ *mcp.CallToolR
 	if err != nil {
 		return nil, ida.AnalysisWaitResult{}, err
 	}
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, ida.AnalysisWaitResult{}, err
 	}

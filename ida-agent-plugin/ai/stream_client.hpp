@@ -66,6 +66,8 @@ struct StreamEvent
   std::string payload;
   std::uint16_t close_code = 0;
   std::string message;
+  std::size_t queued_events = 0;
+  std::size_t queued_bytes = 0;
 };
 
 // Returns a safe diagnostic that never includes URL, headers, body, payload, or

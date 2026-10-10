@@ -7,6 +7,8 @@
 #include <bytes.hpp>
 #include <funcs.hpp>
 #include <gdl.hpp>
+#include <idp.hpp>
+#include <kernwin.hpp>
 #include <lines.hpp>
 #include <name.hpp>
 #include <typeinf.hpp>
@@ -147,6 +149,68 @@ void SetOffsetContinuation(
 }
 
 } // namespace
+
+// Access and invalidation both run on IDA's main thread. Names and function
+// changes use IDB events; reference changes use processor notifications.
+struct FunctionService::PageCache final : event_listener_t
+{
+  static constexpr std::size_t MaxBytes = 4 * 1024 * 1024;
+  struct ReferenceListener final : event_listener_t
+  {
+    PageCache &cache;
+    explicit ReferenceListener(PageCache &owner) : cache(owner) {}
+    ssize_t idaapi on_event(ssize_t event, va_list) override
+    {
+      switch ( event )
+      {
+        case processor_t::ev_add_cref:
+        case processor_t::ev_del_cref:
+        case processor_t::ev_add_dref:
+        case processor_t::ev_del_dref:
+          ++cache.generation;
+          break;
+      }
+      return 0;
+    }
+  } references{*this};
+  bool idb_hooked = false, idp_hooked = false, hooked = false;
+  std::uint64_t generation = 0, observed = 0;
+  ea_t disassembly_entry = BADADDR, next_instruction = BADADDR;
+  std::uint32_t next_offset = 0;
+  ea_t blocks_entry = BADADDR, callees_entry = BADADDR;
+  std::shared_ptr<qflow_chart_ea_t> blocks;
+  std::shared_ptr<const std::vector<FunctionCallee>> callees;
+
+  PageCache()
+  {
+    idb_hooked = hook_event_listener(HT_IDB, this, nullptr);
+    idp_hooked = hook_event_listener(HT_IDP, &references, nullptr);
+    hooked = idb_hooked && idp_hooked;
+  }
+  ~PageCache() override
+  {
+    if ( idb_hooked ) unhook_event_listener(HT_IDB, this);
+    if ( idp_hooked ) unhook_event_listener(HT_IDP, &references);
+  }
+  ssize_t idaapi on_event(ssize_t, va_list) override { ++generation; return 0; }
+  void Refresh()
+  {
+    if ( !hooked || observed != generation )
+    {
+      blocks.reset();
+      callees.reset();
+      disassembly_entry = blocks_entry = callees_entry = BADADDR;
+      observed = generation;
+    }
+  }
+};
+
+FunctionService::PageCache &FunctionService::Pages() const
+{
+  if ( !page_cache_ ) page_cache_ = std::make_shared<PageCache>();
+  page_cache_->Refresh();
+  return *page_cache_;
+}
 
 FunctionLookup FunctionService::Get(std::uint64_t address) const
 {
@@ -324,9 +388,15 @@ FunctionDisassemblyOutcome FunctionService::Disassemble(const FunctionPageQuery 
 
   FunctionDisassemblyResult result{entry_address};
   result.items.reserve(query.limit);
-  std::uint32_t index = 0;
+  PageCache &cache = Pages();
+  const auto generation = cache.generation;
+  const bool resume = cache.hooked && cache.disassembly_entry == entry_address
+      && query.offset == cache.next_offset && query.offset != 0;
+  std::uint32_t index = resume ? query.offset : 0;
+  ea_t continuation = BADADDR;
   function_item_iterator_t iterator;
-  if ( iterator.set(entry_address) && iterator.first() )
+  if ( iterator.set(entry_address, resume ? cache.next_instruction : BADADDR)
+      && (resume || iterator.first()) )
   {
     do
     {
@@ -338,6 +408,7 @@ FunctionDisassemblyOutcome FunctionService::Disassemble(const FunctionPageQuery 
       if ( result.items.size() == query.limit )
       {
         result.has_more = true;
+        continuation = item_address;
         break;
       }
 
@@ -357,6 +428,10 @@ FunctionDisassemblyOutcome FunctionService::Disassemble(const FunctionPageQuery 
       result.items,
       result.has_more,
       &result.next_offset);
+  cache.disassembly_entry = cache.hooked && generation == cache.generation && result.has_more
+      ? entry_address : BADADDR;
+  cache.next_instruction = continuation;
+  cache.next_offset = result.next_offset.value_or(0);
   return {FunctionAnalysisStatus::Success, std::move(result)};
 }
 
@@ -367,18 +442,27 @@ FunctionBasicBlocksOutcome FunctionService::BasicBlocks(const FunctionPageQuery 
   if ( status != FunctionAnalysisStatus::Success )
     return {status, std::nullopt};
 
-  const qflow_chart_ea_t flow_chart(
-      "",
-      entry_address,
-      BADADDR,
-      BADADDR,
-      FC_NOEXT);
-  const std::size_t block_count = flow_chart.blocks.size();
-  for ( const qbasic_block_t &block : flow_chart.blocks )
+  PageCache &cache = Pages();
+  const auto generation = cache.generation;
+  auto chart = cache.blocks_entry == entry_address ? cache.blocks : nullptr;
+  if ( !chart )
   {
-    if ( block.succ.size() > MaxBlockEdges || block.pred.size() > MaxBlockEdges )
-      return {FunctionAnalysisStatus::OutputLimit, std::nullopt};
+    chart = std::make_shared<qflow_chart_ea_t>("", entry_address, BADADDR, BADADDR, FC_NOEXT);
+    std::size_t cache_bytes = chart->blocks.size() * sizeof(qbasic_block_t);
+    for ( const qbasic_block_t &block : chart->blocks )
+    {
+      if ( block.succ.size() > MaxBlockEdges || block.pred.size() > MaxBlockEdges )
+        return {FunctionAnalysisStatus::OutputLimit, std::nullopt};
+      cache_bytes += (block.succ.size() + block.pred.size()) * sizeof(int);
+    }
+    if ( cache.hooked && generation == cache.generation && cache_bytes <= PageCache::MaxBytes )
+    {
+      cache.blocks_entry = entry_address;
+      cache.blocks = chart;
+    }
   }
+  const qflow_chart_ea_t &flow_chart = *chart;
+  const std::size_t block_count = flow_chart.blocks.size();
 
   FunctionBasicBlocksResult result{entry_address};
   const std::size_t begin = (std::min)(static_cast<std::size_t>(query.offset), block_count);
@@ -424,58 +508,78 @@ FunctionCalleesOutcome FunctionService::Callees(const FunctionPageQuery &query) 
   if ( status != FunctionAnalysisStatus::Success )
     return {status, std::nullopt};
 
-  std::map<std::uint64_t, FunctionCallee> collected;
-  function_item_iterator_t iterator;
-  if ( iterator.set(entry_address) && iterator.first() )
+  PageCache &cache = Pages();
+  const auto generation = cache.generation;
+  auto snapshot = cache.callees_entry == entry_address ? cache.callees : nullptr;
+  if ( !snapshot )
   {
-    do
+    std::map<std::uint64_t, FunctionCallee> collected;
+    function_item_iterator_t iterator;
+    if ( iterator.set(entry_address) && iterator.first() )
     {
-      const ea_t item_address = iterator.current();
-      if ( !is_code_ea(item_address) )
-        continue;
-      xrefblk_t xref;
-      for ( bool found = xref.first_from(item_address, XREF_NOFLOW);
-            found;
-            found = xref.next_from() )
+      do
       {
-        if ( !xref.iscode || (xref.type != fl_CF && xref.type != fl_CN) )
+        const ea_t item_address = iterator.current();
+        if ( !is_code_ea(item_address) )
           continue;
-        const ea_t target_entry = get_func_start(xref.to);
-        const bool internal = target_entry != BADADDR;
-        const ea_t target = internal ? target_entry : xref.to;
-        const std::uint64_t stable_target = static_cast<std::uint64_t>(target);
-        if ( collected.find(stable_target) != collected.end() )
-          continue;
-        if ( collected.size() == MaxCallees )
-          return {FunctionAnalysisStatus::OutputLimit, std::nullopt};
+        xrefblk_t xref;
+        for ( bool found = xref.first_from(item_address, XREF_NOFLOW);
+              found;
+              found = xref.next_from() )
+        {
+          if ( !xref.iscode || (xref.type != fl_CF && xref.type != fl_CN) )
+            continue;
+          const ea_t target_entry = get_func_start(xref.to);
+          const bool internal = target_entry != BADADDR;
+          const ea_t target = internal ? target_entry : xref.to;
+          const std::uint64_t stable_target = static_cast<std::uint64_t>(target);
+          if ( collected.find(stable_target) != collected.end() )
+            continue;
+          if ( collected.size() == MaxCallees )
+            return {FunctionAnalysisStatus::OutputLimit, std::nullopt};
 
-        qstring ida_name;
-        const ssize_t name_size = internal
-            ? get_func_name(&ida_name, target)
-            : get_name(&ida_name, target);
-        std::string name;
-        if ( name_size > 0 && !ida_name.empty() )
-          name.assign(ida_name.c_str(), ida_name.length());
-        else
-          name = rpc::FormatAddress(stable_target);
-        if ( name.size() > MaxCalleeNameBytes )
-          return {FunctionAnalysisStatus::OutputLimit, std::nullopt};
-        if ( !is_valid_utf8(name.c_str()) )
-          throw std::runtime_error("function callee name is not valid UTF-8");
-        collected.emplace(
-            stable_target,
-            FunctionCallee{stable_target, std::move(name), internal});
-      }
-    } while ( iterator.next_code() );
+          qstring ida_name;
+          const ssize_t name_size = internal
+              ? get_func_name(&ida_name, target)
+              : get_name(&ida_name, target);
+          std::string name;
+          if ( name_size > 0 && !ida_name.empty() )
+            name.assign(ida_name.c_str(), ida_name.length());
+          else
+            name = rpc::FormatAddress(stable_target);
+          if ( name.size() > MaxCalleeNameBytes )
+            return {FunctionAnalysisStatus::OutputLimit, std::nullopt};
+          if ( !is_valid_utf8(name.c_str()) )
+            throw std::runtime_error("function callee name is not valid UTF-8");
+          collected.emplace(
+              stable_target,
+              FunctionCallee{stable_target, std::move(name), internal});
+        }
+      } while ( iterator.next_code() );
+    }
+
+    auto items = std::make_shared<std::vector<FunctionCallee>>();
+    items->reserve(collected.size());
+    std::size_t cache_bytes = collected.size() * sizeof(FunctionCallee);
+    for ( auto &entry : collected )
+    {
+      cache_bytes += entry.second.name.capacity();
+      items->push_back(std::move(entry.second));
+    }
+    snapshot = std::move(items);
+    if ( cache.hooked && generation == cache.generation && cache_bytes <= PageCache::MaxBytes )
+    {
+      cache.callees_entry = entry_address;
+      cache.callees = snapshot;
+    }
   }
-
   FunctionCalleesResult result{entry_address};
-  auto current = collected.begin();
-  const std::size_t begin = (std::min)(static_cast<std::size_t>(query.offset), collected.size());
+  auto current = snapshot->begin();
+  const std::size_t begin = (std::min)(static_cast<std::size_t>(query.offset), snapshot->size());
   std::advance(current, begin);
-  for ( std::uint32_t count = 0; count < query.limit && current != collected.end(); ++count, ++current )
-    result.items.push_back(current->second);
-  result.has_more = current != collected.end();
+  for ( std::uint32_t count = 0; count < query.limit && current != snapshot->end(); ++count, ++current )
+    result.items.push_back(*current);
+  result.has_more = current != snapshot->end();
   SetOffsetContinuation(
       query.offset,
       result.items,

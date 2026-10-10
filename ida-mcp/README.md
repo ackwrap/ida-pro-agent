@@ -62,9 +62,11 @@ one or more IDA Plugin instances
 {"action":"call","method":"function.search","arguments":{"name":"main","limit":20}}
 ```
 
-业务 method 的 `arguments.instanceId` 可选。提供时直接显式路由；省略时使用当前 Gateway 进程中通过
+业务 method 的 `arguments.instanceId` 可选。提供时直接显式路由；省略时使用当前 MCP 会话中通过
 `ida.instances.select` 选定的 active instance。底层 `BridgeBackend` 始终接收显式
 `instance_id`，active state 不进入 Internal RPC 或 Plugin。
+HTTP 客户端会话分别保存选择，断开后释放；临时发现失败不会清除已有选择或自动切换到其他数据库。
+已指定实例的业务请求定向校验注册文件与进程身份，再由 RPC 握手验证连接，避免重复探测全部实例。
 
 三个 function analysis method 继续使用协议定义的整数 `offset` continuation，输入为
 `address`、可选 `offset`（默认 0）和 `limit`（默认 20），并复用相同的显式/active instance
@@ -151,7 +153,8 @@ ida-mcp.exe -web
 该模式自动打开带 ida-agent 图标的本地配置页，并提供系统托盘的 Open/Exit 菜单。页面支持 Codex、
 OpenCode 2、Antigravity CLI 与 Claude Code 的检测、安装/更新和移除：Codex 通过官方
 `codex mcp list/add/remove` CLI 维护 `~/.codex/config.toml`；OpenCode 2 只对最高优先级的全局
-`opencode.jsonc/json` 执行结构化 patch，将 IDA 条目写入 `mcp.servers.ida-mcp`，使用
+`opencode.jsonc/json` 执行结构化 patch；两者都不存在时兼容已有的 `config.json`。
+将 IDA 条目写入 `mcp.servers.ida-mcp`，使用
 `disabled: false`、`codemode: false`、`protocol: "legacy"` 和分别设置的 catalog/execution 超时。
 旧 `mcp.ida-mcp` 仅在更新 IDA 配置时迁移；移除时清除两种格式的 IDA 条目，并保留其他字段和注释。Antigravity CLI 维护
 `~/.gemini/config/mcp_config.json`；Claude Code 维护 `~/.claude.json`，设置
@@ -296,6 +299,9 @@ direct Go RPC、官方 Go MCP Client 的 Streamable HTTP，以及由 `CommandTra
 .\ida-mcp.exe -diagnostics
 ```
 
-日志输出到 stderr，仅包含工具、方法、阶段、耗时、错误码和重试次数，不包含参数值或结果正文，stdout 保持 MCP JSON。排错时保留 Gateway/客户端版本、工具名和脱敏后的错误对象。依次检查 `tools/list`、`ida_list_instances`，再显式传实例调用 `ida_database_info`，区分目录、路由和执行阶段的问题。
+日志输出到 stderr，仅包含工具、方法、阶段、耗时、错误码和重试次数，不包含参数值或结果正文，stdout 保持 MCP JSON。
+`phaseMs` 按毫秒累计 `execute`、`admission`、`resolve`、`discovery`、`connect`、`handshake`、`rpc` 的耗时；
+仅记录实际经过的阶段，嵌套阶段和并发探测的时间不可直接相加作为总耗时。
+排错时保留 Gateway/客户端版本、工具名和脱敏后的错误对象。依次检查 `tools/list`、`ida_list_instances`，再显式传实例调用 `ida_database_info`，区分目录、路由和执行阶段的问题。
 
 仓库中的 `python mcp-test-project/verify_compatibility.py <gateway-executable> --http` 在隔离的无 IDA 环境检查 4 个协议版本与两种传输，覆盖目录、可恢复错误、会话恢复、文本/结构化一致性、诊断和 stdio EOF。它验证协议与 SDK 行为，不代表具体 Agent 或模型的实际调用能力已验证。

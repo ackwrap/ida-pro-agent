@@ -81,9 +81,15 @@ public:
                  ,
              nullptr) != SQLITE_OK )
     {
+      if ( value_ != nullptr ) sqlite3_close_v2(value_);
+      value_ = nullptr;
       return false;
     }
-    return sqlite3_busy_timeout(value_, BusyTimeoutMs) == SQLITE_OK;
+    if ( sqlite3_busy_timeout(value_, BusyTimeoutMs) == SQLITE_OK )
+      return true;
+    sqlite3_close_v2(value_);
+    value_ = nullptr;
+    return false;
   }
 
   sqlite3 *Get() const noexcept { return value_; }
@@ -289,6 +295,26 @@ bool RetainNewestSessions(
 
 } // namespace
 
+struct ChatHistoryStore::SaveConnection
+{
+  Database database;
+  bool configured = false;
+};
+
+ChatHistoryStore ChatHistoryStore::ForBackgroundSave() const
+{
+  ChatHistoryStore snapshot = *this;
+  snapshot.save_connection_ = std::make_shared<SaveConnection>();
+  return snapshot;
+}
+
+bool ChatHistoryStore::SameSaveTarget(const ChatHistoryStore &other) const noexcept
+{
+  return database_path_ == other.database_path_
+      && database_key_ == other.database_key_
+      && active_session_id_ == other.active_session_id_;
+}
+
 ChatHistoryStore::ChatHistoryStore(std::filesystem::path database_path)
     : database_path_(std::move(database_path))
 {
@@ -466,9 +492,17 @@ bool ChatHistoryStore::Save(const std::vector<ChatEntry> &entries)
   if ( !encoded )
     return false;
 
-  Database database;
-  if ( !database.Open(database_path_) || !Configure(database.Get()) )
-    return false;
+  SaveConnection local;
+  SaveConnection &connection = save_connection_ ? *save_connection_ : local;
+  if ( !connection.configured )
+  {
+    if ( connection.database.Get() == nullptr && !connection.database.Open(database_path_) )
+      return false;
+    if ( !Configure(connection.database.Get()) )
+      return false;
+    connection.configured = true;
+  }
+  Database &database = connection.database;
   Statement save(
       database.Get(),
       "UPDATE chat_sessions SET title=?3,history_json=?4,entry_count=?5,"

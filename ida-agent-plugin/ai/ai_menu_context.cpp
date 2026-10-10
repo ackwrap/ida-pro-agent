@@ -7,6 +7,7 @@
 #include "ai/provider_chat_session.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <utility>
 
 namespace ida_agent::ai
@@ -168,11 +169,15 @@ void AiMenuController::CompactContext(bool automatic)
 
 void AiMenuController::PollContextCompaction()
 {
-  for ( std::size_t count = 0; count < 64 && HasActiveRequest(); ++count )
+  const auto poll_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(8);
+  for ( std::size_t count = 0; count < 64 && HasActiveRequest()
+      && std::chrono::steady_clock::now() < poll_deadline; ++count )
   {
     ProviderChatSessionEvent event = chat_session_->Poll();
     if ( event.kind == ProviderChatSessionEventKind::None )
       return;
+    if ( event.kind == ProviderChatSessionEventKind::Progress )
+      continue;
     if ( event.kind == ProviderChatSessionEventKind::Delta )
     {
       if ( !event.text_delta.empty()

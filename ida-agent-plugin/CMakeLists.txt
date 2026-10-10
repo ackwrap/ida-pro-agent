@@ -70,7 +70,7 @@ endif()
 if(IDA_AGENT_ENABLE_AI AND WIN32)
 
 set(IDA_AGENT_PROVIDER_MODEL_SOURCES ai/provider_settings_model.cpp ai/provider_url_win.cpp)
-set(IDA_AGENT_HISTORY_STORE_SOURCES ai/chat_history_store.cpp ai/chat_history_path_win.cpp)
+set(IDA_AGENT_HISTORY_STORE_SOURCES ai/chat_history_store.cpp ai/chat_history_writer.cpp ai/chat_history_path_win.cpp)
 
 set(IDA_AGENT_STREAM_CLIENT_SOURCES
     ai/file_log.cpp
@@ -757,6 +757,13 @@ if(BUILD_TESTING)
         winsqlite3
     )
     add_test(NAME ida_ai_chat_history_store COMMAND ida_ai_chat_history_store_test)
+    add_executable(ida_ai_chat_history_writer_test
+        tests/unit/ai/chat_history_writer_test.cpp ${IDA_AGENT_HISTORY_STORE_SOURCES}
+        ai/chat_history_codec.cpp ai/chat_transcript.cpp)
+    target_include_directories(ida_ai_chat_history_writer_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/bridge")
+    target_link_libraries(ida_ai_chat_history_writer_test PRIVATE ida_bridge_core winsqlite3)
+    add_test(NAME ida_ai_chat_history_writer COMMAND ida_ai_chat_history_writer_test)
+    set_tests_properties(ida_ai_chat_history_writer PROPERTIES TIMEOUT 15)
     endif()
 
 endif()
@@ -907,6 +914,7 @@ if(WIN32 AND BUILD_TESTING AND IDA_AGENT_ENABLE_INTEGRATION_TESTS)
             -PluginPath "$<TARGET_FILE:ida_agent_plugin>"
             -GatewayDir "${CMAKE_CURRENT_SOURCE_DIR}/../ida-mcp"
             -GoExecutable "${GO_EXECUTABLE}"
+            -PythonExecutable "${Python3_EXECUTABLE}"
     )
     set_tests_properties(
         ida_agent_gateway_ping

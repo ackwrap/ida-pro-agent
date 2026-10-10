@@ -19,6 +19,9 @@ inline constexpr const char *ProviderChatTextLimitMessage =
 enum class ProviderChatSessionEventKind
 {
   None,
+  // A transport event was consumed without producing visible text. Callers
+  // should continue draining within their per-tick work budget.
+  Progress,
   Delta,
   ToolCalls,
   Completed,

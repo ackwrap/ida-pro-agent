@@ -34,7 +34,7 @@ func (registry *toolRegistry) databaseEntryPoints(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, databaseEntryPointsOutput{}, err
 	}
@@ -85,7 +85,7 @@ func (registry *toolRegistry) symbolExports(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, symbolExportsOutput{}, err
 	}
@@ -137,7 +137,7 @@ func (registry *toolRegistry) symbolSearch(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, symbolSearchOutput{}, err
 	}

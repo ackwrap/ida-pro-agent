@@ -5,16 +5,53 @@ import (
 	"sync"
 
 	"ida-mcp/ida"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type instanceManager struct {
-	backend ida.Backend
-	mutex   sync.RWMutex
-	active  string
+	backend  ida.Backend
+	mutex    sync.Mutex
+	sessions map[*mcp.ServerSession]*instanceSelection
+	fallback instanceSelection
 }
 
+type instanceSelection struct {
+	mutex  sync.RWMutex
+	active string
+}
+
+type instanceSelectionKey struct{}
+
 func newInstanceManager(backend ida.Backend) *instanceManager {
-	return &instanceManager{backend: backend}
+	return &instanceManager{backend: backend, sessions: make(map[*mcp.ServerSession]*instanceSelection)}
+}
+
+func (manager *instanceManager) withSession(ctx context.Context, session *mcp.ServerSession) context.Context {
+	if session == nil {
+		return ctx
+	}
+	manager.mutex.Lock()
+	selection := manager.sessions[session]
+	if selection == nil {
+		selection = &instanceSelection{}
+		manager.sessions[session] = selection
+		go func() {
+			_ = session.Wait()
+			manager.mutex.Lock()
+			delete(manager.sessions, session)
+			manager.mutex.Unlock()
+		}()
+	}
+	manager.mutex.Unlock()
+	return context.WithValue(ctx, instanceSelectionKey{}, selection)
+}
+
+func (manager *instanceManager) selection(ctx context.Context) *instanceSelection {
+	if selection, ok := ctx.Value(instanceSelectionKey{}).(*instanceSelection); ok {
+		return selection
+	}
+	return &manager.fallback
 }
 
 func (manager *instanceManager) list(ctx context.Context) ([]ida.Instance, error) {
@@ -25,11 +62,7 @@ func (manager *instanceManager) list(ctx context.Context) ([]ida.Instance, error
 	if err != nil {
 		return nil, err
 	}
-	manager.mutex.Lock()
-	if manager.active != "" && !containsInstance(instances, manager.active) {
-		manager.active = ""
-	}
-	manager.mutex.Unlock()
+	// A failed health probe must not silently change an explicit selection.
 	return instances, nil
 }
 
@@ -40,9 +73,10 @@ func (manager *instanceManager) selectInstance(ctx context.Context, instanceID s
 	}
 	for _, instance := range instances {
 		if instance.InstanceID == instanceID {
-			manager.mutex.Lock()
-			manager.active = instanceID
-			manager.mutex.Unlock()
+			selection := manager.selection(ctx)
+			selection.mutex.Lock()
+			selection.active = instanceID
+			selection.mutex.Unlock()
 			return instance, nil
 		}
 	}
@@ -54,9 +88,10 @@ func (manager *instanceManager) activeInstance(ctx context.Context) (*ida.Instan
 	if err != nil {
 		return nil, err
 	}
-	manager.mutex.RLock()
-	active := manager.active
-	manager.mutex.RUnlock()
+	selection := manager.selection(ctx)
+	selection.mutex.RLock()
+	active := selection.active
+	selection.mutex.RUnlock()
 	for _, instance := range instances {
 		if instance.InstanceID == active {
 			copy := instance
@@ -66,13 +101,14 @@ func (manager *instanceManager) activeInstance(ctx context.Context) (*ida.Instan
 	return nil, nil
 }
 
-func (manager *instanceManager) resolve(instanceID *string) (string, error) {
+func (manager *instanceManager) resolve(ctx context.Context, instanceID *string) (string, error) {
 	if instanceID != nil {
 		return *instanceID, nil
 	}
-	manager.mutex.RLock()
-	active := manager.active
-	manager.mutex.RUnlock()
+	selection := manager.selection(ctx)
+	selection.mutex.RLock()
+	active := selection.active
+	selection.mutex.RUnlock()
 	if active == "" {
 		return "", ida.NewError(
 			ida.ErrorNotFound,
@@ -81,13 +117,4 @@ func (manager *instanceManager) resolve(instanceID *string) (string, error) {
 		)
 	}
 	return active, nil
-}
-
-func containsInstance(instances []ida.Instance, instanceID string) bool {
-	for _, instance := range instances {
-		if instance.InstanceID == instanceID {
-			return true
-		}
-	}
-	return false
 }

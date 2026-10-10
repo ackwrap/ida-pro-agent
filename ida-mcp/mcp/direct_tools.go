@@ -106,13 +106,19 @@ func (registry *toolRegistry) routeDirectArguments(ctx context.Context, raw json
 	if _, explicit := arguments["instanceId"]; explicit {
 		return raw, nil
 	}
+	// A selected instance is resolved by the backend. Do not probe every
+	// database (or reroute to a different one) just to use that selection.
+	if instanceID, err := registry.instances.resolve(ctx, nil); err == nil {
+		arguments["instanceId"], _ = json.Marshal(instanceID)
+		return json.Marshal(arguments)
+	}
 	ctx, cancel := context.WithTimeout(ctx, instanceToolTimeout)
 	defer cancel()
 	instances, err := registry.instances.list(ctx)
 	if err != nil {
 		return nil, err
 	}
-	instanceID, err := registry.instances.resolve(nil)
+	instanceID, err := registry.instances.resolve(ctx, nil)
 	if err != nil {
 		switch len(instances) {
 		case 0:

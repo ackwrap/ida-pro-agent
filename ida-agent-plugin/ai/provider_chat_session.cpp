@@ -354,6 +354,9 @@ struct ProviderChatSession::Impl
     if ( !terminal_event.has_value() || !client->Retire(stream_id) )
       return {};
     ProviderChatSessionEvent result = std::move(*terminal_event);
+    LogAiNetworkDiagnostic("chat.drain", "peakQueuedEvents=" + std::to_string(peak_queued_events)
+        + " peakQueuedBytes=" + std::to_string(peak_queued_bytes), 0, stream_id);
+    peak_queued_events = peak_queued_bytes = 0;
     terminal_event.reset();
     active = false;
     client = nullptr;
@@ -381,28 +384,36 @@ struct ProviderChatSession::Impl
     std::optional<StreamEvent> event = client->TryTakeEvent(stream_id);
     if ( !event.has_value() )
       return {};
+    peak_queued_events = (std::max)(peak_queued_events, event->queued_events);
+    peak_queued_bytes = (std::max)(peak_queued_bytes, event->queued_bytes);
+
+    const auto progress = [] { return MakeEvent(ProviderChatSessionEventKind::Progress); };
 
     switch ( event->kind )
     {
       case StreamEventKind::Opened:
-        return {};
+        return progress();
       case StreamEventKind::Sse:
-        return Decode(event->sse);
+      {
+        auto decoded = Decode(event->sse);
+        return decoded.kind == ProviderChatSessionEventKind::None
+            ? progress() : std::move(decoded);
+      }
       case StreamEventKind::Closed:
         CacheTransportTerminal(*event);
-        return {};
+        return progress();
       case StreamEventKind::Cancelled:
         CacheTransportTerminal(*event);
-        return {};
+        return progress();
       case StreamEventKind::Error:
         LogAiNetworkDiagnostic(
             "chat.transport.error", event->message, event->http_status, stream_id);
         CacheTransportTerminal(*event);
-        return {};
+        return progress();
       case StreamEventKind::WebSocketText:
       case StreamEventKind::WebSocketBinary:
         FailAfterCancel(std::string(ProviderChatProtocolErrorMessage));
-        return {};
+        return progress();
     }
     CacheTerminal(
         ProviderChatSessionEventKind::Error,
@@ -589,6 +600,7 @@ struct ProviderChatSession::Impl
   StreamClient::StreamId stream_id = 0;
   ProviderChatCodec codec = ProviderChatCodec::OpenAIResponses;
   std::size_t text_bytes = 0;
+  std::size_t peak_queued_events = 0, peak_queued_bytes = 0;
   std::size_t reasoning_bytes = 0;
   std::size_t displayed_reasoning_bytes = 0;
   std::string assistant_text;

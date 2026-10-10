@@ -219,7 +219,7 @@ func (manager *ClientManager) configureCodex(ctx context.Context, enabled bool) 
 
 func (manager *ClientManager) openCodeConfigPath() string {
 	directory := manager.openCodeDirectory()
-	for _, name := range []string{"opencode.jsonc", "opencode.json"} {
+	for _, name := range []string{"opencode.jsonc", "opencode.json", "config.json"} {
 		path := filepath.Join(directory, name)
 		if info, err := os.Stat(path); err == nil && info.Mode().IsRegular() {
 			return path

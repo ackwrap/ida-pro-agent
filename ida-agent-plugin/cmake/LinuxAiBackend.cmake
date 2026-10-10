@@ -20,6 +20,7 @@ set(IDA_AGENT_AI_BACKEND_SOURCES
     ai/provider_settings_store.cpp
     ${IDA_AGENT_PROVIDER_URL_SOURCE}
     ai/chat_history_store.cpp
+    ai/chat_history_writer.cpp
     ${IDA_AGENT_HISTORY_PATH_SOURCE}
     ai/chat_history_codec.cpp
     ai/chat_transcript.cpp
@@ -45,7 +46,7 @@ target_compile_features(ida_ai_backend PUBLIC cxx_std_17)
 
 if(BUILD_TESTING)
     include("${CMAKE_CURRENT_LIST_DIR}/LinuxAiPanelTests.cmake")
-    foreach(_test provider_settings_model provider_settings_store plugin_settings chat_history_codec chat_history_store linux_storage provider_client sse_parser provider_chat stream_client)
+    foreach(_test provider_settings_model provider_settings_store plugin_settings chat_history_codec chat_history_store chat_history_writer linux_storage provider_client sse_parser provider_chat stream_client)
         add_executable(ida_ai_${_test}_test tests/unit/ai/${_test}_test.cpp)
         target_link_libraries(ida_ai_${_test}_test PRIVATE ida_ai_backend)
         add_test(NAME ida_ai_${_test} COMMAND ida_ai_${_test}_test)

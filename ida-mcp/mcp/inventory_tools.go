@@ -33,7 +33,7 @@ func (registry *toolRegistry) databaseSegments(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, databaseSegmentsOutput{}, err
 	}
@@ -93,7 +93,7 @@ func (registry *toolRegistry) stringSearch(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, stringSearchOutput{}, err
 	}
@@ -146,7 +146,7 @@ func (registry *toolRegistry) symbolImports(
 	}
 	ctx, cancel := context.WithTimeout(ctx, readToolTimeout)
 	defer cancel()
-	instanceID, err := registry.instances.resolve(input.InstanceID)
+	instanceID, err := registry.instances.resolve(ctx, input.InstanceID)
 	if err != nil {
 		return nil, symbolImportsOutput{}, err
 	}

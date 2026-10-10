@@ -170,6 +170,8 @@ std::optional<StreamEvent> StreamClient::Impl::TryTakeEvent(StreamId stream_id)
     else
     {
       result = std::move(state->events.front());
+      result->queued_events = state->events.size();
+      result->queued_bytes = state->event_bytes;
       state->event_bytes -= EventBytes(*result);
       state->events.pop_front();
       reap = IsTerminal(result->kind) && state->events.empty() && state->worker_done;
