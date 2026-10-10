@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-symbol-search-bad",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [{"address": "0x140005000", "name": "sub_140005000", "kind": "function"}],
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

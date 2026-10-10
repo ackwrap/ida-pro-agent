@@ -1,0 +1,46 @@
+name: Sync public source
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-source-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'ackwrap/ida-agent' && github.event.repository.private && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Queued runs always publish the latest master instead of an older snapshot.
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Test snapshot export and public release publisher
+        run: python -m unittest discover -s release/tests -p 'test_*.py'
+      - name: Synchronize committed source and public documentation
+        env:
+          SOURCE_SYNC_KEY: ${{ secrets.IDA_AGENT_SOURCE_SYNC_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SOURCE_SYNC_KEY" || { echo 'Configure IDA_AGENT_SOURCE_SYNC_KEY first.' >&2; exit 1; }
+          key_dir="$(mktemp -d "$RUNNER_TEMP/source-sync.XXXXXX")"
+          trap 'rm -f "$key_dir/key" "$key_dir/known_hosts"; rmdir "$key_dir"' EXIT
+          umask 077
+          printf '%s\n' "$SOURCE_SYNC_KEY" > "$key_dir/key"
+          # GitHub's published Ed25519 host key, not an unverified ssh-keyscan result.
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$key_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i '$key_dir/key' -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='$key_dir/known_hosts'"
+          python release/sync_public_source.py --destination build/public-source-sync --push

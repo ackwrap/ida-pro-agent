@@ -1,0 +1,11 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-recovery-null",
+  "sessionId": "session-0001",
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "invalid recovery value",
+    "retryable": false,
+    "recoveryChangeId": null
+  }
+}

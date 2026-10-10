@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "protocol_version": "ida-rpc/1",
+  "instance_id": "8dd304b5-8a3e-4d55-94ec-b931924e38fd",
+  "pid": 4242,
+  "ida_version": "9.4",
+  "database": "D:\\samples\\test.i64",
+  "input_file": "test.exe",
+  "processor": "metapc",
+  "bitness": 64,
+  "started_at": 1788063000,
+  "arch": "x86_64",
+  "capabilities": {
+    "decompiler": true,
+    "debugger": false,
+    "ui": true,
+    "address_bits": 64
+  },
+  "endpoint": {
+    "kind": "unix",
+    "path": "/tmp/ida-agent-1000/instances/ida-agent-4242-8dd304b5.sock"
+  },
+  "pipe": ""
+}

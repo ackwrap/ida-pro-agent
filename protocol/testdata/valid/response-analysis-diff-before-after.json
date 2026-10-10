@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-diff","sessionId":"session-1","result":{"before":"old pseudocode","after":"new pseudocode","action":{"kind":"comment.set","address":"0x401000","value":"new"},"changed":true}}

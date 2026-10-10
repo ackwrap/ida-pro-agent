@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-detach",
+  "sessionId": "session-1",
+  "method": "debugger.detach",
+  "params": {},
+  "timeoutMs": 120000
+}

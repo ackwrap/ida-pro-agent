@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-database-0001",
+  "sessionId": "session-0001",
+  "method": "database.info",
+  "params": {
+    "unexpected": true
+  },
+  "timeoutMs": 5000
+}

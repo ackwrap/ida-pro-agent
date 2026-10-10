@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "string-search-continue",
+  "sessionId": "session-0001",
+  "method": "string.search",
+  "params": {
+    "query": "hello",
+    "minLength": 4,
+    "limit": 20,
+    "refresh": false,
+    "cursor": "ss1.0000000000000001.0000000000001000.0000000000000003"
+  },
+  "timeoutMs": 5000
+}

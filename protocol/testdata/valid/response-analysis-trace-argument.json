@@ -1,0 +1,33 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "analysis-trace-argument",
+  "sessionId": "session-0001",
+  "result": {
+    "entryAddress": "0x1000",
+    "callAddress": "0x1020",
+    "argumentIndex": 0,
+    "argumentCount": 1,
+    "argumentType": "unsigned __int64",
+    "model": "microcode_reaching_definitions",
+    "maturity": "MMAT_CALLS",
+    "scope": "function",
+    "status": "complete",
+    "cfgComplete": true,
+    "root": 0,
+    "nodes": [
+      {
+        "id": 0,
+        "kind": "parameter",
+        "operation": "",
+        "bits": 64,
+        "address": null,
+        "value": "0"
+      }
+    ],
+    "edges": [],
+    "guards": [],
+    "limitations": [],
+    "truncated": false,
+    "visitedStates": 10
+  }
+}

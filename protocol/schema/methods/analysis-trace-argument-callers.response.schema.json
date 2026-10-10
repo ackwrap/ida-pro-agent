@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "argument-callers.schema.json#/$defs/result"
+        }
+      },
+      "required": [
+        "result"
+      ]
+    }
+  ]
+}

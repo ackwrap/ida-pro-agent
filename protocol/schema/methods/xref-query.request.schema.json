@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "xref.query Request",
+  "allOf": [
+    {
+      "$ref": "../request.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "method": {"const": "xref.query"},
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["address", "direction"],
+          "properties": {
+            "address": {
+              "$ref": "../common.schema.json#/$defs/address"
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["incoming", "outgoing"]
+            },
+            "category": {
+              "type": "string",
+              "enum": ["all", "code", "data"],
+              "default": "all"
+            },
+            "includeFlow": {
+              "type": "boolean",
+              "default": false
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "cursor": {
+              "$ref": "#/$defs/cursor"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cursor": {
+      "type": "string",
+      "pattern": "^xq2\\.[0-9a-f]{16}\\.[0-9a-f]{16}\\.[0-9a-f]{16}$"
+    }
+  }
+}

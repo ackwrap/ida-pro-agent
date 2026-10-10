@@ -1,0 +1,31 @@
+#!/bin/sh
+# IDAT does not preload Qt like the GUI does. Use the matching IDA libraries.
+set -eu
+
+usage() {
+    printf '%s\n' 'Usage: idat-with-agent /absolute/path/to/ida-9.4/idat [IDA arguments...]'
+}
+
+if [ "$#" -eq 0 ]; then
+    usage >&2
+    exit 2
+fi
+if [ "$1" = '--help' ]; then
+    usage
+    exit 0
+fi
+ida_idat=$(readlink -f -- "$1")
+shift
+if [ ! -x "$ida_idat" ] || [ "$(basename -- "$ida_idat")" != 'idat' ]; then
+    printf '%s\n' 'The first argument must be the idat executable from IDA 9.4.' >&2
+    exit 2
+fi
+ida_runtime=$(dirname -- "$ida_idat")
+for module in Core Gui Widgets; do
+    if [ ! -r "$ida_runtime/libQt6${module}.so.6" ]; then
+        printf 'Missing IDA Qt library: %s\n' "$ida_runtime/libQt6${module}.so.6" >&2
+        exit 2
+    fi
+done
+export LD_LIBRARY_PATH="$ida_runtime${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+exec "$ida_idat" "$@"

@@ -1,0 +1,13 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-suspend",
+  "result": {
+    "accepted": true,
+    "state": "not_running",
+    "running": false,
+    "suspended": false,
+    "instructionPointer": null,
+    "threadId": null
+  },
+  "sessionId": "session-1"
+}

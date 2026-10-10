@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-08","sessionId":"session-0001","method":"analysis.problems","params":{"type":"disassembly","start":"0x400000","limit":1},"timeoutMs":5000}

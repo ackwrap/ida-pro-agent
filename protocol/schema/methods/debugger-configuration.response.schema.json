@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "required": [
+        "result"
+      ],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string",
+              "maxLength": 32768,
+              "pattern": "^[^\\x00]*$"
+            },
+            "arguments": {
+              "type": "string",
+              "maxLength": 32768,
+              "pattern": "^[^\\x00]*$"
+            },
+            "directory": {
+              "type": "string",
+              "maxLength": 32768,
+              "pattern": "^[^\\x00]*$"
+            },
+            "host": {
+              "type": "string",
+              "maxLength": 1024,
+              "pattern": "^[^\\x00]*$"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": -1,
+              "maximum": 65535,
+              "not": {
+                "const": 0
+              }
+            },
+            "hasPassword": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "arguments",
+            "directory",
+            "host",
+            "port",
+            "hasPassword"
+          ]
+        }
+      }
+    }
+  ]
+}

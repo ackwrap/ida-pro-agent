@@ -1,0 +1,102 @@
+name: macOS Universal 2 package
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-package
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package:
+    name: Full macOS Universal 2 ZIP and DMG
+    if: github.event.repository.private
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: ida-mcp/go.sum
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Download private Qt build inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/macos-inputs
+          gh release download macos-build-inputs-ida94-qt682-v1 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern ida94-qt682-macos-universal2-v1.tar.gz \
+            --dir build/macos-inputs
+          cd build/macos-inputs
+          printf '%s  %s\n' \
+            e3df8a4cdc15a860b3f5f8f24a27c228cd60b4c85fcf0b7e6fcb1cb0524da9aa \
+            ida94-qt682-macos-universal2-v1.tar.gz | shasum -a 256 -c -
+          tar -xzf ida94-qt682-macos-universal2-v1.tar.gz
+      - name: Check build prerequisites
+        run: |
+          for tool in cmake ninja; do command -v "$tool" || brew install "$tool"; done
+          test -d build/macos-inputs/ida-qt.app/Contents/Frameworks
+          test -d build/macos-inputs/qt-6.8.2-macos/include
+          for tool in cmake ninja go python3 openssl; do command -v "$tool"; done
+          xcrun --find clang
+          xcrun --find swiftc
+          go version
+          sw_vers -productVersion
+      - name: Prepare Python test dependencies
+        run: |
+          python3 -m venv build/macos-venv
+          build/macos-venv/bin/python -m pip install websockets==15.0.1
+      - name: Validate, compile and package both architectures
+        env:
+          IDASDK: ${{ github.workspace }}/ida-sdk/src
+        run: |
+          build/macos-venv/bin/python release/build_macos.py \
+            --qt-runtime build/macos-inputs/ida-qt.app \
+            --qt-sdk build/macos-inputs/qt-6.8.2-macos \
+            --python build/macos-venv/bin/python
+      - name: Verify release Gateway compatibility
+        run: |
+          python3 mcp-test-project/verify_stdio.py build/release/macos/ida-mcp-universal
+          python3 mcp-test-project/verify_compatibility.py build/release/macos/ida-mcp-universal --http
+      - name: Include release notes
+        run: |
+          version=$(cat ida-mcp/VERSION)
+          cp "release/notes/$version.md" "release/dist/ida-agent-$version-release-notes.md"
+          cat "release/notes/$version.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload tested release packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-macos-universal2-${{ github.sha }}
+          path: |
+            release/dist/ida-agent-*-macos-universal2.zip
+            release/dist/ida-agent-*-macos-universal2.zip.sha256
+            release/dist/ida-agent-*-macos-universal2.dmg
+            release/dist/ida-agent-*-macos-universal2.dmg.sha256
+            release/dist/ida-agent-*-release-notes.md
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload CTest results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-macos-tests-${{ github.sha }}
+          path: build/release/macos/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
+          retention-days: 14

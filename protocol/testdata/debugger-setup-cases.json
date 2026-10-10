@@ -1,0 +1,321 @@
+[
+  {
+    "method": "select",
+    "params": {
+      "name": "win32",
+      "remote": false
+    },
+    "valid": true
+  },
+  {
+    "method": "select",
+    "params": {
+      "name": "win32",
+      "remote": false,
+      "unknown": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "select",
+    "params": null,
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "path": "C:\\Samples\\demo.exe",
+      "arguments": "--mode test",
+      "directory": "C:\\Samples",
+      "host": "localhost",
+      "port": 23946,
+      "password": "fixture-password"
+    },
+    "valid": true
+  },
+  {
+    "method": "configure",
+    "params": {
+      "path": "C:\\Samples\\demo.exe",
+      "arguments": "--mode test",
+      "directory": "C:\\Samples",
+      "host": "localhost",
+      "port": 23946,
+      "password": "fixture-password",
+      "unknown": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": null,
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 2
+    },
+    "valid": true
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 2,
+      "unknown": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": null,
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 1234
+    },
+    "valid": true
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 1234,
+      "unknown": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": null,
+    "valid": false
+  },
+  {
+    "method": "select",
+    "params": {},
+    "valid": false
+  },
+  {
+    "method": "select",
+    "params": {
+      "name": ""
+    },
+    "valid": false
+  },
+  {
+    "method": "select",
+    "params": {
+      "name": "win32"
+    },
+    "valid": true
+  },
+  {
+    "method": "select",
+    "params": {
+      "name": "x\u0000y"
+    },
+    "valid": false
+  },
+  {
+    "method": "select",
+    "params": {
+      "name": "win32",
+      "remote": null
+    },
+    "valid": false
+  },
+  {
+    "method": "select",
+    "params": {
+      "name": "win32",
+      "remote": true
+    },
+    "valid": true
+  },
+  {
+    "method": "configure",
+    "params": {},
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "password": ""
+    },
+    "valid": true
+  },
+  {
+    "method": "configure",
+    "params": {
+      "port": -1
+    },
+    "valid": true
+  },
+  {
+    "method": "configure",
+    "params": {
+      "port": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "port": 65535
+    },
+    "valid": true
+  },
+  {
+    "method": "configure",
+    "params": {
+      "port": 65536
+    },
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "port": 1.5
+    },
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "host": null
+    },
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "path": "x\u0000y"
+    },
+    "valid": false
+  },
+  {
+    "method": "configure",
+    "params": {
+      "arguments": true
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": -1
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 1
+    },
+    "valid": true
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 2147483647
+    },
+    "valid": true
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 2147483648
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 1.5
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": null
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": "1234"
+    },
+    "valid": false
+  },
+  {
+    "method": "attach",
+    "params": {
+      "pid": 18446744073709551615
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 0
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 1
+    },
+    "valid": true
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 1000
+    },
+    "valid": true
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 1001
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": null
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": "2"
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {
+      "limit": 2.5
+    },
+    "valid": false
+  },
+  {
+    "method": "processes",
+    "params": {},
+    "valid": true
+  }
+]

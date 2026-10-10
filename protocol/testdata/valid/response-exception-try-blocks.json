@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-06","sessionId":"session-0001","result":{"functionAddress":"0x401000","items":[{"ranges":[{"start":"0x401000","end":"0x401010"}],"kind":"cpp","level":0,"handlers":[{"kind":"catch","ranges":[{"start":"0x401020","end":"0x401030"}],"catchAll":true}]}],"truncated":false}}

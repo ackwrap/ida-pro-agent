@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-13","sessionId":"session-0001","method":"type.get","params":{"name":"sample_t"},"timeoutMs":12000}

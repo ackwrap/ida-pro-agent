@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-symbol-exports-bad",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [{"address": "0x140002000", "name": "ExportedApi", "ordinal": 0}],
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

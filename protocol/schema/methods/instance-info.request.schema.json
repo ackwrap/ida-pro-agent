@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "instance.info Request",
+  "allOf": [
+    {"$ref": "../request.schema.json"},
+    {
+      "type": "object",
+      "properties": {
+        "method": {"const": "instance.info"},
+        "params": {"type": "object", "additionalProperties": false, "maxProperties": 0}
+      }
+    }
+  ]
+}

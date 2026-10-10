@@ -1,0 +1,56 @@
+name: Linux MCP, AI backend and panel model tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  basic-mcp:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Use all available CPU cores
+        run: python3 release/build_parallel.py --github-env
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: ida-mcp/go.sum
+      - name: Build and test Gateway
+        run: |
+          go -C ida-mcp vet ./...
+          go -C ida-mcp test ./...
+          go -C ida-mcp build ./...
+      - name: Test public source sync and Gateway compatibility
+        run: |
+          python3 -m unittest discover -s release/tests -p 'test_*.py'
+          mkdir -p build/gateway
+          go -C ida-mcp build -o ../build/gateway/ida-mcp .
+          python3 mcp-test-project/verify_stdio.py build/gateway/ida-mcp
+          python3 mcp-test-project/verify_compatibility.py build/gateway/ida-mcp --http
+      - name: Install AI backend development dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev ca-certificates openssl python3-websockets binutils
+      - name: Configure and build plugin and independent AI backend
+        run: |
+          cmake -S ida-agent-plugin -B build/linux-plugin -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DIDA_AGENT_ENABLE_AI=OFF \
+            -DIDA_AGENT_BUILD_AI_BACKEND=ON \
+            -DIDA_AGENT_ENABLE_INTEGRATION_TESTS=OFF -DIDA_AGENT_ENABLE_GUI_TESTS=OFF \
+            -DIDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN=OFF -DBUILD_TESTING=ON
+          cmake --build build/linux-plugin
+      - name: Run C++ unit tests
+        run: ctest --test-dir build/linux-plugin --output-on-failure

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "instance.info Success Response",
+  "allOf": [
+    {"$ref": "../response.schema.json"},
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instance_id", "pid", "ida_version", "database", "input_file", "processor",
+            "bitness", "architecture", "capabilities"
+          ],
+          "properties": {
+            "instance_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "pid": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+            "ida_version": {"type": "string", "minLength": 1, "maxLength": 64},
+            "database": {"type": "string", "maxLength": 1024},
+            "input_file": {"type": "string", "maxLength": 1024},
+            "processor": {"type": "string", "minLength": 1, "maxLength": 64},
+            "bitness": {"type": "integer", "enum": [32, 64]},
+            "architecture": {"type": "string", "minLength": 1, "maxLength": 64},
+            "capabilities": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["decompiler", "debugger", "ui", "address_bits"],
+              "properties": {
+                "decompiler": {"type": "boolean"},
+                "debugger": {"type": "boolean"},
+                "ui": {"type": "boolean", "description": "MCP UI inspection/control capability; not whether IDA has a GUI or can display permission dialogs."},
+                "address_bits": {"type": "integer", "enum": [32, 64]}
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

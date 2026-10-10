@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IDA Agent Named Pipe Hello Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["method", "params"],
+  "properties": {
+    "method": {"const": "hello"},
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "client"],
+      "properties": {
+        "protocol": {"type": "integer", "const": 1},
+        "client": {"type": "string", "const": "ida-mcp"}
+      }
+    }
+  }
+}

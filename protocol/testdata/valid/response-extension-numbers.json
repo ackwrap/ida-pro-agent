@@ -1,0 +1,9 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-0005",
+  "sessionId": "session-0001",
+  "result": {
+    "ratio": 0.5,
+    "count": 4294967296
+  }
+}

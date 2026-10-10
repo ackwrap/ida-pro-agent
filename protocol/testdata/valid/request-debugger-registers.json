@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-dr","sessionId":"session-1","method":"debugger.registers","params":{"threadMode":"specified","threadIds":[1],"registerMode":"named","names":["rip"]},"timeoutMs":30000}

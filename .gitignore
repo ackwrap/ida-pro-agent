@@ -1,0 +1,20 @@
+*.docx
+*.py[cod]
+__pycache__/
+/.codegraph/
+/build/
+/release/dist/
+/qt-sdk/*
+!/qt-sdk/qt-6.8.2-win/
+/qt-sdk/qt-6.8.2-win/*
+!/qt-sdk/qt-6.8.2-win/include/
+!/qt-sdk/qt-6.8.2-win/include/**
+!/qt-sdk/qt-6.8.2-win/mkspecs/
+!/qt-sdk/qt-6.8.2-win/mkspecs/**
+/ida-mcp/ida-mcp
+/ida-mcp/ida-mcp.exe
+
+# Keep only required public documentation under docs/ in Git.
+# Add explicit exceptions here for required documents and their assets.
+/docs/*
+!/docs/UPGRADING.md

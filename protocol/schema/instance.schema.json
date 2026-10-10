@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IDA Agent Instance Registry Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "protocol_version",
+    "instance_id",
+    "pid",
+    "ida_version",
+    "database",
+    "input_file",
+    "processor",
+    "bitness",
+    "started_at",
+    "arch",
+    "capabilities"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "protocol_version": {
+      "type": "string",
+      "const": "ida-rpc/1"
+    },
+    "instance_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "pid": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "pipe": {
+      "type": "string",
+      "minLength": 25,
+      "maxLength": 256,
+      "pattern": "^\\\\\\\\\\.\\\\pipe\\\\ida-agent-[1-9][0-9]*-[0-9a-f]{8}$"
+    },
+    "ida_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "database": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "input_file": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "processor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "bitness": {
+      "type": "integer",
+      "enum": [
+        32,
+        64
+      ]
+    },
+    "started_at": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807
+    },
+    "arch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9._+-]+$"
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decompiler",
+        "debugger",
+        "ui",
+        "address_bits"
+      ],
+      "properties": {
+        "decompiler": {
+          "type": "boolean"
+        },
+        "debugger": {
+          "type": "boolean"
+        },
+        "ui": {
+          "type": "boolean",
+          "description": "MCP UI inspection/control capability; not whether IDA has a GUI or can display permission dialogs."
+        },
+        "address_bits": {
+          "type": "integer",
+          "enum": [
+            32,
+            64
+          ]
+        }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "unix"
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 107,
+          "pattern": "^/(?:[^\\x00-\\x1f\\x7f\\\\/]+/)*ida-agent-[1-9][0-9]*-[0-9a-f]{8}\\.sock$",
+          "not": {
+            "pattern": "/(?:\\.|\\.\\.)/"
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "version": {
+          "const": 1
+        }
+      },
+      "required": [
+        "pipe"
+      ],
+      "not": {
+        "required": [
+          "endpoint"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "version": {
+          "const": 2
+        }
+      },
+      "required": [
+        "endpoint"
+      ],
+      "not": {
+        "required": [
+          "pipe"
+        ]
+      }
+    }
+  ]
+}

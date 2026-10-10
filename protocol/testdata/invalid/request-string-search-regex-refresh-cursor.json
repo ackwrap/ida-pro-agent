@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "string-search-regex-refresh-cursor",
+  "sessionId": "session-0001",
+  "method": "string.search_regex",
+  "params": {
+    "pattern": "sample",
+    "minLength": 4,
+    "limit": 20,
+    "refresh": true,
+    "cursor": "sr1.0000000000000001.0000000000001000.0000000000000003"
+  },
+  "timeoutMs": 20000
+}

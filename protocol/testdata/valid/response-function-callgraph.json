@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-function-callgraph","sessionId":"session-0001","result":{"nodes":[{"address":"0x401000","name":"main","depth":0}],"edges":[],"truncated":false}}

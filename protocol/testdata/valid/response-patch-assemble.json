@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-pa","sessionId":"session-1","result":{"address":"0x401000","bytes":"90","size":1,"instructions":[{"startAddress":"0x401000","endAddress":"0x401001","offset":0,"size":1}]}}

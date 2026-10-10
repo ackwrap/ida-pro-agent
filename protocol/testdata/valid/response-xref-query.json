@@ -1,0 +1,18 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-xref-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [
+      {
+        "from": "0x140001000",
+        "to": "0x140002000",
+        "type": "call_near",
+        "code": true,
+        "userDefined": false
+      }
+    ],
+    "nextCursor": "xq2.14650fb0739d0383.0000000000000001.68e99ec5f626926e",
+    "hasMore": true
+  }
+}

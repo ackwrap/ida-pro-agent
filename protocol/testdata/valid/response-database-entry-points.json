@@ -1,0 +1,13 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-database-entry-points-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [
+      {"address": "0x140001000", "name": "start", "type": "entry"},
+      {"address": "0x140002000", "name": "ExportedApi", "type": "export", "ordinal": 1}
+    ],
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

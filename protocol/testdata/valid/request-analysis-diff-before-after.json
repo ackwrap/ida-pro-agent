@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-diff","sessionId":"session-1","method":"analysis.diff_before_after","params":{"action":{"kind":"comment.set","address":"0x401000","value":"new"}},"timeoutMs":120000}

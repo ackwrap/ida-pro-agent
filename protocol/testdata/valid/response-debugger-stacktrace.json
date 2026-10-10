@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-dt","sessionId":"session-1","result":{"items":[{"callAddress":"0x401000","functionAddress":"0x401000","framePointer":"0x7ff000","functionKnown":true,"module":"sample.exe","symbol":"main"}]}}

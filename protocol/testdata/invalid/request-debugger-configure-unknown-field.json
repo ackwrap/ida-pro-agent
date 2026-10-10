@@ -1,0 +1,16 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-configure",
+  "sessionId": "session-1",
+  "method": "debugger.configure",
+  "params": {
+    "path": "C:\\Samples\\demo.exe",
+    "arguments": "--mode test",
+    "directory": "C:\\Samples",
+    "host": "localhost",
+    "port": 23946,
+    "password": "fixture-password",
+    "unknown": true
+  },
+  "timeoutMs": 120000
+}

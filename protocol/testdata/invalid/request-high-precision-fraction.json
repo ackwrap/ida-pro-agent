@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-0004",
+  "sessionId": "session-0001",
+  "method": "system.ping",
+  "params": {},
+  "timeoutMs": 5000.0000000000000000000001
+}

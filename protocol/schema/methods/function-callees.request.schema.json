@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.callees Request",
+  "allOf": [
+    {"$ref": "../request.schema.json"},
+    {
+      "type": "object",
+      "properties": {
+        "method": {"const": "function.callees"},
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["address"],
+          "properties": {
+            "address": {"$ref": "../common.schema.json#/$defs/address"},
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        }
+      }
+    }
+  ]
+}

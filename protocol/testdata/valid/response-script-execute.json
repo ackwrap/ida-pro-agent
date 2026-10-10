@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-script-execute-1",
+  "sessionId": "123e4567-e89b-42d3-a456-426614174000",
+  "result": {
+    "language": "python",
+    "success": true,
+    "result": null,
+    "stdout": "hello\n",
+    "stderr": "",
+    "truncated": false,
+    "originalSize": 6
+  }
+}

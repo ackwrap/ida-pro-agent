@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-processes",
+  "sessionId": "session-1",
+  "method": "debugger.processes",
+  "params": {
+    "limit": 2
+  },
+  "timeoutMs": 120000
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "memory.read Request",
+  "allOf": [
+    {
+      "$ref": "../request.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "method": {
+          "const": "memory.read"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["address", "format"],
+          "properties": {
+            "address": {"$ref": "../common.schema.json#/$defs/address"},
+            "format": {
+              "type": "string",
+              "enum": ["bytes", "string", "integer", "pointer"]
+            },
+            "length": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4096
+            },
+            "widthBits": {
+              "type": "integer",
+              "enum": [8, 16, 32, 64]
+            }
+          },
+          "oneOf": [
+            {
+              "properties": {"format": {"const": "bytes"}},
+              "required": ["length"],
+              "not": {"required": ["widthBits"]}
+            },
+            {
+              "properties": {"format": {"const": "string"}},
+              "required": ["length"],
+              "not": {"required": ["widthBits"]}
+            },
+            {
+              "properties": {"format": {"const": "integer"}},
+              "required": ["widthBits"],
+              "not": {"required": ["length"]}
+            },
+            {
+              "properties": {"format": {"const": "pointer"}},
+              "not": {
+                "anyOf": [
+                  {"required": ["length"]},
+                  {"required": ["widthBits"]}
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "memory.read Success Response",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["address", "format", "bytesRead", "value"],
+          "properties": {
+            "address": {"$ref": "../common.schema.json#/$defs/address"},
+            "format": {
+              "type": "string",
+              "enum": ["bytes", "string", "integer", "pointer"]
+            },
+            "bytesRead": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4096
+            },
+            "value": {"type": "string"},
+            "widthBits": {
+              "type": "integer",
+              "enum": [8, 16, 32, 64]
+            },
+            "byteOrder": {
+              "type": "string",
+              "enum": ["little", "big"]
+            },
+            "terminated": {"type": "boolean"}
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "format": {"const": "bytes"},
+                "value": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 8192,
+                  "pattern": "^(?:[0-9a-f]{2})+$"
+                }
+              },
+              "not": {
+                "anyOf": [
+                  {"required": ["widthBits"]},
+                  {"required": ["byteOrder"]},
+                  {"required": ["terminated"]}
+                ]
+              }
+            },
+            {
+              "properties": {
+                "format": {"const": "string"},
+                "value": {"type": "string", "maxLength": 4096}
+              },
+              "required": ["terminated"],
+              "not": {
+                "anyOf": [
+                  {"required": ["widthBits"]},
+                  {"required": ["byteOrder"]}
+                ]
+              }
+            },
+            {
+              "properties": {
+                "format": {"const": "integer"},
+                "value": {"$ref": "../common.schema.json#/$defs/address"}
+              },
+              "required": ["widthBits", "byteOrder"],
+              "not": {"required": ["terminated"]}
+            },
+            {
+              "properties": {
+                "format": {"const": "pointer"},
+                "value": {"$ref": "../common.schema.json#/$defs/address"}
+              },
+              "required": ["widthBits", "byteOrder"],
+              "not": {"required": ["terminated"]}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

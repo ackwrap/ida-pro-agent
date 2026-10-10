@@ -1,0 +1,15 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-processes",
+  "result": {
+    "items": [
+      {
+        "pid": 1234,
+        "name": "demo.exe"
+      }
+    ],
+    "total": 3,
+    "truncated": true
+  },
+  "sessionId": "session-1"
+}

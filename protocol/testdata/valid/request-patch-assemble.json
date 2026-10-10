@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-pa","sessionId":"session-1","method":"patch.assemble","params":{"address":"0x401000","instruction":"nop"},"timeoutMs":30000}

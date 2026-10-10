@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-bad-01","sessionId":"session-0001","method":"instruction.get","params":{"address":"0x401000","decode":true},"timeoutMs":5000}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "database.segments Request",
+  "allOf": [
+    {"$ref": "../request.schema.json"},
+    {
+      "type": "object",
+      "properties": {
+        "method": {"const": "database.segments"},
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {"type": "string", "maxLength": 256},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20},
+            "cursor": {"$ref": "#/$defs/cursor"}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cursor": {
+      "type": "string",
+      "pattern": "^ds1\\.[0-9a-f]{16}\\.[0-9a-f]{16}\\.[0-9a-f]{16}$"
+    }
+  }
+}

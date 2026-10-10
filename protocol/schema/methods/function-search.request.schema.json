@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.search Request",
+  "allOf": [
+    {
+      "$ref": "../request.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "method": {
+          "const": "function.search"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "address": {
+              "$ref": "../common.schema.json#/$defs/address"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "cursor": {
+              "$ref": "#/$defs/cursor"
+            }
+          },
+          "oneOf": [
+            {
+              "required": ["name"],
+              "not": {"required": ["address"]}
+            },
+            {
+              "required": ["address"],
+              "not": {
+                "anyOf": [
+                  {"required": ["name"]},
+                  {"required": ["cursor"]}
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cursor": {
+      "type": "string",
+      "pattern": "^fs1\\.[0-9a-f]{16}\\.[0-9a-f]{16}\\.[0-9a-f]{16}$"
+    }
+  }
+}

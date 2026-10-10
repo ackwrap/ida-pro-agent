@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-function-profile","sessionId":"session-0001","method":"function.profile","params":{"name":"main","minSize":0,"maxSize":1048576,"includePrototype":true,"sampleLimit":1,"limit":20},"timeoutMs":60000}

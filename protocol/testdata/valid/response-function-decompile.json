@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-decompile-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "entryAddress": "0x140001000",
+    "pseudocode": "int main()\n{\n  return helper();\n",
+    "offset": 0,
+    "returnedSize": 32,
+    "originalSize": 34,
+    "truncated": true,
+    "nextOffset": 32
+  }
+}

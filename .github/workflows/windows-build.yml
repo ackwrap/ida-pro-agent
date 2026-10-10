@@ -1,0 +1,112 @@
+name: Windows build and tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  gateway:
+    name: Gateway (Windows x64)
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.x' # Windows overlapped-pipe deadlines require Go 1.25+
+          cache-dependency-path: ida-mcp/go.sum
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Test public release publisher and source sync
+        run: python -m unittest discover -s release/tests -p 'test_*.py'
+      - name: Vet and test
+        run: |
+          go -C ida-mcp vet ./...
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go -C ida-mcp test ./...
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build Gateway and copy client skills
+        env:
+          CGO_ENABLED: '0'
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          New-Item -ItemType Directory -Force build/gateway | Out-Null
+          go -C ida-mcp build -trimpath -buildvcs=false '-ldflags=-s -w' -o ../build/gateway/ida-mcp.exe .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item -LiteralPath skills -Destination build/gateway/skills -Recurse
+          'Gateway and client skills only. Use the Release packages workflow for complete platform packages.' |
+            Set-Content -LiteralPath build/gateway/CONTENTS.txt -Encoding utf8
+      - name: Verify Gateway protocol and client compatibility
+        run: |
+          python mcp-test-project/verify_stdio.py build/gateway/ida-mcp.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python mcp-test-project/verify_compatibility.py build/gateway/ida-mcp.exe --http
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload Gateway artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-mcp-windows-x64-${{ github.sha }}
+          path: build/gateway/
+          if-no-files-found: error
+          retention-days: 14
+
+  plugin:
+    name: Full plugin and C++ unit tests (Windows x64)
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Use all available CPU cores
+        run: python release/build_parallel.py --github-env
+      - name: Configure full plugin and unit tests
+        run: |
+          cmake -S ida-agent-plugin -B build/ci-plugin -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_TESTING=ON `
+            -DIDA_AGENT_ENABLE_QT_AI_CONSOLE=ON `
+            -DIDA_AGENT_ENABLE_INTEGRATION_TESTS=OFF `
+            -DIDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN=OFF
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build full plugin and run unit tests
+        run: |
+          cmake --build build/ci-plugin
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/ci-plugin --output-on-failure --output-junit test-results.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-plugin-windows-x64-${{ github.sha }}
+          path: build/ci-plugin/ida-runtime/plugins/ida-agent-plugin.dll
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload CTest results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-cpp-tests-${{ github.sha }}
+          path: |
+            build/ci-plugin/test-results.xml
+            build/ci-plugin/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
+          retention-days: 14

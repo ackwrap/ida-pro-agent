@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-database-segments-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [{"start": "0x140001000", "end": "0x140002000", "name": ".text", "class": "CODE", "bitness": 64, "permissions": "r-x", "type": "code"}],
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

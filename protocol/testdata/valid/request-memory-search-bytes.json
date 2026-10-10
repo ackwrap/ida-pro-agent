@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-01","sessionId":"session-0001","method":"memory.search_bytes","params":{"pattern":"90","start":"0x401000","end":"0x402000","limit":20},"timeoutMs":30000}

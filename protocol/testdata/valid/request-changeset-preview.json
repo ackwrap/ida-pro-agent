@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-csp","sessionId":"session-1","method":"changeset.preview","params":{"operations":[{"kind":"comment.set","address":"0x401000","value":"new","repeatable":false}]},"timeoutMs":30000}

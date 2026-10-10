@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-function-export","sessionId":"session-0001","result":{"format":"prototypes","content":"int main(void);\n","truncated":false,"originalSize":16}}

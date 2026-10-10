@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-database-entry-points-bad",
+  "sessionId": "session-0001",
+  "method": "database.entry_points",
+  "params": {"type": "main", "path": "out.json"},
+  "timeoutMs": 5000
+}

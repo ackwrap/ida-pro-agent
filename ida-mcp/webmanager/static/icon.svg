@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ida-mcp">
+  <circle cx="32" cy="32" r="30" fill="#0c1922" stroke="#ff9720" stroke-width="2"/>
+  <path d="M16 46V18l16 18 16-18v28" fill="none" stroke="#ff9720" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="18" r="5" fill="#41e2eb"/>
+  <circle cx="32" cy="36" r="5" fill="#41e2eb"/>
+  <circle cx="48" cy="18" r="5" fill="#41e2eb"/>
+</svg>

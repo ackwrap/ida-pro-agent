@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-08","sessionId":"session-0001","method":"signature.xrefs","params":{"address":"0x401000","format":"ida","wildcardOperands":true,"maxLength":250,"top":5},"timeoutMs":30000}

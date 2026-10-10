@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-db","sessionId":"session-1","result":{"items":[{"address":"0x401000","enabled":true,"type":"software","size":1,"passCount":0,"lowLevel":false,"condition":"","conditionLanguage":null,"compiled":false,"active":true}]}}

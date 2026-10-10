@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"p1-07","sessionId":"session-0001","result":{"entryAddress":"0x401000","totalCount":1,"truncated":false,"items":[{"index":0,"name":"arg0","declaration":"int arg0;","width":4,"defBlock":0,"defEa":null,"locator":{"kind":"register","text":"r0"},"flags":["used","argument"]}]}}

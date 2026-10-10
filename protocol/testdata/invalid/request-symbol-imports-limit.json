@@ -1,0 +1,4 @@
+{
+  "protocolVersion": "ida-rpc/1", "requestId": "bad-si-limit", "sessionId": "session-0001",
+  "method": "symbol.imports", "params": {"limit": 101}, "timeoutMs": 5000
+}

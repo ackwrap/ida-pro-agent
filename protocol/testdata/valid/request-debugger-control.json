@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-dc","sessionId":"session-1","method":"debugger.control","params":{"action":"run_to","address":"0x401000"},"timeoutMs":120000}

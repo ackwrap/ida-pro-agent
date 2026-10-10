@@ -1,0 +1,11 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-attach",
+  "sessionId": "session-1",
+  "method": "debugger.attach",
+  "params": {
+    "pid": 1234,
+    "unknown": true
+  },
+  "timeoutMs": 120000
+}

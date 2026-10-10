@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-instance-info",
+  "sessionId": "8dd304b5-8a3e-4d55-94ec-b931924e38fd",
+  "method": "instance.info",
+  "params": {},
+  "timeoutMs": 5000
+}

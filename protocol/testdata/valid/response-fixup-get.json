@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-03","sessionId":"session-0001","result":{"source":"0x403000","target":"0x405000","type":"offset32","description":"32-bit relocation","relative":false,"external":true,"unused":false,"created":false}}

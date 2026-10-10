@@ -1,0 +1,13 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-function-disassemble-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "entryAddress": "0x140001000",
+    "items": [
+      {"address": "0x140001000", "text": "push rbp"}
+    ],
+    "nextOffset": 1,
+    "hasMore": true
+  }
+}

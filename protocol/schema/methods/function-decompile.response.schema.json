@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.decompile Success Response",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entryAddress",
+            "pseudocode",
+            "offset",
+            "returnedSize",
+            "originalSize",
+            "truncated",
+            "nextOffset"
+          ],
+          "properties": {
+            "entryAddress": {"$ref": "../common.schema.json#/$defs/address"},
+            "pseudocode": {
+              "type": "string",
+              "maxLength": 65536
+            },
+            "offset": {"$ref": "#/$defs/textOffset"},
+            "returnedSize": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65536
+            },
+            "originalSize": {"$ref": "#/$defs/textOffset"},
+            "truncated": {"type": "boolean"},
+            "nextOffset": {
+              "oneOf": [
+                {"type": "null"},
+                {"$ref": "#/$defs/textOffset"}
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {"truncated": {"const": true}},
+                "required": ["truncated"]
+              },
+              "then": {
+                "properties": {"nextOffset": {"$ref": "#/$defs/textOffset"}}
+              }
+            },
+            {
+              "if": {
+                "properties": {"truncated": {"const": false}},
+                "required": ["truncated"]
+              },
+              "then": {
+                "properties": {"nextOffset": {"type": "null"}}
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "textOffset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16777216
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-dmw","sessionId":"session-1","method":"debugger.memory_write","params":{"address":"0x401000","bytes":"90"},"timeoutMs":120000}

@@ -1,0 +1,67 @@
+name: Linux x64 package
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Full Linux x64 AI package
+    if: github.event.repository.private
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: ida-mcp/go.sum
+      - name: Install build and test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libssl-dev ca-certificates openssl python3-websockets binutils \
+            libgl-dev libegl1 libopengl0 libfontconfig1 libxkbcommon0 libdbus-1-3
+      - name: Download private Qt build inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/linux-inputs
+          gh release download linux-build-inputs-ida94-qt682-v1 \
+            --repo "$GITHUB_REPOSITORY" --pattern ida94-qt682-linux-x64-v1.tar.gz --dir build/linux-inputs
+          cd build/linux-inputs
+          printf '%s  %s\n' fc9f7dd41afebc355d65aca4bfe0187e54fab9c0ab925c895a7180ddb9129571 \
+            ida94-qt682-linux-x64-v1.tar.gz | sha256sum -c -
+          tar -xzf ida94-qt682-linux-x64-v1.tar.gz
+      - name: Validate, compile and package
+        env:
+          IDASDK: ${{ github.workspace }}/ida-sdk/src
+        run: |
+          python3 release/build_linux.py \
+            --qt-runtime build/linux-inputs/ida-qt --qt-sdk build/linux-inputs/qt-6.8.2-linux
+      - name: Verify release Gateway compatibility
+        run: |
+          python3 mcp-test-project/verify_stdio.py build/release/linux/ida-mcp
+          python3 mcp-test-project/verify_compatibility.py build/release/linux/ida-mcp --http
+      - name: Upload tested release package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-linux-x64-${{ github.sha }}
+          path: |
+            release/dist/ida-agent-*-linux-x64.tar.gz
+            release/dist/ida-agent-*-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload CTest results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-linux-package-tests-${{ github.sha }}
+          path: build/release/linux/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
+          retention-days: 14

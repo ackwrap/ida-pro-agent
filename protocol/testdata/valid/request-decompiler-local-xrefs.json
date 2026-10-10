@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"p1-11","sessionId":"session-0001","method":"decompiler.local_xrefs","params":{"address":"0x401000","localIndex":0,"maxDepth":16,"maxNodes":1000,"maxItems":100},"timeoutMs":30000}

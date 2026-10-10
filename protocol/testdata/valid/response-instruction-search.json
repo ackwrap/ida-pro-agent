@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-02","sessionId":"session-0001","result":{"items":[{"address":"0x401000","bytes":"90","size":1,"text":"nop","mnemonic":"nop","operands":[]}],"nextCursor":null,"hasMore":false}}

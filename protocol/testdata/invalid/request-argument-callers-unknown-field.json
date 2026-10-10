@@ -1,0 +1,17 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "analysis-trace-argument-callers",
+  "sessionId": "session-0001",
+  "method": "analysis.trace_argument_callers",
+  "params": {
+    "callAddress": "0x1020",
+    "argumentIndex": 0,
+    "maxDepth": 2,
+    "maxContexts": 16,
+    "maxCallers": 8,
+    "maxNodes": 1000,
+    "maxWork": 100000,
+    "extra": true
+  },
+  "timeoutMs": 60000
+}

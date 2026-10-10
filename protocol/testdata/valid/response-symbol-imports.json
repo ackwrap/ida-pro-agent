@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-symbol-imports-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [{"address": "0x140004000", "name": "CreateFileW", "module": "KERNEL32", "ordinal": 42}],
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

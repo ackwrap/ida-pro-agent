@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-string-search-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [{"address": "0x140003000", "length": 5, "encoding": "UTF-8", "value": "hello", "truncated": false, "originalSize": 5}],
+    "nextCursor": "ss1.14650fb0739d0383.0000000000000001.68e99ec5f626926e",
+    "hasMore": true
+  }
+}

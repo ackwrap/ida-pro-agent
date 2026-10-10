@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-04","sessionId":"session-0001","result":{"items":[{"address":"0x401000","source":"disassembly","text":"nop"}],"nextCursor":null,"hasMore":false}}

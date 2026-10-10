@@ -1,0 +1,12 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-memory-options",
+  "sessionId": "session-0001",
+  "method": "memory.read",
+  "params": {
+    "address": "0x140001000",
+    "format": "pointer",
+    "length": 8
+  },
+  "timeoutMs": 5000
+}

@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-dr","sessionId":"session-1","result":{"items":[{"threadId":1,"registers":[{"name":"rip","value":"0x401000"}]}]}}

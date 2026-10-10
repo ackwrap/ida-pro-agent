@@ -1,0 +1,152 @@
+name: Release packages (Windows, Linux, macOS)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the packages to the public release repository
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  linux:
+    if: github.event.repository.private
+    name: Linux x64 package
+    uses: ./.github/workflows/linux-package.yml
+
+  macos:
+    if: github.event.repository.private
+    name: macOS Universal 2 package
+    uses: ./.github/workflows/macos-build.yml
+
+  package:
+    if: github.event.repository.private
+    name: Full Windows x64 package
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Check release version
+        env:
+          BUILD_REF_TYPE: ${{ github.ref_type }}
+          BUILD_REF_NAME: ${{ github.ref_name }}
+        run: |
+          $version = (Get-Content -Raw ida-mcp/VERSION).Trim()
+          if ($env:BUILD_REF_TYPE -eq 'tag' -and $env:BUILD_REF_NAME -ne "v$version") {
+            throw "The tag must match v$version from ida-mcp/VERSION."
+          }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.x' # Windows overlapped-pipe deadlines require Go 1.25+
+          cache-dependency-path: ida-mcp/go.sum
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Use all available CPU cores
+        run: python release/build_parallel.py --github-env
+      - name: Test public release publisher
+        run: python -m unittest discover -s release/tests -p 'test_publish_release.py'
+      - name: Validate Gateway
+        run: |
+          go -C ida-mcp vet ./...
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go -C ida-mcp test ./...
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build full plugin and run C++ unit tests
+        run: |
+          cmake -S ida-agent-plugin -B build/ci-full -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_TESTING=ON `
+            -DIDA_AGENT_ENABLE_QT_AI_CONSOLE=ON `
+            -DIDA_AGENT_ENABLE_INTEGRATION_TESTS=OFF `
+            -DIDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN=OFF
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/ci-full
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/ci-full --output-on-failure --output-junit test-results.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package portable ZIP and installer
+        run: |
+          python release/build_release.py --clean --plugin build/ci-full/ida-runtime/plugins/ida-agent-plugin.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify packaged Gateway compatibility
+        run: |
+          $version = (Get-Content -Raw ida-mcp/VERSION).Trim()
+          $gateway = "release/dist/ida-agent-$version-windows-x64/ida-mcp.exe"
+          python mcp-test-project/verify_stdio.py $gateway
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python mcp-test-project/verify_compatibility.py $gateway --http
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-windows-x64-${{ github.sha }}
+          path: |
+            release/dist/ida-agent-*-windows-x64.zip
+            release/dist/ida-agent-*-windows-x64-setup.exe
+            release/dist/ida-agent-*-windows-x64-setup.exe.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload CTest results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ida-agent-release-tests-${{ github.sha }}
+          path: |
+            build/ci-full/test-results.xml
+            build/ci-full/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    name: Publish to public repository
+    needs: [package, linux, macos]
+    if: github.event.repository.private && (github.event_name == 'push' || inputs.publish)
+    runs-on: windows-2022
+    timeout-minutes: 15
+    concurrency:
+      group: public-release-${{ vars.IDA_AGENT_RELEASE_REPOSITORY || 'ackwrap/ida-pro-agent' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Download the tested release packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ida-agent-windows-x64-${{ github.sha }}
+          path: build/public-release
+      - name: Download the tested Linux package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ida-agent-linux-x64-${{ github.sha }}
+          path: build/public-release
+      - name: Download the tested macOS packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ida-agent-macos-universal2-${{ github.sha }}
+          path: build/public-release
+      - name: Publish binary packages
+        env:
+          GH_TOKEN: ${{ secrets.IDA_AGENT_RELEASE_TOKEN }}
+          IDA_AGENT_RELEASE_REPOSITORY: ${{ vars.IDA_AGENT_RELEASE_REPOSITORY || 'ackwrap/ida-pro-agent' }}
+        run: python release/publish_release.py --assets build/public-release

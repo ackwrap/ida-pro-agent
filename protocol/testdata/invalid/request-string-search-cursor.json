@@ -1,0 +1,4 @@
+{
+  "protocolVersion": "ida-rpc/1", "requestId": "bad-ss-cursor", "sessionId": "session-0001",
+  "method": "string.search", "params": {"cursor": "invalid"}, "timeoutMs": 5000
+}

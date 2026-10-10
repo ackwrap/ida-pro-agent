@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-backends",
+  "sessionId": "session-1",
+  "method": "debugger.backends",
+  "params": {
+    "unknown": true
+  },
+  "timeoutMs": 120000
+}

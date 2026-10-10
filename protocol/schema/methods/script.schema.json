@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "executeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "code"],
+      "properties": {
+        "language": {"type": "string", "enum": ["python", "idc"]},
+        "code": {"type": "string", "minLength": 1, "maxLength": 32768}
+      }
+    },
+    "executeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "success", "result", "stdout", "stderr", "truncated", "originalSize"],
+      "properties": {
+        "language": {"type": "string", "enum": ["python", "idc"]},
+        "success": {"type": "boolean"},
+        "result": {"type": ["string", "null"], "maxLength": 32768},
+        "stdout": {"type": "string", "maxLength": 32768},
+        "stderr": {"type": "string", "maxLength": 32768},
+        "truncated": {"type": "boolean"},
+        "originalSize": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

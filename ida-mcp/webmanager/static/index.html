@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="ida-mcp-token" content="{{.Token}}">
+  <title>IDA MCP - connections</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #e8f1f2;
+      --muted: #81979e;
+      --panel: #101e27;
+      --panel-2: #142630;
+      --line: #27404a;
+      --orange: #ff9720;
+      --cyan: #41e2eb;
+      --danger: #ff6b5f;
+      --bg: #081117;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 82% 4%, rgba(65,226,235,.12), transparent 24rem),
+        linear-gradient(rgba(39,64,74,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(39,64,74,.14) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 32px 32px, 32px 32px, auto;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 64px; }
+    header { display: grid; grid-template-columns: 84px 1fr auto; gap: 22px; align-items: center; margin-bottom: 38px; }
+    .brand-icon { width: 84px; height: 84px; filter: drop-shadow(0 10px 24px rgba(255,151,32,.16)); }
+    .eyebrow, .version, .client-id, .state, code {
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      letter-spacing: .08em;
+    }
+    .eyebrow { margin: 0 0 7px; color: var(--cyan); font-size: 12px; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: .98; letter-spacing: -.045em; font-weight: 760; }
+    .version { align-self: start; color: var(--muted); border: 1px solid var(--line); padding: 8px 10px; font-size: 11px; }
+    .intro { max-width: 690px; color: #a9bbc0; line-height: 1.65; margin: 0 0 28px 106px; }
+    .statusbar {
+      display: flex; gap: 10px; align-items: center; margin: 0 0 22px 106px;
+      color: var(--muted); font-size: 13px;
+    }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 5px rgba(65,226,235,.09); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .card {
+      position: relative; overflow: hidden; min-height: 294px; padding: 24px;
+      background: linear-gradient(145deg, rgba(20,38,48,.96), rgba(11,24,32,.96));
+      border: 1px solid var(--line); box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+    .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--line); }
+    .card.current::before { background: var(--cyan); }
+    .card.mismatch::before { background: var(--orange); }
+    .card-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+    .client-id { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    h2 { margin: 8px 0 0; font-size: 25px; }
+    .state { font-size: 10px; text-transform: uppercase; border: 1px solid var(--line); padding: 7px 8px; color: var(--muted); }
+    .current .state { color: var(--cyan); border-color: rgba(65,226,235,.45); }
+    .mismatch .state { color: var(--orange); border-color: rgba(255,151,32,.45); }
+    .detail { min-height: 48px; margin: 26px 0 19px; color: #adbec3; line-height: 1.5; font-size: 14px; }
+    .path-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+    code { display: block; margin-top: 7px; color: #bcd0d4; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+    .actions { display: flex; gap: 10px; margin-top: 23px; }
+    .skill-panel { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .skill-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .skill-title { font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .skill-state { color: var(--muted); font: 10px/1 "Cascadia Code", Consolas, monospace; text-transform: uppercase; }
+    .skill-state.ready { color: var(--cyan); }
+    .skill-state.conflict { color: var(--danger); }
+    .skill-detail { margin: 12px 0 0; color: #91a6ac; font-size: 12px; line-height: 1.45; }
+    button {
+      appearance: none; border: 1px solid var(--orange); background: var(--orange); color: #15100a;
+      padding: 10px 15px; font: 700 12px/1 ui-sans-serif, system-ui; cursor: pointer;
+      transition: transform .15s ease, background .15s ease, opacity .15s ease;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); background: #ffad4d; }
+    button.secondary { background: transparent; border-color: var(--line); color: #a9bbc0; }
+    button:disabled { cursor: wait; opacity: .45; }
+    .notice { display: none; margin-top: 18px; padding: 12px 14px; border-left: 3px solid var(--danger); background: rgba(255,107,95,.08); color: #ffc2bc; font-size: 13px; }
+    footer { margin-top: 24px; color: #61767d; font-size: 11px; line-height: 1.6; }
+    @media (max-width: 720px) {
+      main { padding-top: 28px; }
+      header { grid-template-columns: 62px 1fr; gap: 15px; }
+      .brand-icon { width: 62px; height: 62px; }
+      .version { grid-column: 2; justify-self: start; }
+      .intro, .statusbar { margin-left: 0; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img class="brand-icon" src="/icon.svg" alt="ida-mcp">
+      <div>
+        <p class="eyebrow">Local MCP connections</p>
+        <h1>IDA MCP</h1>
+      </div>
+      <span class="version">v{{.Version}}</span>
+    </header>
+    <p class="intro">Connect Codex, OpenCode, Antigravity CLI, Claude Code, Grok Build, and ZCode to the local IDA bridge and share its packaged analysis knowledge. Changes are limited to fixed <code style="display:inline">ida-mcp</code> entries and never expose this page beyond loopback.</p>
+    <div class="statusbar"><span class="pulse"></span><span id="gateway">Reading local configuration...</span></div>
+    <section id="clients" class="grid" aria-live="polite"></section>
+    <div id="notice" class="notice" role="alert"></div>
+    <footer>After a configuration change, restart the affected AI client. The tray process can stay open or be exited from its menu.</footer>
+  </main>
+  <script nonce="{{.Token}}">
+    const token = document.querySelector('meta[name="ida-mcp-token"]').content;
+    const clients = document.getElementById('clients');
+    const notice = document.getElementById('notice');
+    const gateway = document.getElementById('gateway');
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    }
+
+    function render(data) {
+      gateway.textContent = `Gateway ${data.version} · ${data.gatewayPath}`;
+      clients.innerHTML = data.clients.map(client => {
+        const css = client.current ? 'current' : (client.configured ? 'mismatch' : '');
+        const state = client.current ? 'connected' : (client.configured ? 'update needed' : 'not configured');
+        const primary = client.current ? 'Update' : 'Install';
+        const skillState = client.skills.conflict ? 'conflict' : (client.skills.current ? 'linked' : (client.skills.configured ? 'partial' : 'not linked'));
+        const skillClass = client.skills.conflict ? 'conflict' : (client.skills.current ? 'ready' : '');
+        return `<article class="card ${css}">
+          <div class="card-head"><div><div class="client-id">${escapeHTML(client.id)}</div><h2>${escapeHTML(client.name)}</h2></div><span class="state">${state}</span></div>
+          <p class="detail">${escapeHTML(client.detail)}</p>
+          <div class="path-label">Configuration</div><code>${escapeHTML(client.configPath)}</code>
+          <div class="actions">
+            <button data-client="${escapeHTML(client.id)}" data-action="install" ${client.available ? '' : 'disabled'}>${primary}</button>
+            ${client.configured ? `<button class="secondary" data-client="${escapeHTML(client.id)}" data-action="remove">Remove</button>` : ''}
+          </div>
+          <div class="skill-panel">
+            <div class="skill-head"><span class="skill-title">Shared IDA Skills</span><span class="skill-state ${skillClass}">${skillState}</span></div>
+            <p class="skill-detail">${escapeHTML(client.skills.detail)}</p>
+            <div class="path-label">Skill directory</div><code>${escapeHTML(client.skills.root)}</code>
+            <div class="actions">
+              <button data-client="${escapeHTML(client.id)}" data-scope="skills" data-action="install" ${client.skills.available && !client.skills.conflict ? '' : 'disabled'}>${client.skills.current ? 'Refresh links' : 'Link skills'}</button>
+              ${client.skills.configured ? `<button class="secondary" data-client="${escapeHTML(client.id)}" data-scope="skills" data-action="remove">Unlink</button>` : ''}
+            </div>
+          </div>
+        </article>`;
+      }).join('');
+    }
+
+    async function load() {
+      const response = await fetch('/api/status', {headers: {'X-IDA-AGENT-Token': token}});
+      if (!response.ok) throw new Error('Unable to read local client configuration.');
+      render(await response.json());
+    }
+
+    clients.addEventListener('click', async event => {
+      const button = event.target.closest('button[data-client]');
+      if (!button) return;
+      notice.style.display = 'none';
+      document.querySelectorAll('button').forEach(item => item.disabled = true);
+      try {
+        const scope = button.dataset.scope ? `/${button.dataset.scope}` : '';
+        const response = await fetch(`/api/clients/${encodeURIComponent(button.dataset.client)}${scope}/${button.dataset.action}`, {
+          method: 'POST', headers: {'X-IDA-AGENT-Token': token}
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || 'Configuration update failed.');
+        await load();
+      } catch (error) {
+        notice.textContent = error.message;
+        notice.style.display = 'block';
+        await load().catch(() => {});
+      }
+    });
+
+    load().catch(error => {
+      notice.textContent = error.message;
+      notice.style.display = 'block';
+      gateway.textContent = 'Manager unavailable';
+    });
+  </script>
+</body>
+</html>

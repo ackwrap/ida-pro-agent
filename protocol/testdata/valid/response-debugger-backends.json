@@ -1,0 +1,19 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-backends",
+  "result": {
+    "items": [
+      {
+        "name": "win32",
+        "remote": false
+      },
+      {
+        "name": "win32",
+        "remote": true
+      }
+    ],
+    "current": "",
+    "remote": false
+  },
+  "sessionId": "session-1"
+}

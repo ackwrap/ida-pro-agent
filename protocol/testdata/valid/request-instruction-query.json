@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-03","sessionId":"session-0001","method":"instruction.query","params":{"start":"0x401000","end":"0x402000","operand":"eax","limit":20},"timeoutMs":30000}

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "database.info Success Response",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "database",
+            "processor",
+            "architecture",
+            "addressBits",
+            "addressRange",
+            "segments"
+          ],
+          "properties": {
+            "database": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "processor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9._+-]+$"
+            },
+            "architecture": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9._+-]+$"
+            },
+            "addressBits": {
+              "type": "integer",
+              "enum": [16, 32, 64]
+            },
+            "addressRange": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["start", "end"],
+                  "properties": {
+                    "start": {
+                      "$ref": "../common.schema.json#/$defs/address"
+                    },
+                    "end": {
+                      "$ref": "../common.schema.json#/$defs/address"
+                    }
+                  }
+                }
+              ]
+            },
+            "segments": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "total",
+                "code",
+                "data",
+                "bss",
+                "other",
+                "readable",
+                "writable",
+                "executable"
+              ],
+              "properties": {
+                "total": {
+                  "$ref": "#/$defs/count"
+                },
+                "code": {
+                  "$ref": "#/$defs/count"
+                },
+                "data": {
+                  "$ref": "#/$defs/count"
+                },
+                "bss": {
+                  "$ref": "#/$defs/count"
+                },
+                "other": {
+                  "$ref": "#/$defs/count"
+                },
+                "readable": {
+                  "$ref": "#/$defs/count"
+                },
+                "writable": {
+                  "$ref": "#/$defs/count"
+                },
+                "executable": {
+                  "$ref": "#/$defs/count"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-memory-string",
+  "sessionId": "session-0001",
+  "result": {
+    "address": "0x140002000",
+    "format": "string",
+    "bytesRead": 6,
+    "value": "hello",
+    "terminated": true
+  }
+}

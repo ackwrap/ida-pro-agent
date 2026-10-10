@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "symbol.search Request",
+  "allOf": [
+    {"$ref": "../request.schema.json"},
+    {
+      "type": "object",
+      "properties": {
+        "method": {"const": "symbol.search"},
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {"type": "string", "maxLength": 256},
+            "kind": {"type": "string", "enum": ["global", "data", "label"]},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20},
+            "cursor": {"$ref": "#/$defs/cursor"}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cursor": {
+      "type": "string",
+      "pattern": "^sy1\\.[0-9a-f]{16}\\.[0-9a-f]{16}\\.[0-9a-f]{16}$"
+    }
+  }
+}

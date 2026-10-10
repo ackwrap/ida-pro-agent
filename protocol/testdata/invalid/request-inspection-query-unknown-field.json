@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"p1-bad-1","sessionId":"session-0001","method":"source.files","params":{"limit":2,"path":"C:/secret/source.cpp"},"timeoutMs":5000}

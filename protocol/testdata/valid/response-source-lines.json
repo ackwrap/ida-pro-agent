@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"p1-02","sessionId":"session-0001","result":{"items":[{"address":"0x401010","line":42,"filename":"main.cpp"}],"nextCursor":"0x401020","hasMore":true}}

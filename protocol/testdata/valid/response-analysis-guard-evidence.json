@@ -1,0 +1,53 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "analysis-guard-evidence",
+  "sessionId": "session-0001",
+  "result": {
+    "entryAddress": "0x1000",
+    "callAddress": "0x1020",
+    "argumentIndex": 0,
+    "argumentCount": 1,
+    "argumentType": "unsigned __int64",
+    "model": "microcode_reaching_definitions",
+    "maturity": "MMAT_CALLS",
+    "scope": "function",
+    "status": "complete",
+    "cfgComplete": true,
+    "root": 0,
+    "nodes": [
+      {
+        "id": 0,
+        "kind": "parameter",
+        "operation": "",
+        "bits": 64,
+        "address": null,
+        "value": "0"
+      },
+      {
+        "id": 1,
+        "kind": "constant",
+        "operation": "",
+        "bits": 64,
+        "address": "0x1004",
+        "value": "0xffffffffffffffff"
+      }
+    ],
+    "edges": [],
+    "guards": [
+      {
+        "address": "0x1004",
+        "operation": "unsigned_gt",
+        "bits": 64,
+        "operands": [
+          0,
+          1
+        ],
+        "requiredBranch": "false",
+        "valueRelation": "same_value"
+      }
+    ],
+    "limitations": [],
+    "truncated": false,
+    "visitedStates": 10
+  }
+}

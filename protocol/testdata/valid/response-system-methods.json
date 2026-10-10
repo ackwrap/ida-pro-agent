@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-system-methods","sessionId":"session-0001","result":{"methods":["database.info","system.ping"]}}

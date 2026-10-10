@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-suspend",
+  "sessionId": "session-1",
+  "method": "debugger.suspend",
+  "params": {},
+  "timeoutMs": 120000
+}

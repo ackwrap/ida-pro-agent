@@ -1,0 +1,11 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-select",
+  "sessionId": "session-1",
+  "method": "debugger.select",
+  "params": {
+    "name": "win32",
+    "remote": false
+  },
+  "timeoutMs": 120000
+}

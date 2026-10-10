@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IDA Agent Named Pipe Hello Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["product", "protocol", "instance_id", "pid"],
+  "properties": {
+    "product": {"const": "ida-agent-plugin"},
+    "protocol": {"type": "integer", "const": 1},
+    "instance_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "pid": {"type": "integer", "minimum": 1, "maximum": 4294967295}
+  }
+}

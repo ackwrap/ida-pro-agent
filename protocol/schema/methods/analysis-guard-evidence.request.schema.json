@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "../request.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "method": {
+          "const": "analysis.guard_evidence"
+        },
+        "params": {
+          "$ref": "semantic-analysis.schema.json#/$defs/params"
+        }
+      }
+    }
+  ]
+}

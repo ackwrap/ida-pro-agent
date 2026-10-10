@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-09","sessionId":"session-0001","method":"xref.struct_field","params":{"type":"sample_t","field":"value","limit":100},"timeoutMs":12000}

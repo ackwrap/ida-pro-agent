@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-10","sessionId":"session-0001","method":"global.value","params":{"name":"global_value","maxBytes":4096},"timeoutMs":12000}

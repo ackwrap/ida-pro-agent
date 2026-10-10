@@ -1,0 +1,6 @@
+{
+  "version": 1, "protocol_version": "ida-rpc/1", "instance_id": "not-a-uuid", "pid": 4242,
+  "pipe": "\\\\.\\pipe\\ida-agent-4242-8dd304b5", "ida_version": "9.4", "database": "test.i64",
+  "input_file": "test.exe", "processor": "metapc", "bitness": 64, "started_at": 1788063000,
+  "arch": "x86_64", "capabilities": {"decompiler": true, "debugger": false, "ui": true, "address_bits": 64}
+}

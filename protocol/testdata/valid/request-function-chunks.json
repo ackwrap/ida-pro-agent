@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-02","sessionId":"session-0001","method":"function.chunks","params":{"address":"0x401000","offset":0,"limit":2},"timeoutMs":5000}

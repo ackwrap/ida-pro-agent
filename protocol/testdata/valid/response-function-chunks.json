@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-02","sessionId":"session-0001","result":{"entryAddress":"0x401000","items":[{"start":"0x401000","end":"0x401020","kind":"entry"},{"start":"0x402000","end":"0x402010","kind":"tail"}],"nextOffset":null,"hasMore":false}}

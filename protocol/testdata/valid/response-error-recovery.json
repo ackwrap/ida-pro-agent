@@ -1,0 +1,11 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-recovery",
+  "sessionId": "session-0001",
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "automatic rollback failed",
+    "retryable": false,
+    "recoveryChangeId": "change-0123456789abcdef-1"
+  }
+}

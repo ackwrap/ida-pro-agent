@@ -1,0 +1,4 @@
+{
+  "protocolVersion": "ida-rpc/1", "requestId": "bad-ds-response", "sessionId": "session-0001",
+  "result": {"items": [], "nextCursor": null, "hasMore": true}
+}

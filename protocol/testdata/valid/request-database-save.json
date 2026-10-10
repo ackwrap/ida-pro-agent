@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-database-save","sessionId":"session-0001","method":"database.save","params":{"compact":true,"backup":true},"timeoutMs":120000}

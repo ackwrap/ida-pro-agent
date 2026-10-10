@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "database.segments Success Response",
+  "allOf": [
+    {"$ref": "../response.schema.json"},
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["items", "nextCursor", "hasMore"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["start", "end", "name", "class", "bitness", "permissions", "type"],
+                "properties": {
+                  "start": {"$ref": "../common.schema.json#/$defs/address"},
+                  "end": {"$ref": "../common.schema.json#/$defs/address"},
+                  "name": {"type": "string", "minLength": 1, "maxLength": 1024},
+                  "class": {"type": "string", "maxLength": 1024},
+                  "bitness": {"type": "integer", "enum": [16, 32, 64]},
+                  "permissions": {"type": "string", "enum": ["---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"]},
+                  "type": {"type": "string", "enum": ["normal", "external", "code", "data", "implementation", "group", "null", "undefined", "bss", "absolute_symbols", "communal", "internal_memory"]}
+                }
+              }
+            },
+            "nextCursor": {
+              "oneOf": [
+                {"type": "null"},
+                {"$ref": "database-segments.request.schema.json#/$defs/cursor"}
+              ]
+            },
+            "hasMore": {"type": "boolean"}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"hasMore": {"const": true}}, "required": ["hasMore"]},
+              "then": {"properties": {"nextCursor": {"$ref": "database-segments.request.schema.json#/$defs/cursor"}}}
+            },
+            {
+              "if": {"properties": {"hasMore": {"const": false}}, "required": ["hasMore"]},
+              "then": {"properties": {"nextCursor": {"type": "null"}}}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

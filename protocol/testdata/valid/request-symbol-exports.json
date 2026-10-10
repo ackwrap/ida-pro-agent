@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-symbol-exports-0001",
+  "sessionId": "session-0001",
+  "method": "symbol.exports",
+  "params": {"name": "api", "limit": 20},
+  "timeoutMs": 5000
+}

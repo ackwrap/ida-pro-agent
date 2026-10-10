@@ -1,0 +1,31 @@
+IDA Agent for macOS — Universal 2 (Intel + Apple Silicon)
+
+安装 / Install
+1. 关闭所有 IDA / IDAT。
+2. 双击 IDA Agent Installer.app，然后点击 Install。
+   默认插件目录为 ~/.idapro/plugins/；使用自定义 IDAUSR 时，填写对应的用户目录。
+3. 在 IDA 9.4 中打开数据库，选择 Edit > Plugins > IDA Agent。
+4. Go 网关安装到 ~/Library/Application Support/ida-agent/bin/ida-mcp。
+   MCP 客户端的 command 填写这个绝对路径，stdio 模式不需要参数。
+   也可以双击同目录的 Open IDA Agent.command，并打开终端中显示的本地网址进行配置。
+
+Close IDA, open IDA Agent Installer.app and click Install. The default IDA user
+directory is ~/.idapro. Set the directory to your IDAUSR when using a custom one.
+The gateway is installed under ~/Library/Application Support/ida-agent/bin/.
+No administrator password, Python, Go compiler, Qt download or OpenSSL is required.
+Restart IDA and MCP clients after upgrading.
+
+升级与卸载 / Upgrade and uninstall
+Existing installed files are preserved beside their destinations with a
+.backup-UUID suffix. Failed replacements restore the previous files.
+To uninstall, close IDA and stop MCP clients using the gateway, then remove
+~/.idapro/plugins/ida-agent-plugin.dylib and the installed ida-agent/bin directory
+(adjust the plugin path for a custom IDAUSR). Remove corresponding MCP client
+entries. Chat history and provider settings are retained separately.
+
+要求与验证范围 / Requirements and validation
+Requires macOS 15+ and IDA Professional 9.4 with its bundled Qt 6.8.2.
+Intel runtime validation has passed. arm64 is compiled and linked but still
+requires runtime validation on Apple Silicon. IDA and Qt are not bundled.
+This test release is ad-hoc signed, not Developer ID signed or notarized.
+See README-MACOS.md for native networking behavior and build instructions.

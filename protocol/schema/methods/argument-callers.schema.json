@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "callAddress",
+        "argumentIndex"
+      ],
+      "properties": {
+        "callAddress": {
+          "type": "string",
+          "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+        },
+        "argumentIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 2
+        },
+        "maxContexts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64,
+          "default": 16
+        },
+        "maxCallers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 8
+        },
+        "maxNodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4000,
+          "default": 1000
+        },
+        "maxWork": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000,
+          "default": 100000
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "callAddress",
+        "argumentIndex",
+        "model",
+        "scope",
+        "status",
+        "contexts",
+        "links",
+        "boundaries",
+        "limitations",
+        "truncated",
+        "visitedWork",
+        "totalNodes"
+      ],
+      "properties": {
+        "callAddress": {
+          "type": "string",
+          "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+        },
+        "argumentIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "model": {
+          "const": "microcode_caller_contexts"
+        },
+        "scope": {
+          "const": "known_direct_callers"
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "contexts": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "depth",
+              "trace"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 63
+              },
+              "depth": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "trace": {
+                "$ref": "semantic-analysis.schema.json#/$defs/result"
+              }
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "maxItems": 63,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fromContext",
+              "parameterNode",
+              "toContext"
+            ],
+            "properties": {
+              "fromContext": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 63
+              },
+              "parameterNode": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 999
+              },
+              "toContext": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 63
+              }
+            }
+          }
+        },
+        "boundaries": {
+          "type": "array",
+          "maxItems": 512,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "context",
+              "parameterNode",
+              "callAddress",
+              "reason"
+            ],
+            "properties": {
+              "context": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 63
+              },
+              "parameterNode": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 999
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "callAddress": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "enum": [
+                  "context_budget",
+                  "node_budget",
+                  "depth_budget",
+                  "caller_budget",
+                  "boundary_budget",
+                  "extraction_budget",
+                  "caller_analysis_unavailable",
+                  "recursive_call",
+                  "ambiguous_call",
+                  "prototype_mismatch",
+                  "argument_mapping_unavailable",
+                  "call_not_recovered",
+                  "parameter_abi_unavailable",
+                  "non_call_reference",
+                  "no_known_callers"
+                ]
+              }
+            }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "enum": [
+              "caller_set_not_proven_complete",
+              "work_budget",
+              "boundary_budget"
+            ]
+          }
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "visitedWork": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "totalNodes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4000
+        }
+      }
+    }
+  }
+}

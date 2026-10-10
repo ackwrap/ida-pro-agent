@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {"$ref": "../response.schema.json"},
+    {
+      "required": ["result"],
+      "properties": {
+        "result": {"$ref": "script.schema.json#/$defs/executeResult"}
+      }
+    }
+  ]
+}

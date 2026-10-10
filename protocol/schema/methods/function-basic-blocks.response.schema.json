@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.basic_blocks Success Response",
+  "allOf": [
+    {"$ref": "../response.schema.json"},
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entryAddress", "items", "nextOffset", "hasMore"],
+          "properties": {
+            "entryAddress": {"$ref": "../common.schema.json#/$defs/address"},
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["start", "end", "type", "successors", "predecessors"],
+                "properties": {
+                  "start": {"$ref": "../common.schema.json#/$defs/address"},
+                  "end": {"$ref": "../common.schema.json#/$defs/address"},
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "normal",
+                      "indirect_jump",
+                      "return",
+                      "conditional_return",
+                      "no_return",
+                      "external_no_return",
+                      "external",
+                      "error"
+                    ]
+                  },
+                  "successors": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {"$ref": "../common.schema.json#/$defs/address"}
+                  },
+                  "predecessors": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {"$ref": "../common.schema.json#/$defs/address"}
+                  }
+                }
+              }
+            },
+            "nextOffset": {
+              "oneOf": [
+                {"type": "null"},
+                {"$ref": "#/$defs/nextOffset"}
+              ]
+            },
+            "hasMore": {"type": "boolean"}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"hasMore": {"const": true}}, "required": ["hasMore"]},
+              "then": {"properties": {"nextOffset": {"$ref": "#/$defs/nextOffset"}}}
+            },
+            {
+              "if": {"properties": {"hasMore": {"const": false}}, "required": ["hasMore"]},
+              "then": {"properties": {"nextOffset": {"type": "null"}}}
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nextOffset": {"type": "integer", "minimum": 0, "maximum": 1000100}
+  }
+}

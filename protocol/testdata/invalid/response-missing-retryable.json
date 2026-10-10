@@ -1,0 +1,9 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-0002",
+  "sessionId": "session-0001",
+  "error": {
+    "code": "TIMEOUT",
+    "message": "operation timed out"
+  }
+}

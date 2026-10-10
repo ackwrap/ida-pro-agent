@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"p1-11","sessionId":"session-0001","result":{"entryAddress":"0x401000","localIndex":0,"name":"v","visitedNodes":3,"totalReturned":1,"truncated":false,"items":[{"ordinal":0,"depth":2,"ea":"0x401004","parentOp":"asg","type":"int"}]}}

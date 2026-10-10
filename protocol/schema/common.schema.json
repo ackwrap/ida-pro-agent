@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "ida-rpc/1"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "method": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^(system|instance|database|function|string|decompiler|xref|symbol|type|memory|instruction|listing|signature|global|patch|analysis|changeset|debugger|script|ui|fixup|switch|exception|source|name|comment|bookmark)\\.[a-z][a-z0-9_]*$"
+    },
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+    },
+    "errorCode": {
+      "type": "string",
+      "enum": [
+        "INVALID_ARGUMENT",
+        "INVALID_ADDRESS",
+        "NOT_FOUND",
+        "CAPABILITY_UNAVAILABLE",
+        "PERMISSION_DENIED",
+        "IDA_BUSY",
+        "DECOMPILE_FAILED",
+        "CONFLICT",
+        "TIMEOUT",
+        "OUTPUT_LIMIT",
+        "INTERNAL_ERROR"
+      ]
+    }
+  }
+}

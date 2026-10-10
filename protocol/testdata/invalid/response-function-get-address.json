@@ -1,0 +1,31 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-function-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "entryAddress": "140001000",
+    "addressRange": {
+      "start": "0x140001000",
+      "end": "0x140001080"
+    },
+    "name": "sub_140001000",
+    "signature": null,
+    "flags": {
+      "noReturn": false,
+      "far": false,
+      "library": false,
+      "static": false,
+      "frame": true,
+      "hidden": false,
+      "thunk": false,
+      "lumina": false,
+      "outlined": false
+    },
+    "statistics": {
+      "sizeBytes": 128,
+      "instructionCount": 31,
+      "basicBlockCount": 4,
+      "chunkCount": 1
+    }
+  }
+}

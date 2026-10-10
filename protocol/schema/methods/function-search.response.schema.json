@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.search Success Response",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["items", "nextCursor", "hasMore"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["entryAddress", "name"],
+                "properties": {
+                  "entryAddress": {
+                    "$ref": "../common.schema.json#/$defs/address"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                }
+              }
+            },
+            "nextCursor": {
+              "oneOf": [
+                {"type": "null"},
+                {"$ref": "function-search.request.schema.json#/$defs/cursor"}
+              ]
+            },
+            "hasMore": {
+              "type": "boolean"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {"hasMore": {"const": true}},
+                "required": ["hasMore"]
+              },
+              "then": {
+                "properties": {
+                  "nextCursor": {
+                    "$ref": "function-search.request.schema.json#/$defs/cursor"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {"hasMore": {"const": false}},
+                "required": ["hasMore"]
+              },
+              "then": {
+                "properties": {
+                  "nextCursor": {"type": "null"}
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

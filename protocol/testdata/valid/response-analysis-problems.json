@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-08","sessionId":"session-0001","result":{"items":[{"address":"0x401000","type":"disassembly","name":"Cannot disassemble","description":"Cannot decode instruction"}],"nextAddress":null,"hasMore":false}}

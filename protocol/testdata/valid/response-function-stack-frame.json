@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-function-stack-frame","sessionId":"session-0001","result":{"entryAddress":"0x401000","size":32,"variables":[{"name":"local","declaration":"int local","bitOffset":-32,"bitSize":32,"role":"local"}]}}

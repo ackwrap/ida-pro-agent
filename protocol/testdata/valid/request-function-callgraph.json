@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-function-callgraph","sessionId":"session-0001","method":"function.callgraph","params":{"roots":["0x401000"],"direction":"both","maxDepth":2,"maxNodes":100,"maxEdges":200,"perFunction":100},"timeoutMs":60000}

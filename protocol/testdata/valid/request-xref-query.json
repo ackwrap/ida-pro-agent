@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-xref-0001",
+  "sessionId": "session-0001",
+  "method": "xref.query",
+  "params": {
+    "address": "0x140001000",
+    "direction": "outgoing",
+    "category": "all",
+    "includeFlow": false,
+    "limit": 1
+  },
+  "timeoutMs": 5000
+}

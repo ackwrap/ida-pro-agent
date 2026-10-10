@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "string.search Request",
+  "allOf": [
+    {"$ref": "../request.schema.json"},
+    {
+      "type": "object",
+      "properties": {
+        "method": {"const": "string.search"},
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "not":{"required":["refresh","cursor"],"properties":{"refresh":{"const":true}}},
+          "properties": {
+            "refresh": {"type":"boolean","default":false,"description":"Reuse the existing IDA string list by default. Set true to rebuild it before the first page; cannot be combined with cursor. A rebuild may be slow, especially while debugging."},
+            "query": {"type": "string", "maxLength": 256},
+            "minLength": {"type": "integer", "minimum": 1, "maximum": 4096, "default": 4},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20},
+            "cursor": {"$ref": "#/$defs/cursor"}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cursor": {
+      "type": "string",
+      "pattern": "^ss1\\.[0-9a-f]{16}\\.[0-9a-f]{16}\\.[0-9a-f]{16}$"
+    }
+  }
+}

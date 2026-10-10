@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-database-survey","sessionId":"session-0001","method":"database.survey","params":{"mode":"full","budget":6},"timeoutMs":30000}

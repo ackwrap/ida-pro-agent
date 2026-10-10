@@ -1,0 +1,12 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-function-callees-0001",
+  "sessionId": "session-0001",
+  "method": "function.callees",
+  "params": {
+    "address": "0x140001000",
+    "offset": 0,
+    "limit": 1
+  },
+  "timeoutMs": 5000
+}

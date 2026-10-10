@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-database-entry-points-0001",
+  "sessionId": "session-0001",
+  "method": "database.entry_points",
+  "params": {"name": "start", "type": "entry", "limit": 20},
+  "timeoutMs": 5000
+}

@@ -1,0 +1,8 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-script-execute-bad-1",
+  "sessionId": "123e4567-e89b-42d3-a456-426614174000",
+  "method": "script.execute",
+  "params": {"language": "python", "code": "print('hello')", "confirmed": true},
+  "timeoutMs": 120000
+}

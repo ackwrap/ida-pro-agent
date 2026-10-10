@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","allOf":[{"$ref":"../request.schema.json"},{"properties":{"method":{"const":"switch.get"},"params":{"$ref":"readonly-analysis.schema.json#/$defs/addressParam"}}}]}

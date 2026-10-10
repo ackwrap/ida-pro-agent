@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-function-callers","sessionId":"session-0001","method":"function.callers","params":{"address":"0x401000","offset":0,"limit":20},"timeoutMs":45000}

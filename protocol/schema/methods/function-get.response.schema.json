@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.get Success Response",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entryAddress",
+            "addressRange",
+            "name",
+            "signature",
+            "flags",
+            "statistics"
+          ],
+          "properties": {
+            "entryAddress": {
+              "$ref": "../common.schema.json#/$defs/address"
+            },
+            "addressRange": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["start", "end"],
+              "properties": {
+                "start": {
+                  "$ref": "../common.schema.json#/$defs/address"
+                },
+                "end": {
+                  "$ref": "../common.schema.json#/$defs/address"
+                }
+              }
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "signature": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                }
+              ]
+            },
+            "flags": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "noReturn",
+                "far",
+                "library",
+                "static",
+                "frame",
+                "hidden",
+                "thunk",
+                "lumina",
+                "outlined"
+              ],
+              "properties": {
+                "noReturn": {"type": "boolean"},
+                "far": {"type": "boolean"},
+                "library": {"type": "boolean"},
+                "static": {"type": "boolean"},
+                "frame": {"type": "boolean"},
+                "hidden": {"type": "boolean"},
+                "thunk": {"type": "boolean"},
+                "lumina": {"type": "boolean"},
+                "outlined": {"type": "boolean"}
+              }
+            },
+            "statistics": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sizeBytes",
+                "instructionCount",
+                "basicBlockCount",
+                "chunkCount"
+              ],
+              "properties": {
+                "sizeBytes": {
+                  "$ref": "#/$defs/positiveCount"
+                },
+                "instructionCount": {
+                  "$ref": "#/$defs/count"
+                },
+                "basicBlockCount": {
+                  "$ref": "#/$defs/count"
+                },
+                "chunkCount": {
+                  "$ref": "#/$defs/positiveCount"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "positiveCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    }
+  }
+}

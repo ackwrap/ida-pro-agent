@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","allOf":[{"$ref":"../request.schema.json"},{"type":"object","properties":{"method":{"const":"signature.xrefs"},"params":{"$ref":"remaining-callable.schema.json#/$defs/signatureXrefsParams"}}}]}

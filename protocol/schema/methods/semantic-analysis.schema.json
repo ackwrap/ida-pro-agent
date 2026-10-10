@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "callAddress": {
+          "type": "string",
+          "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+        },
+        "argumentIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "maxNodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 200
+        },
+        "maxWork": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000,
+          "default": 20000
+        },
+        "maxGuards": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 32
+        }
+      },
+      "required": [
+        "callAddress",
+        "argumentIndex"
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "constant",
+            "operation",
+            "parameter",
+            "entry_value",
+            "call_return",
+            "memory_read",
+            "address",
+            "unknown",
+            "merge"
+          ]
+        },
+        "operation": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "bits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "operation",
+        "bits",
+        "address",
+        "value"
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999
+        },
+        "to": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
+    },
+    "guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "bits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "operands": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          },
+          "maxItems": 2
+        },
+        "requiredBranch": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false",
+            "neither",
+            "unknown"
+          ]
+        },
+        "valueRelation": {
+          "type": "string",
+          "enum": [
+            "same_value",
+            "derived_value",
+            "unrelated",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "address",
+        "operation",
+        "bits",
+        "operands",
+        "requiredBranch",
+        "valueRelation"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entryAddress": {
+          "type": "string",
+          "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+        },
+        "callAddress": {
+          "type": "string",
+          "pattern": "^0x[0-9A-Fa-f]{1,16}$"
+        },
+        "argumentIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "argumentCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "argumentType": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "model": {
+          "const": "microcode_reaching_definitions"
+        },
+        "maturity": {
+          "const": "MMAT_CALLS"
+        },
+        "scope": {
+          "const": "function"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "cfgComplete": {
+          "type": "boolean"
+        },
+        "root": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          },
+          "maxItems": 1000
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          },
+          "maxItems": 2000
+        },
+        "guards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/guard"
+          },
+          "maxItems": 128
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "maxItems": 64
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "visitedStates": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "entryAddress",
+        "callAddress",
+        "argumentIndex",
+        "argumentCount",
+        "argumentType",
+        "model",
+        "maturity",
+        "scope",
+        "status",
+        "cfgComplete",
+        "root",
+        "nodes",
+        "edges",
+        "guards",
+        "limitations",
+        "truncated",
+        "visitedStates"
+      ]
+    }
+  }
+}

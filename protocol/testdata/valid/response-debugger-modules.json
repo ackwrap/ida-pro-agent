@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"p1-10","sessionId":"session-0001","result":{"items":[{"name":"sample.exe","base":"0x140000000","size":4096,"rebaseTo":null}],"nextCursor":null,"hasMore":false}}

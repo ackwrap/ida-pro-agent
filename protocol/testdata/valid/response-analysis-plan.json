@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"analysis-plan-01","sessionId":"session-0001","result":{"accepted":true,"start":"0x401000","end":"0x401001","queue":"used"}}

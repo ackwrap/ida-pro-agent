@@ -1,0 +1,10 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-database-entry-points-bad",
+  "sessionId": "session-0001",
+  "result": {
+    "items": [{"address": "0x140001000", "name": "start", "type": "entry", "ordinal": 1}],
+    "nextCursor": null,
+    "hasMore": false
+  }
+}

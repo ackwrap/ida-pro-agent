@@ -1,0 +1,92 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "analysis-trace-argument-callers",
+  "sessionId": "session-0001",
+  "result": {
+    "callAddress": "0x1020",
+    "argumentIndex": 0,
+    "model": "microcode_caller_contexts",
+    "scope": "known_direct_callers",
+    "status": "partial",
+    "contexts": [
+      {
+        "id": 0,
+        "depth": 0,
+        "trace": {
+          "entryAddress": "0x1000",
+          "callAddress": "0x1020",
+          "argumentIndex": 0,
+          "argumentCount": 1,
+          "argumentType": "unsigned __int64",
+          "model": "microcode_reaching_definitions",
+          "maturity": "MMAT_CALLS",
+          "scope": "function",
+          "status": "complete",
+          "cfgComplete": true,
+          "root": 0,
+          "nodes": [
+            {
+              "id": 0,
+              "kind": "parameter",
+              "operation": "",
+              "bits": 64,
+              "address": null,
+              "value": "0"
+            }
+          ],
+          "edges": [],
+          "guards": [],
+          "limitations": [],
+          "truncated": false,
+          "visitedStates": 10
+        }
+      },
+      {
+        "id": 1,
+        "depth": 1,
+        "trace": {
+          "entryAddress": "0x2000",
+          "callAddress": "0x2020",
+          "argumentIndex": 0,
+          "argumentCount": 1,
+          "argumentType": "unsigned __int64",
+          "model": "microcode_reaching_definitions",
+          "maturity": "MMAT_CALLS",
+          "scope": "function",
+          "status": "complete",
+          "cfgComplete": true,
+          "root": 0,
+          "nodes": [
+            {
+              "id": 0,
+              "kind": "constant",
+              "operation": "",
+              "bits": 64,
+              "address": "0x2020",
+              "value": "0xffffffffffffffff"
+            }
+          ],
+          "edges": [],
+          "guards": [],
+          "limitations": [],
+          "truncated": false,
+          "visitedStates": 10
+        }
+      }
+    ],
+    "links": [
+      {
+        "fromContext": 0,
+        "parameterNode": 0,
+        "toContext": 1
+      }
+    ],
+    "boundaries": [],
+    "limitations": [
+      "caller_set_not_proven_complete"
+    ],
+    "truncated": false,
+    "visitedWork": 100,
+    "totalNodes": 2
+  }
+}

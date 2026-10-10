@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"remaining-10","sessionId":"session-0001","result":{"address":"0x403000","symbol":"global_value","declaration":"int global_value","size":4,"bytesRead":4,"format":"integer","value":"0x1","truncated":false}}

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "xref.query Success Response",
+  "allOf": [
+    {
+      "$ref": "../response.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["items", "nextCursor", "hasMore"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["from", "to", "type", "code", "userDefined"],
+                "properties": {
+                  "from": {"$ref": "../common.schema.json#/$defs/address"},
+                  "to": {"$ref": "../common.schema.json#/$defs/address"},
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "call_far", "call_near", "jump_far", "jump_near", "flow",
+                      "offset", "write", "read", "text", "informational", "symbolic",
+                      "unknown_code", "unknown_data"
+                    ]
+                  },
+                  "code": {"type": "boolean"},
+                  "userDefined": {"type": "boolean"}
+                },
+                "oneOf": [
+                  {
+                    "properties": {
+                      "code": {"const": true},
+                      "type": {
+                        "enum": [
+                          "call_far", "call_near", "jump_far", "jump_near",
+                          "flow", "unknown_code"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "code": {"const": false},
+                      "type": {
+                        "enum": [
+                          "offset", "write", "read", "text", "informational",
+                          "symbolic", "unknown_data"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "nextCursor": {
+              "oneOf": [
+                {"type": "null"},
+                {"$ref": "xref-query.request.schema.json#/$defs/cursor"}
+              ]
+            },
+            "hasMore": {"type": "boolean"}
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {"hasMore": {"const": true}},
+                "required": ["hasMore"]
+              },
+              "then": {
+                "properties": {
+                  "nextCursor": {"$ref": "xref-query.request.schema.json#/$defs/cursor"}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {"hasMore": {"const": false}},
+                "required": ["hasMore"]
+              },
+              "then": {
+                "properties": {"nextCursor": {"type": "null"}}
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

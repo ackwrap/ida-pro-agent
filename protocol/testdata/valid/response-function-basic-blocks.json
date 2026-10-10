@@ -1,0 +1,19 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-function-basic-blocks-0001",
+  "sessionId": "session-0001",
+  "result": {
+    "entryAddress": "0x140001000",
+    "items": [
+      {
+        "start": "0x140001000",
+        "end": "0x140001010",
+        "type": "normal",
+        "successors": ["0x140001010"],
+        "predecessors": []
+      }
+    ],
+    "nextOffset": 1,
+    "hasMore": true
+  }
+}

@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"req-di","sessionId":"session-1","result":{"state":"suspended","running":true,"suspended":true,"instructionPointer":"0x401000","threadId":1}}

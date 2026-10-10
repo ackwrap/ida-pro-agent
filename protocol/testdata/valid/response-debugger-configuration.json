@@ -1,0 +1,13 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-debugger-configuration",
+  "result": {
+    "path": "C:\\Samples\\demo.exe",
+    "arguments": "--mode test",
+    "directory": "C:\\Samples",
+    "host": "localhost",
+    "port": 23946,
+    "hasPassword": true
+  },
+  "sessionId": "session-1"
+}

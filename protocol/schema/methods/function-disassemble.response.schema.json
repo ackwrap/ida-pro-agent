@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "function.disassemble Success Response",
+  "allOf": [
+    {"$ref": "../response.schema.json"},
+    {
+      "type": "object",
+      "required": ["result"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entryAddress", "items", "nextOffset", "hasMore"],
+          "properties": {
+            "entryAddress": {"$ref": "../common.schema.json#/$defs/address"},
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["address", "text"],
+                "properties": {
+                  "address": {"$ref": "../common.schema.json#/$defs/address"},
+                  "text": {"type": "string", "maxLength": 4096}
+                }
+              }
+            },
+            "nextOffset": {
+              "oneOf": [
+                {"type": "null"},
+                {"$ref": "#/$defs/nextOffset"}
+              ]
+            },
+            "hasMore": {"type": "boolean"}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"hasMore": {"const": true}}, "required": ["hasMore"]},
+              "then": {"properties": {"nextOffset": {"$ref": "#/$defs/nextOffset"}}}
+            },
+            {
+              "if": {"properties": {"hasMore": {"const": false}}, "required": ["hasMore"]},
+              "then": {"properties": {"nextOffset": {"type": "null"}}}
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nextOffset": {"type": "integer", "minimum": 0, "maximum": 1000100}
+  }
+}

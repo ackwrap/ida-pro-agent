@@ -1,0 +1,1 @@
+{"protocolVersion":"ida-rpc/1","requestId":"readonly-01","sessionId":"session-0001","result":{"requestedAddress":"0x401001","address":"0x401000","end":"0x401005","size":5,"kind":"code","bytes":"e800000000","mnemonic":"call","text":"call sub_401100","operands":[{"index":0,"type":"near_address","text":"sub_401100","address":"0x401100"}]}}

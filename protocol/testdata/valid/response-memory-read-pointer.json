@@ -1,0 +1,13 @@
+{
+  "protocolVersion": "ida-rpc/1",
+  "requestId": "req-memory-pointer",
+  "sessionId": "session-0001",
+  "result": {
+    "address": "0x140004000",
+    "format": "pointer",
+    "bytesRead": 8,
+    "value": "0x140001000",
+    "widthBits": 64,
+    "byteOrder": "little"
+  }
+}
