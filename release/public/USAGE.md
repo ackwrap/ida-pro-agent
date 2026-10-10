@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide describes ida-agent 0.4.7. Use the plugin and Gateway from the same release package.
+This guide describes ida-agent 0.4.8. Use the plugin and Gateway from the same release package.
 
 ### Automatic update checks
 

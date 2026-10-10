@@ -1,8 +1,8 @@
 {
   "format_version": 1,
   "source_repository": "ackwrap/ida-agent",
-  "source_commit": "e0778ccefa1bcb785e0d0d2ab445945adc6d0084",
-  "version": "0.4.7",
+  "source_commit": "bd8c21a1499935eceb8b3f1eab0c690d903811d3",
+  "version": "0.4.8",
   "files": [
     ".gitattributes",
     ".github/workflows/agent-client-regression.yml",
@@ -4333,6 +4333,7 @@
     "release/notes/0.4.5.md",
     "release/notes/0.4.6.md",
     "release/notes/0.4.7.md",
+    "release/notes/0.4.8.md",
     "release/prepare_linux_qt.py",
     "release/prepare_macos_qt.py",
     "release/public/README.md",

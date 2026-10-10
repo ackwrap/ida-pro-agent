@@ -129,6 +129,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
+### Version 0.4.8 / 0.4.8 版本
+
+Version 0.4.8 makes OpenCode 2 the configuration manager's default OpenCode target. It migrates the managed IDA entry to the native v2 format while preserving other servers, settings, and comments. Install Scoop's `versions/opencode2` or npm's `@opencode/cli@2`, then use **Install MCP** / **Update MCP**. See the [setup guide](USAGE.md#opencode-2-setup) and [release notes](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.8.md).
+
+0.4.8 的配置管理页默认面向 OpenCode 2，将受管理的 IDA 条目迁移到 v2 原生格式，并保留其他服务器、设置和注释。先安装 Scoop 的 `versions/opencode2` 或 npm 的 `@opencode/cli@2`，再点击 **Install MCP** / **Update MCP**。详见[安装说明](USAGE.zh-CN.md#opencode-2-安装与配置)和[发布说明](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.8.md)。
+
 ### Version 0.4.7 / 0.4.7 版本
 
 Version 0.4.7 adds automatic stable-release checks to the Qt plugin and local Web manager, with shared daily caching, an opt-out, manual checks, and a release-page link. Close IDA and install the complete 0.4.7 package to enable these controls. See the [usage guide](USAGE.md#automatic-update-checks) and [release notes](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.7.md).
