@@ -153,17 +153,18 @@ ChatMessageView::Message &ChatMessageView::InsertMessage(ChatSpeaker speaker, bo
   message.preview = preview;
   message.inline_role = speaker == ChatSpeaker::System || speaker == ChatSpeaker::Tool
       || speaker == ChatSpeaker::Thinking;
-  const char *label = "[System]";
+  const char *label = u8"\u2699\uFE0F System";
   switch ( speaker )
   {
-    case ChatSpeaker::User: label = "[You]"; break;
-    case ChatSpeaker::Assistant: label = "[AI]"; break;
-    case ChatSpeaker::Context: label = "[Context]"; break;
-    case ChatSpeaker::Thinking: label = "[Thinking]"; break;
-    case ChatSpeaker::Tool: label = "[Tool]"; break;
+    case ChatSpeaker::User: label = u8"\U0001F464 You"; break;
+    case ChatSpeaker::Assistant: label = u8"\U0001F916 AI"; break;
+    case ChatSpeaker::Context: label = u8"\U0001F4CC Context"; break;
+    case ChatSpeaker::Thinking: label = u8"\U0001F4AD Thinking"; break;
+    case ChatSpeaker::Tool: label = u8"\U0001F527 Tool"; break;
     case ChatSpeaker::System: break;
   }
-  const auto role_label = QT::QString::fromLatin1(label);
+  // QString positions count UTF-16 units, including emoji surrogate pairs.
+  const auto role_label = QT::QString::fromUtf8(label);
   message.role_length = static_cast<int>(role_label.size());
   cursor.insertText(role_label);
   if ( message.inline_role )
@@ -171,8 +172,6 @@ ChatMessageView::Message &ChatMessageView::InsertMessage(ChatSpeaker speaker, bo
   else
     cursor.insertBlock(QT::QTextBlockFormat(), QT::QTextCharFormat());
   auto inserted = messages_.insert(before, std::move(message));
-  CompactSeparator(inserted->frame->firstPosition() - 1);
-  CompactSeparator(inserted->frame->lastPosition() + 1);
   StyleMessage(*inserted);
   return *inserted;
 }
@@ -198,7 +197,8 @@ void ChatMessageView::CompactSeparator(int position)
       || cursor.currentFrame() != document()->rootFrame() )
     return;
   QT::QTextBlockFormat spacing;
-  spacing.setLineHeight(2, QT::QTextBlockFormat::FixedHeight);
+  const auto gap = QT::QFontMetricsF(font(), this).lineSpacing() / 3.0;
+  spacing.setLineHeight(gap, QT::QTextBlockFormat::FixedHeight);
   cursor.setBlockFormat(spacing);
   QT::QTextCharFormat empty;
   empty.setFontPointSize(1);

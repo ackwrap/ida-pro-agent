@@ -60,8 +60,8 @@ For the tested Ubuntu installation, the additional GUI runtime packages are:
 ```sh
 sudo apt-get install -y libxcb-cursor0 libxkbcommon-x11-0 libxcb-xinerama0 \
   libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libegl1 libopengl0
-# Required for Chinese/Japanese/Korean text on minimal WSL installations:
-sudo apt-get install -y fonts-noto-cjk
+# Fonts for Chinese/Japanese/Korean text and chat role emoji on minimal WSL:
+sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji
 ```
 
 Headless IDAT still requires an IDA license and a configured Python runtime for

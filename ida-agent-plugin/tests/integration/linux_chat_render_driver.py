@@ -138,8 +138,9 @@ def tick():
             copy_action(output, code, "idaAgentCopyCode", "int answer() {\n    return 42;\n}")
             copy_action(output, code, "idaAgentCopyMessage", MARKDOWN)
             thinking = document.find("thinking-check: comparing evidence")
-            role = document.find("[Thinking]")
+            role = document.find("\U0001f4ad Thinking")
             assert not thinking.isNull() and role.block() == thinking.block(), "thinking label did not stay inline"
+            assert role.block().text().startswith("\U0001f4ad Thinking thinking-check:"), "emoji header overwrote the body"
             assert role.charFormat().fontWeight() >= QtGui.QFont.DemiBold
             assert thinking.charFormat().fontWeight() == output.font().weight(), "role weight leaked into thinking body"
             copy_action(output, thinking, "idaAgentCopyMessage", "thinking-check: comparing evidence")

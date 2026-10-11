@@ -79,14 +79,17 @@ void ChatMessageView::StyleMessage(Message &message)
   const bool primary = !message.inline_role;
   const bool user = message.speaker == ChatSpeaker::User;
   auto format = message.frame->frameFormat();
-  format.setPadding(primary ? 4 : 2);
+  format.setPadding(primary ? 6 : 3);
   format.setTopMargin(0);
   format.setBottomMargin(0);
   format.setBorder(1);
   format.setBorderStyle(QT::QTextFrameFormat::BorderStyle_Solid);
-  format.setBorderBrush(Mix(base, primary ? accent : text, primary ? 30 : 12));
+  format.setBorderBrush(Mix(base, primary ? accent : text, primary ? 20 : 8));
   format.setBackground(Mix(base, user ? accent : text, user ? 8 : 3));
   message.frame->setFrameFormat(format);
+  // Recompute the font-relative gap when the view font or style changes.
+  CompactSeparator(message.frame->firstPosition() - 1);
+  CompactSeparator(message.frame->lastPosition() + 1);
 
   QT::QTextCursor header = message.frame->firstCursorPosition();
   const auto header_text = header.block();
@@ -100,7 +103,7 @@ void ChatMessageView::StyleMessage(Message &message)
   header.mergeCharFormat(role);
   header.setPosition(header_text.position());
   auto header_block = header.blockFormat();
-  header_block.setBottomMargin(primary ? 1 : 0);
+  header_block.setBottomMargin(primary ? 2 : 0);
   header.setBlockFormat(header_block);
 
   QT::QTextCursor body = BodyCursor(message);

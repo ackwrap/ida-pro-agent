@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "source_repository": "ackwrap/ida-agent",
-  "source_commit": "a75a1b7154c8fd0ec7ded23dcb288623cbdc1543",
+  "source_commit": "7716f109b941a87fd54a6f30ffd32e6b84409211",
   "version": "0.4.8",
   "files": [
     ".gitattributes",
