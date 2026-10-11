@@ -7,6 +7,7 @@
 #include "ai/agent_effect_coordinator.hpp"
 #include "ai/agent_effect_policy.hpp"
 #include "ai/agent_loop.hpp"
+#include "ai/analysis_memory/session.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -72,6 +73,8 @@ private:
     std::string prepared_id;
     std::string safe_summary;
     AgentToolCall call;
+    std::string memory_key;
+    std::string memory_revision;
   };
 
   void MaybeAutoOpenChat();
@@ -83,6 +86,13 @@ private:
   void ClearCurrentConversation();
   void SelectConversation(std::string_view selector);
   void SubmitChatMessage(std::string_view text);
+  analysis_memory::BinaryContext CaptureAnalysisContext() const;
+  void ExecuteMemoryCommand(std::string_view text);
+  void ExecuteWorkflowCommand(std::string_view text);
+  void BeginAnalysisTurn();
+  std::string AnalysisSystemPrompt(std::string_view text);
+  bool PrepareAnalysisTool(const AgentToolCall &call, std::size_t index);
+  AgentToolResult DecideMemoryEffect(const PendingEffectCall &effect, bool confirm);
   void PollChatRequest();
   void CompactContext(bool automatic = false);
   void PollContextCompaction();
@@ -127,6 +137,7 @@ private:
   AgentEffectSessionPolicies effect_policies_;
   std::string conversation_session_id_ = "runtime-1";
   std::uint64_t next_runtime_session_id_ = 2;
+  analysis_memory::Session analysis_session_;
   ChatHistoryStore history_store_;
   ChatHistoryWriter history_writer_;
   std::function<void(const char *)> lifecycle_trace_;

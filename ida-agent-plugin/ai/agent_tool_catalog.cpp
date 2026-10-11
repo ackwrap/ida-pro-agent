@@ -19,7 +19,9 @@ using Json = nlohmann::json;
 constexpr std::size_t MaxSearchQueryBytes = 256;
 constexpr std::uint32_t DefaultSearchResults = 6;
 constexpr std::uint32_t MaxSearchResults = 12;
-constexpr std::array<std::string_view, 9> CoreToolNames{{
+constexpr std::array<std::string_view, 11> CoreToolNames{{
+    "ida_analysis_memory_search",
+    "ida_analysis_workflow_get",
     "ida_database_info",
     "ida_ui_cursor",
     "ida_ui_selection",

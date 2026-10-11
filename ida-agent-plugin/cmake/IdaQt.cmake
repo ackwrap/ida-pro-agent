@@ -1,4 +1,8 @@
 # IDA supplies Qt at runtime on every supported platform.
+option(IDA_AGENT_EXPERIMENTAL_IDA95 "Allow local Windows IDA 9.5 ABI acceptance builds (not certified support)" OFF)
+if(IDA_AGENT_EXPERIMENTAL_IDA95 AND NOT WIN32)
+    message(FATAL_ERROR "IDA 9.5 experimental runtime acceptance is currently Windows-only")
+endif()
 if(APPLE)
     include("${CMAKE_CURRENT_LIST_DIR}/IdaQtMac.cmake")
     return()
@@ -11,7 +15,7 @@ set(IDA_AGENT_QT_MKSPEC win32-msvc)
 set(IDA_AGENT_QT_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../../qt-sdk/qt-6.8.2-win"
     CACHE PATH "Qt 6.8.2 headers and configuration for the IDA AI console")
 set(IDA_AGENT_IDA_QT_RUNTIME_DIR "" CACHE PATH
-    "Optional IDA 9.4 installation to regenerate Qt imports instead of using the SDK libraries")
+    "Optional IDA installation to regenerate Qt imports; IDA 9.5 requires experimental opt-in")
 option(IDA_AGENT_ENABLE_QT_AI_CONSOLE
     "Build the docked AI console with an independent input line" ON)
 
@@ -37,6 +41,9 @@ endif()
 
 set(IDA_AGENT_QT_IMPORT_LIBRARIES "")
 if(NOT IDA_AGENT_IDA_QT_RUNTIME_DIR)
+    if(IDA_AGENT_EXPERIMENTAL_IDA95)
+        message(FATAL_ERROR "IDA 9.5 acceptance requires an actual IDA_AGENT_IDA_QT_RUNTIME_DIR")
+    endif()
     # These official QT-namespaced imports are tracked in the pinned SDK.
     # Linking needs neither an IDA installation nor stock Qt runtime DLLs.
     set(_ida_qt_import_dir "${IDASDK}/lib/x64_win_qt")
@@ -70,6 +77,19 @@ set(_dumpbin "${_msvc_bin_dir}/dumpbin.exe")
 if(NOT EXISTS "${_dumpbin}")
     message(FATAL_ERROR "dumpbin.exe was not found beside CMAKE_AR: ${_dumpbin}")
 endif()
+set(_ida_agent_expected_host_version 9.4)
+if(IDA_AGENT_EXPERIMENTAL_IDA95)
+    execute_process(COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_LIST_DIR}/probe_ida_runtime.py"
+        --ida-dir "${IDA_AGENT_IDA_QT_RUNTIME_DIR}" --dumpbin "${_dumpbin}"
+        --expected-host-version 9.5
+        --output "${CMAKE_BINARY_DIR}/ida95-abi-preflight.json"
+        RESULT_VARIABLE _ida_agent_probe_result)
+    if(NOT _ida_agent_probe_result EQUAL 0)
+        message(FATAL_ERROR "IDA 9.5 ABI preflight failed; see ida95-abi-preflight.json")
+    endif()
+    set(_ida_agent_expected_host_version 9.5)
+endif()
 set(_ida_qt_import_dir "${CMAKE_BINARY_DIR}/ida-qt-imports")
 foreach(_qt_module Core Gui Widgets)
     set(_ida_qt_import "${_ida_qt_import_dir}/Qt6${_qt_module}.lib")
@@ -83,7 +103,7 @@ foreach(_qt_module Core Gui Widgets)
             --expected-version 6.8.2
             --expected-namespace QT
             --host-executable "${IDA_AGENT_IDA_QT_RUNTIME_DIR}/ida.exe"
-            --expected-host-version 9.4
+            --expected-host-version "${_ida_agent_expected_host_version}"
         RESULT_VARIABLE _ida_qt_import_result
     )
     if(NOT _ida_qt_import_result EQUAL 0)

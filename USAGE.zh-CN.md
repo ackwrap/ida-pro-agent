@@ -61,6 +61,12 @@ API Key 和保存的代理密码以明文存放在当前用户私有文件中。
 
 所选供应商会收到会话内容与相关分析上下文、工具结果。分享配置或日志前请移除凭据。
 
+### 分析记忆与工作流（源码构建）
+
+在所选模型中启用 **Tools**。用 `/memory add <笔记>`、`/memory add-local <笔记>`、`/memory search <关键词>` 和 `/memory forget <编号>` 管理当前二进制的外部分析记忆。`/new`、`/clear` 保留已存笔记。`/workflow protection [问题]`、`/workflow function [问题]`、`/workflow types [问题]` 分别提供保护强度评估、函数与数据流调查、类型恢复准备；报告使用实际工具证据并明确未完成的范围。Agent 的记忆写入沿用会话审批。详见[完整命令与 IDA 9.5 验收说明](ida-agent-plugin/ANALYSIS.md)。
+
+上述功能已进入当前源码，尚未包含在 v0.4.8 包中。稳定 UI ABI 仍是 IDA 9.4 / Qt 6.8.2；Windows 9.5 实验路径要求严格 ABI 预检，实机验收仍待完成。
+
 ### 外部 MCP 客户端：使用配置管理页
 
 Windows 可打开安装后的快捷方式，或运行：

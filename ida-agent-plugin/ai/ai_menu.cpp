@@ -194,6 +194,7 @@ void AiMenuController::Stop(bool unregister_actions) noexcept
   started_ = false;
   auto_opened_ = false;
   history_store_opened_ = false;
+  analysis_session_.Reset();
   database_context_id_ = -1;
   const auto total = std::chrono::duration_cast<std::chrono::milliseconds>(
       menu_removed_at - started_at);
@@ -465,6 +466,12 @@ bool AiMenuController::ExecuteCliLine(const char *line)
       break;
     case CliCommandKind::Context:
       ShowContextUsage(true);
+      break;
+    case CliCommandKind::AnalysisMemory:
+      ExecuteMemoryCommand(command.text);
+      break;
+    case CliCommandKind::AnalysisWorkflow:
+      ExecuteWorkflowCommand(command.text);
       break;
     case CliCommandKind::Unknown:
       chat_panel_.AppendSystem("Unknown command: " + command.text + ". Enter /help for commands.");

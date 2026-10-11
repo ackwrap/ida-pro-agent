@@ -58,6 +58,12 @@ Enter the API prefix, not a complete operation URL. **Test Connection** checks m
 
 API keys and saved proxy passwords are stored as plaintext with current-user file permissions, normally in `%LOCALAPPDATA%\ida-agent\ai\providers.json`. The built-in AI sends conversation content and relevant analysis results to the selected provider. External MCP clients use their own provider settings.
 
+### Analysis memory and workflows (source builds)
+
+Enable **Tools** for the selected model. Use `/memory add <note>`, `/memory add-local <note>`, `/memory search <text>`, and `/memory forget <id>` to manage this binary's external analysis memory. `/new` and `/clear` keep saved notes. Use `/workflow protection [question]`, `/workflow function [question]`, or `/workflow types [question]` for reports with actual tool evidence and explicit coverage gaps. Agent memory writes follow the conversation approval policy. See the [full command and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md).
+
+These features are in current source builds and are not included in v0.4.8. The stable UI ABI remains IDA 9.4 / Qt 6.8.2; the Windows 9.5 experimental path requires strict ABI preflight and still needs live acceptance.
+
 ### MCP clients
 
 Run `ida-mcp.exe -web` for the local client configuration manager, or configure your MCP client to start `ida-mcp.exe` with no arguments for stdio. Keep IDA open with the database loaded. Optional HTTP transport binds only to loopback; authenticated remote hosting is not implemented.
@@ -110,6 +116,12 @@ Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管�
 支持 OpenAI 风格的 **Responses / Chat Completions** 和 Anthropic 风格的 **Messages**。Base URL 填 API 前缀，例如 `https://api.openai.com/v1`，不要附加 `/responses`、`/chat/completions` 或 `/messages`，插件会自动追加。**Test Connection** 只检查模型列表接口，不能证明聊天、流式输出和工具调用均兼容；不支持模型列表的服务可尝试手动添加模型。
 
 API Key 和已保存的代理密码使用当前用户文件权限保护，但以明文保存，通常位于 `%LOCALAPPDATA%\ida-agent\ai\providers.json`。内置 AI 会向选定供应商发送会话内容与相关分析结果。外部 MCP 客户端使用其自己的模型供应商配置。
+
+### 分析记忆与工作流（源码构建）
+
+在所选模型中启用 **Tools**。用 `/memory add <笔记>`、`/memory add-local <笔记>`、`/memory search <关键词>` 和 `/memory forget <编号>` 管理当前二进制的外部分析记忆。`/new`、`/clear` 保留已存笔记。`/workflow protection [问题]`、`/workflow function [问题]`、`/workflow types [问题]` 分别提供保护强度评估、函数与数据流调查、类型恢复准备；报告使用实际工具证据并明确未完成的范围。Agent 的记忆写入沿用会话审批。详见[完整命令与 IDA 9.5 验收说明](ida-agent-plugin/ANALYSIS.md)。
+
+上述功能已进入当前源码，尚未包含在 v0.4.8 包中。稳定 UI ABI 仍是 IDA 9.4 / Qt 6.8.2；Windows 9.5 实验路径要求严格 ABI 预检，实机验收仍待完成。
 
 ### MCP 客户端
 

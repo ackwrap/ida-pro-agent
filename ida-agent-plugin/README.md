@@ -15,6 +15,12 @@ Linux 独立 AI 后端已支持 HTTP、SSE、WS/WSS 和聊天会话逻辑；libc
 以固定版本静态内嵌，OpenSSL 使用系统库。启用 `IDA_AGENT_ENABLE_AI=ON` 后，
 可使用 AI Chat、供应商设置、工具审批和历史记录；Qt 运行库由 Linux IDA 9.4 提供。
 
+## 分析记忆与带证据的工作流
+
+当前源码构建增加 `/memory`，用于按二进制保存、检索和管理分析笔记；`/workflow protection`、`/workflow function`、`/workflow types` 分别用于保护强度评估、函数与数据流调查、类型恢复准备。所选模型须启用 **Tools**。结论保留证据地址和来源，过期证据须重新验证，报告根据实际成功的工具调用检查覆盖范围。Agent 的记忆写入和删除沿用会话审批，存储位于 IDB 外部。
+
+详见[命令、存储、限制与 IDA 9.5 验收说明](ANALYSIS.md)。Windows 增加严格的 9.5 ABI 预检和显式实验构建配置；9.5 实机验收仍待完成，稳定支持的 UI ABI 保持 IDA 9.4 / Qt 6.8.2。这些记忆工具属于内置 Agent，外部 MCP 工具目录不变。
+
 ## Lifecycle
 
 数据库初始化后，Plugin 在 IDA 主线程读取一次固定元数据、创建 ready Pipe 并启动 registry

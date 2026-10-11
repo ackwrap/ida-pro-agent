@@ -1,6 +1,7 @@
 #include "ai/agent_ui_context.hpp"
 
 #include "ai/agent_tool_registry.hpp"
+#include "ai/chat_history_store.hpp"
 
 #include "address.hpp"
 #include "bridge/ida_executor.hpp"
@@ -11,6 +12,9 @@
 #include <ida.hpp>
 #include <kernwin.hpp>
 #include <range.hpp>
+#include <loader.hpp>
+#include <nalt.hpp>
+#include <filesystem>
 #include <segment.hpp>
 #include <ua.hpp>
 
@@ -47,6 +51,27 @@ Json RangeJson(ea_t start, ea_t end)
   return Json{
       {"start", rpc::FormatAddress(static_cast<std::uint64_t>(start))},
       {"end", rpc::FormatAddress(static_cast<std::uint64_t>(end))}};
+}
+
+Json AnalysisContextSnapshot()
+{
+  const char *path = get_path(PATH_TYPE_IDB);
+  if (path == nullptr || *path == '\0') return nullptr;
+  const auto idb = NormalizeDatabaseKey(std::filesystem::u8path(path));
+  if (!idb) return nullptr;
+  uchar digest[32]{};
+  std::string hash;
+  if (retrieve_input_file_sha256(digest))
+  {
+    constexpr char hex[] = "0123456789abcdef";
+    for (unsigned char byte : digest) { hash.push_back(hex[byte >> 4]); hash.push_back(hex[byte & 15]); }
+  }
+  const ea_t cursor = get_screen_ea();
+  const func_t *function = cursor == BADADDR ? nullptr : get_func(cursor);
+  return Json{{"idb", *idb}, {"sha256", hash}, {"changeCount", inf_get_database_change_count()},
+      {"imageBase", rpc::FormatAddress(get_imagebase())}, {"databaseContextId", get_dbctx_id()},
+      {"cursor", cursor == BADADDR ? Json(nullptr) : Json(rpc::FormatAddress(cursor))},
+      {"function", function == nullptr ? Json(nullptr) : Json(rpc::FormatAddress(function->start_ea))}};
 }
 
 Json UiCursor()
@@ -213,6 +238,10 @@ void PopulateAgentUiContextInvokers(
     AgentToolInvokers &invokers,
     bridge::IdaExecutor &executor)
 {
+  invokers.analysis_context = [&executor]()
+  {
+    return executor.ReadFor(std::chrono::seconds(2), []() { return AnalysisContextSnapshot(); });
+  };
   invokers.ui_cursor = [&executor]()
   {
     return executor.ReadFor(std::chrono::seconds(12), []() { return UiCursor(); });

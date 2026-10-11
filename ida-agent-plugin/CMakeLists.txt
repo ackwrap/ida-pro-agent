@@ -124,6 +124,8 @@ if((CMAKE_SYSTEM_NAME STREQUAL "Linux" OR APPLE) AND (IDA_AGENT_BUILD_AI_BACKEND
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LinuxAiBackend.cmake")
 endif()
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AnalysisMemory.cmake")
+
 ida_add_plugin(ida_agent_plugin
     SOURCES
         plugin.cpp
@@ -215,6 +217,7 @@ if(IDA_AGENT_ENABLE_AI)
         ai/agent_ui_context.cpp
         ai/ai_menu.cpp
         ai/ai_menu_chat.cpp
+        ai/ai_menu_analysis.cpp
         ai/ai_menu_context.cpp
         ai/ai_menu_selection.cpp
         ai/ai_menu_state.cpp
@@ -257,6 +260,7 @@ if(IDA_AGENT_ENABLE_AI)
         ${IDA_AGENT_PROVIDER_MODEL_SOURCES}
         ai/provider_settings_store.cpp
     )
+    target_link_libraries(ida_agent_plugin PRIVATE ida_ai_analysis)
     if(WIN32)
         target_link_libraries(ida_agent_plugin PRIVATE winhttp winsqlite3)
     else()

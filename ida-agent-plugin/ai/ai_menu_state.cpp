@@ -107,6 +107,7 @@ void AiMenuController::OnAllHistoryCleared() noexcept
   try
   {
     agent_loop_.Reset();
+    analysis_session_.Reset();
     AdvanceEffectGeneration();
     ClearCompactionState();
     context_usage_ = {};
@@ -244,6 +245,7 @@ void AiMenuController::StartNewConversation()
   history_writer_.Drain();
   PollHistoryWrite();
   agent_loop_.Reset();
+  analysis_session_.Reset();
   ClearCompactionState();
   context_usage_ = {};
   chat_panel_.ClearTransientStatus();
@@ -281,6 +283,7 @@ void AiMenuController::ClearCurrentConversation()
   history_writer_.Drain();
   PollHistoryWrite();
   agent_loop_.Reset();
+  analysis_session_.Reset();
   ClearCompactionState();
   context_usage_ = {};
   chat_panel_.ClearTransientStatus();
@@ -336,6 +339,7 @@ void AiMenuController::SelectConversation(std::string_view selector)
     return;
   }
   agent_loop_.Reset();
+  analysis_session_.Reset();
   ClearCompactionState();
   context_usage_ = {};
   SetConversationSessionId(*id);

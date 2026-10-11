@@ -51,6 +51,17 @@ AgentToolRegistry::AgentToolRegistry(
 {
 }
 
+nlohmann::json AgentToolRegistry::AnalysisContext() const noexcept
+{
+  try
+  {
+    if (Available() && fixed_invokers_ && fixed_invokers_->analysis_context)
+      return fixed_invokers_->analysis_context();
+  }
+  catch (...) {}
+  return nullptr;
+}
+
 AgentToolRegistry::~AgentToolRegistry()
 {
   SetAvailable(false);

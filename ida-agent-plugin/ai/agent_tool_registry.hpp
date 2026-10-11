@@ -409,6 +409,8 @@ struct AgentToolInvokers
 {
   using Json = nlohmann::json;
   std::function<Json()> database_info;
+  // Private context snapshot for built-in analysis memory; not an RPC/tool.
+  std::function<Json()> analysis_context;
   std::function<Json(const AgentListArguments &)> database_segments;
   std::function<Json(const AgentListArguments &)> database_entry_points;
   std::function<Json(const AgentFunctionSearchArguments &)> function_search;
@@ -574,6 +576,7 @@ public:
   void CancelAndForget(JobId job_id) noexcept;
   void SetAvailable(bool available) noexcept;
   bool Available() const noexcept;
+  nlohmann::json AnalysisContext() const noexcept;
 
 #ifdef IDA_AGENT_AGENT_TOOL_REGISTRY_TESTING
   static AgentToolRegistry ForTesting(

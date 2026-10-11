@@ -121,10 +121,13 @@ void AiMenuController::SubmitChatMessage(std::string_view text)
     std::vector<AgentToolDefinition> tools = agent_tools_.Definitions();
     const auto &effects = AgentEffectToolDefinitions();
     tools.insert(tools.end(), effects.begin(), effects.end());
+    const auto &analysis = analysis_memory::ToolDefinitions();
+    tools.insert(tools.end(), analysis.begin(), analysis.end());
+    BeginAnalysisTurn();
     AgentLoopStep step = agent_loop_.Begin(
         *active,
         messages,
-        std::string(AgentSystemPrompt()),
+        AnalysisSystemPrompt(text),
         std::move(tools));
     if ( step.error )
     {
@@ -136,6 +139,12 @@ void AiMenuController::SubmitChatMessage(std::string_view text)
   }
   else
   {
+    if (!analysis_session_.ActiveWorkflow().empty())
+    {
+      chat_panel_.AppendSystem("Analysis workflows require a model with Tools enabled in Provider Manager.");
+      PersistTranscript();
+      return;
+    }
     build = BuildProviderChatRequest(*active, messages);
   }
   if ( build.error )
@@ -293,6 +302,11 @@ void AiMenuController::PollChatRequest()
         chat_panel_.AppendSystem(EmptyResponseMessage);
       }
       agent_loop_.Complete();
+      if (!analysis_session_.ActiveWorkflow().empty())
+      {
+        analysis_session_.Bind(CaptureAnalysisContext());
+        chat_panel_.AppendSystem(analysis_session_.CompletionNotice());
+      }
     }
     else
     {
@@ -333,6 +347,8 @@ void AiMenuController::BeginAgentToolBatch(
   }
   PersistTranscript();
 
+  analysis_session_.Bind(CaptureAnalysisContext());
+  analysis_session_.BeginReadBatch();
   const AgentEffectApprovalPolicy policy = CurrentEffectPolicy();
   effect_coordinator_.UpdateBinding(CurrentEffectBinding());
   std::vector<AgentToolCall> read_only_calls;
@@ -345,6 +361,8 @@ void AiMenuController::BeginAgentToolBatch(
       pending_tool_results_[index] = std::move(*result);
       continue;
     }
+    if (PrepareAnalysisTool(call, index))
+      continue;
     if ( !IsEffectTool(call.name) )
     {
       pending_read_only_indices_.push_back(index);
@@ -398,7 +416,8 @@ void AiMenuController::BeginAgentToolBatch(
     }
   }
 
-  if ( policy == AgentEffectApprovalPolicy::Allow )
+  if ( policy == AgentEffectApprovalPolicy::Allow
+      && !pending_effect_calls_.empty() )
   {
     DecidePendingEffects(true);
     return;
@@ -480,6 +499,11 @@ void AiMenuController::DecidePendingEffects(bool confirm)
   const AgentEffectBinding binding = CurrentEffectBinding();
   for ( const PendingEffectCall &effect : effects )
   {
+    if (effect.prepared_id == "analysis-memory")
+    {
+      pending_tool_results_[effect.result_index] = DecideMemoryEffect(effect, confirm);
+      continue;
+    }
     const AgentEffectDecisionResult decision = confirm
         ? effect_coordinator_.Confirm(effect.prepared_id, binding)
         : effect_coordinator_.Reject(effect.prepared_id, binding);
@@ -532,6 +556,8 @@ void AiMenuController::CompleteAgentToolResults(
   }
   if ( !results.empty() )
     PersistTranscript();
+  analysis_session_.Bind(CaptureAnalysisContext());
+  analysis_session_.Observe(results);
   AgentLoopStep step = agent_loop_.CompleteToolRound(std::move(results));
   if ( step.error )
   {

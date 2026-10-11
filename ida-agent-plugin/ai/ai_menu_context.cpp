@@ -23,6 +23,8 @@ std::vector<AgentToolDefinition> ContextAgentTools(
   std::vector<AgentToolDefinition> tools = registry.Definitions();
   const auto &effects = AgentEffectToolDefinitions();
   tools.insert(tools.end(), effects.begin(), effects.end());
+  const auto &analysis = analysis_memory::ToolDefinitions();
+  tools.insert(tools.end(), analysis.begin(), analysis.end());
   return tools;
 }
 
@@ -66,7 +68,7 @@ bool AiMenuController::RefreshContextUsage()
   if ( agent_enabled )
   {
     ProviderChatAgentOptions options;
-    options.system_prompt = std::string(AgentSystemPrompt());
+    options.system_prompt = AnalysisSystemPrompt({});
     options.tools = InitialAgentToolDefinitions(
         ContextAgentTools(agent_tools_));
     build = BuildProviderAgentRequest(*active, messages, options);

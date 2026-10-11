@@ -87,6 +87,12 @@ Provider settings normally live in `%LOCALAPPDATA%\ida-agent\ai\providers.json`.
 
 The built-in agent sends chat content and the analysis context/tool results used in that conversation to the selected provider. Choose a provider appropriate for the binaries and data you analyze.
 
+## Analysis memory and evidence workflows
+
+Current source builds add `/memory` for persistent per-binary notes and `/workflow protection`, `/workflow function`, and `/workflow types` for evidence-oriented analysis. Enable **Tools** for the selected model. Stored evidence keeps addresses and provenance; the agent rechecks stale findings and validates reports against successful tool calls. Memory saves/deletes use the existing conversation approval policy and stay outside the IDB. These features are for the built-in agent; the external MCP catalog remains unchanged.
+
+See the [analysis usage and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md) for commands, storage, limits and tests. Windows source builds also offer a strict IDA 9.5 ABI preflight and explicit experimental configuration; live 9.5 acceptance is pending and the stable supported UI ABI remains IDA 9.4 / Qt 6.8.2.
+
 ## Connect an MCP client
 
 Version 0.4.5 adds 12 direct tools alongside the 11 domain tools; earlier v0.4.4 packages expose only the domain tools. See [Gateway compatibility details](ida-mcp/README.md#agent-compatibility).

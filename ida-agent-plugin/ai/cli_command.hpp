@@ -26,6 +26,8 @@ enum class CliCommandKind
   History,
   SelectSession,
   Context,
+  AnalysisMemory,
+  AnalysisWorkflow,
   Unknown,
 };
 
