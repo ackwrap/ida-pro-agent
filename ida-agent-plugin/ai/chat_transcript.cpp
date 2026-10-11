@@ -132,6 +132,8 @@ void ChatTranscript::Reset()
   entries_.clear();
   lines_.clear();
   encoded_budget_ = 26;
+  retained_lines_ = 0;
+  lines_dirty_ = true;
   Append(ChatSpeaker::System, "IDA Agent AI UI is ready.");
   Append(
       ChatSpeaker::System,
@@ -176,15 +178,21 @@ bool ChatTranscript::Restore(std::vector<ChatEntry> entries)
   std::vector<ChatEntry> original_entries = entries_;
   std::vector<std::string> original_lines = lines_;
   const std::size_t original_budget = encoded_budget_;
-  const auto rollback = [this, &original_entries, &original_lines, original_budget]()
+  const std::size_t original_line_count = retained_lines_;
+  const bool original_dirty = lines_dirty_;
+  const auto rollback = [this, &original_entries, &original_lines, original_budget, original_line_count, original_dirty]()
   {
     entries_ = std::move(original_entries);
     lines_ = std::move(original_lines);
     encoded_budget_ = original_budget;
+    retained_lines_ = original_line_count;
+    lines_dirty_ = original_dirty;
   };
   entries_.clear();
   lines_.clear();
   encoded_budget_ = 26;
+  retained_lines_ = 0;
+  lines_dirty_ = true;
   for ( ChatEntry &entry : entries )
   {
     if ( entry.text.size() > MaxChatEntryBytesFor(entry.speaker)
@@ -194,7 +202,7 @@ bool ChatTranscript::Restore(std::vector<ChatEntry> entries)
       return false;
     }
     entry.text = Sanitize(entry.text);
-    if ( !AppendEntry(std::move(entry), false, false) )
+    if ( !AppendEntry(std::move(entry), false) )
     {
       rollback();
       return false;
@@ -202,8 +210,7 @@ bool ChatTranscript::Restore(std::vector<ChatEntry> entries)
   }
   if ( entries_.empty() )
     Reset();
-  else
-    RebuildLines();
+
   return true;
 }
 
@@ -220,13 +227,12 @@ ChatTranscriptAppendResult ChatTranscript::AppendDetailed(
   if ( text.size() > MaxChatEntryBytesFor(speaker) || !IsValidUtf8(text) )
     return result;
 
-  const std::size_t previous_lines = lines_.size();
+  const std::size_t previous_lines = (std::min)(retained_lines_, max_lines_);
   const std::string sanitized = Sanitize(text);
   const std::size_t added_lines = 1
       + static_cast<std::size_t>(std::count(sanitized.begin(), sanitized.end(), '\n'));
   result.appended = AppendEntry(
       ChatEntry{speaker, sanitized},
-      true,
       true,
       &result.trimmed_entries);
   result.display_rebuild_required = result.appended
@@ -237,7 +243,6 @@ ChatTranscriptAppendResult ChatTranscript::AppendDetailed(
 
 bool ChatTranscript::AppendEntry(
     ChatEntry entry,
-    bool rebuild,
     bool trim_oldest,
     std::size_t *trimmed_entries)
 {
@@ -257,6 +262,8 @@ bool ChatTranscript::AppendEntry(
           || encoded_budget_ > MaxChatHistoryBytes - addition()) )
   {
     encoded_budget_ -= EncodedEntryBudget(entries_.front()) + (entries_.size() > 1 ? 1 : 0);
+    retained_lines_ -= 1 + static_cast<std::size_t>(
+        std::count(entries_.front().text.begin(), entries_.front().text.end(), '\n'));
     entries_.erase(entries_.begin());
     if ( trimmed_entries != nullptr )
       ++*trimmed_entries;
@@ -268,9 +275,10 @@ bool ChatTranscript::AppendEntry(
   }
 
   encoded_budget_ += addition();
+  retained_lines_ += 1 + static_cast<std::size_t>(
+      std::count(entry.text.begin(), entry.text.end(), '\n'));
   entries_.push_back(std::move(entry));
-  if ( rebuild )
-    RebuildLines();
+  lines_dirty_ = true;
   return true;
 }
 
@@ -279,12 +287,14 @@ const std::vector<ChatEntry> &ChatTranscript::Entries() const noexcept
   return entries_;
 }
 
-const std::vector<std::string> &ChatTranscript::Lines() const noexcept
+const std::vector<std::string> &ChatTranscript::Lines() const
 {
+  if ( lines_dirty_ )
+    RebuildLines();
   return lines_;
 }
 
-void ChatTranscript::RebuildLines()
+void ChatTranscript::RebuildLines() const
 {
   std::vector<std::string> reverse_lines;
   reverse_lines.reserve(max_lines_);
@@ -310,6 +320,7 @@ void ChatTranscript::RebuildLines()
     }
   }
   lines_.assign(reverse_lines.rbegin(), reverse_lines.rend());
+  lines_dirty_ = false;
 }
 
 std::size_t ChatTranscript::EncodedEntryBudget(const ChatEntry &entry)

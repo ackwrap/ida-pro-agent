@@ -2,6 +2,7 @@
 #include "ai/chat_context.hpp"
 #include "ai/chat_display_formatter.hpp"
 #include "ai/chat_transcript.hpp"
+#include "ai/chat_render_budget.hpp"
 #include "ai/cli_command.hpp"
 
 #include <algorithm>
@@ -495,5 +496,56 @@ int main()
               no_retained_migration.old_committed_utf16_units + 4)
               == no_retained_migration.new_committed_utf16_units,
       "fully clipped preview candidate did not clamp to committed boundary");
+  // Cache construction must remain independent of appending raw history.
+  ChatTranscript lazy(3);
+  Require(lazy.Restore({{ChatSpeaker::User, "first"}}), "lazy restore failed");
+  lazy.AppendDetailed(ChatSpeaker::Assistant, "one\ntwo");
+  const auto lazy_overflow = lazy.AppendDetailed(ChatSpeaker::System, "tail");
+  Require(lazy_overflow.display_rebuild_required
+      && lazy.Lines() == std::vector<std::string>{"[AI] one", "     two", "[System] tail"},
+      "lazy line view lost clipping semantics before first access");
+  const auto cached_lines = lazy.Lines();
+  Require(!lazy.Restore({{ChatSpeaker::User, std::string(1, '\xFF')}})
+      && lazy.Lines() == cached_lines, "lazy restore rollback lost a materialized cache");
+  lazy.Append(ChatSpeaker::User, "new");
+  const auto dirty_entries = lazy.Entries();
+  Require(!lazy.Restore({{ChatSpeaker::User, std::string(1, '\xFF')}})
+      && lazy.Entries().size() == dirty_entries.size()
+      && lazy.Lines().back() == "[You] new", "lazy restore rollback lost a dirty cache");
+
+  const std::string unicode = "a\xE4\xB8\xAD\xF0\x9F\x98\x80z";
+  Require(ChatUtf8PrefixBytes(unicode, 2) == 1
+      && ChatUtf8PrefixBytes(unicode, 4) == 4
+      && ChatUtf8PrefixBytes(unicode, 7) == 4
+      && ChatUtf8PrefixBytes(unicode, 8) == 8, "render clipping split a UTF-8 character");
+  Require(ChatRenderPrefixBytes("one\ntwo\nthree", 100, 2) == 7,
+      "render line budget was not enforced");
+  Require(CanRenderChatMarkdown("## hello\n\ncode")
+      && !CanRenderChatMarkdown(std::string(MaxChatMarkdownBytes + 1, 'x'))
+      && !CanRenderChatMarkdown(std::string(MaxChatMarkdownLines, '\n')),
+      "Markdown complexity budget failed");
+  const std::string complete(MaxRenderedMessageBytes + 7, 'x');
+  const auto clipped = BoundedChatRenderText(complete);
+  Require(clipped.size() == MaxRenderedMessageBytes + ChatDisplayLimitNotice.size()
+      && clipped.find(ChatDisplayLimitNotice) == MaxRenderedMessageBytes
+      && complete.size() == MaxRenderedMessageBytes + 7,
+      "bounded display modified source text or omitted its notice");
+  Require(BoundedChatRenderText(unicode) == unicode, "short UTF-8 body was changed");
+  const std::string long_line(MaxRenderedChatLineBytes + 5, 'x');
+  const auto segmented = BoundedChatRenderText(long_line);
+  Require(segmented == std::string(MaxRenderedChatLineBytes, 'x') + "\nxxxxx"
+      && !CanRenderChatMarkdown(long_line), "long-line display did not segment/fall back");
+  auto first_chunk = MakeChatRenderChunk(long_line, MaxRenderedChatLineBytes, 9);
+  auto next_chunk = MakeChatRenderChunk(std::string_view(long_line).substr(first_chunk.consumed),
+      20, 9, first_chunk.line_bytes);
+  Require(first_chunk.text + next_chunk.text == segmented
+      && next_chunk.consumed == 5, "long-line segmentation changed across stream boundaries");
+  const std::string split_unicode = std::string(MaxRenderedChatLineBytes - 1, 'x')
+      + "\xF0\x9F\x98\x80";
+  Require(BoundedChatRenderText(split_unicode)
+      == std::string(MaxRenderedChatLineBytes - 1, 'x') + "\n\xF0\x9F\x98\x80",
+      "display paragraph segmentation split a UTF-8 code point");
+
+
   return 0;
 }

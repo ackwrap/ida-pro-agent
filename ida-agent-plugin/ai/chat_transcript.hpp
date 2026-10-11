@@ -73,21 +73,22 @@ public:
       ChatSpeaker speaker,
       std::string_view text);
   const std::vector<ChatEntry> &Entries() const noexcept;
-  const std::vector<std::string> &Lines() const noexcept;
+  const std::vector<std::string> &Lines() const;
 
 private:
   bool AppendEntry(
       ChatEntry entry,
-      bool rebuild,
       bool trim_oldest,
       std::size_t *trimmed_entries = nullptr);
-  void RebuildLines();
+  void RebuildLines() const;
   static std::size_t EncodedEntryBudget(const ChatEntry &entry);
 
   std::size_t max_lines_;
   std::size_t encoded_budget_ = 26;
   std::vector<ChatEntry> entries_;
-  std::vector<std::string> lines_;
+  std::size_t retained_lines_ = 0;
+  mutable bool lines_dirty_ = true;
+  mutable std::vector<std::string> lines_;
 };
 
 } // namespace ida_agent::ai

@@ -106,6 +106,7 @@ target_link_libraries(ida_ai_jump_target_text_test PRIVATE ida_ai_backend)
 
 add_executable(ida_ai_chat_ui_model_test
     tests/unit/ai/chat_ui_model_test.cpp
+    ai/chat_render_budget.cpp
     ai/chat_context.cpp
     ai/chat_display_formatter.cpp
     ai/cli_command.cpp

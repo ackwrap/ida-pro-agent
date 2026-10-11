@@ -52,7 +52,7 @@ std::string ActionLabel(const JumpTargetText &candidate)
 
 } // namespace
 
-void AttachChatOutputJumpMenu(QT::QPlainTextEdit *output)
+void AttachChatOutputJumpMenu(ChatMessageView *output)
 {
   if ( output == nullptr )
     return;
@@ -64,6 +64,27 @@ void AttachChatOutputJumpMenu(QT::QPlainTextEdit *output)
       [output](const QT::QPoint &pos)
       {
         QT::QMenu *menu = output->createStandardContextMenu();
+        const auto under_pointer = output->cursorForPosition(pos);
+        const auto message = output->CopyMessageAt(under_pointer);
+        const auto code = output->CopyCodeAt(under_pointer);
+        if ( !message.isNull() || !code.isNull() )
+        {
+          menu->addSeparator();
+          const auto add_copy = [menu](const char *label, const char *name, const QT::QString &text)
+          {
+            auto *copy = menu->addAction(QT::QString::fromLatin1(label));
+            copy->setObjectName(QT::QString::fromLatin1(name));
+            QT::QObject::connect(copy, &QT::QAction::triggered, menu, [text]()
+            {
+              QT::QApplication::clipboard()->setText(text);
+            });
+          };
+          if ( !code.isNull() )
+            add_copy("Copy Code", "idaAgentCopyCode", code);
+          if ( !message.isNull() )
+            add_copy("Copy Message", "idaAgentCopyMessage", message);
+        }
+
         const std::string selected = output->textCursor().selectedText().toStdString();
         if ( !selected.empty() )
         {

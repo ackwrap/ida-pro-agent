@@ -229,9 +229,13 @@ if(IDA_AGENT_ENABLE_AI)
         ai/chat_command_line_edit.cpp
         ai/chat_context.cpp
         ai/chat_display_formatter.cpp
+        ai/chat_render_budget.cpp
+        ai/chat_message_view.cpp
+        ai/chat_message_styles.cpp
         ai/chat_output_menu.cpp
         ai/chat_output_view.cpp
         ai/chat_panel.cpp
+        ai/chat_panel_widgets.cpp
         ai/chat_reasoning.cpp
         ai/chat_reasoning_control.cpp
         ai/chat_script_approval.cpp
@@ -728,6 +732,7 @@ if(BUILD_TESTING)
 
     add_executable(ida_ai_chat_ui_model_test
         tests/unit/ai/chat_ui_model_test.cpp
+        ai/chat_render_budget.cpp
         ai/chat_context.cpp
         ai/chat_display_formatter.cpp
         ai/chat_transcript.cpp

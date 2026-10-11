@@ -87,7 +87,7 @@ Provider settings normally live in `%LOCALAPPDATA%\ida-agent\ai\providers.json`.
 
 The built-in agent sends chat content and the analysis context/tool results used in that conversation to the selected provider. Choose a provider appropriate for the binaries and data you analyze.
 
-AI Chat source builds include an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat effort reference](ida-agent-plugin/CHAT.md).
+AI Chat source builds include an Agent-style view with Markdown, code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
 
 ## Analysis memory and evidence workflows
 

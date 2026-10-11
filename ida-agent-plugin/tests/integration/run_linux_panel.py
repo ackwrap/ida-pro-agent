@@ -56,6 +56,26 @@ class Provider(BaseHTTPRequestHandler):
             self.send_header("Connection", "close")
             self.end_headers()
             self.close_connection = True
+            if "render-markdown" in prompt:
+                from linux_chat_render_fixture import MARKDOWN
+                self.event({"reasoning_content": "thinking-check: comparing evidence"})
+                for index in range(0, len(MARKDOWN), 37):
+                    self.event({"content": MARKDOWN[index:index + 37]})
+                    time.sleep(0.005)
+                self.event({}, "stop")
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+                return
+            if "render-burst" in prompt:
+                from linux_chat_render_fixture import BURST
+                for index in range(0, len(BURST), 2048):
+                    self.event({"content": BURST[index:index + 2048]})
+                # Allow queued batches and the selection/scroll checks to run.
+                time.sleep(1.5)
+                self.event({}, "stop")
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+                return
             if "cancel-check" in prompt:
                 self.event({"content": "Waiting for cancellation"})
                 for _ in range(100):
@@ -104,6 +124,7 @@ def main():
     parser.add_argument("--ida-dir", type=Path, required=True)
     parser.add_argument("--plugin", type=Path, required=True)
     parser.add_argument("--scale-factor", choices=("1", "1.5", "2"), help="Exercise the real Qt layout at this scale")
+    parser.add_argument("--render-check", action="store_true", help="Also exercise Markdown and a bounded large stream over restored long history")
     args = parser.parse_args()
     args.ida_dir = args.ida_dir.resolve()
     root = Path(tempfile.mkdtemp(prefix="ida-panel-", dir="/tmp")).resolve()
@@ -130,7 +151,7 @@ def main():
         "profiles": [{"id": "custom-1", "builtIn": False, "settings": {
             "displayName": "Linux Panel Test", "protocol": "openai", "openAiApiMode": "chatCompletions",
             "baseUrl": f"http://127.0.0.1:{server.server_port}/v1", "model": "linux-panel-test", "apiKey": "local-test-only"},
-            "models": [{"id": "linux-panel-test", "enabled": True, "capabilities": "tools", "contextLength": 128000,
+            "models": [{"id": "linux-panel-test", "enabled": True, "capabilities": "tools", "contextLength": 2000000 if args.render_check else 128000,
                 "maxOutputTokens": 4096, "reasoningEffort": "default", "reasoningSummary": "visible"}],
             "headers": [], "proxy": {"mode": "direct", "host": "", "port": 0, "username": "", "password": "", "bypassLocal": True}}]})
     private_json(settings / "settings.json", {"version": 2, "openChatOnDatabaseOpen": True,
@@ -143,6 +164,8 @@ def main():
     environment = dict(os.environ, IDAUSR=str(user), XDG_CONFIG_HOME=str(config), XDG_STATE_HOME=str(state),
         IDA_AGENT_INSTANCE_DIR=str(root / "instances"), IDA_AGENT_PANEL_TEST_ROOT=str(root),
         IDA_AGENT_TEST_DIAGNOSTICS="1")
+    if args.render_check:
+        environment["IDA_AGENT_PANEL_TEST_RENDER_CHECK"] = "1"
     if args.scale_factor:
         environment["QT_SCALE_FACTOR"] = args.scale_factor
     driver = Path(__file__).with_name("linux_panel_driver.py").resolve()
@@ -150,9 +173,23 @@ def main():
         with (root / "python.log").open("w") as log:
             from linux_test_environment import configure_linux_user
             configure_linux_user(args.ida_dir, user, environment, log)
-        for phase in ("exercise", "restore"):
+        phases = ("exercise", "render", "restore") if args.render_check else ("exercise", "restore")
+        for phase in phases:
+            if phase == "render":
+                from linux_chat_render_fixture import seed_entries
+                # Modify only the disposable DB while IDA has fully exited.
+                with sqlite3.connect(state / "ida-agent/ai/chat.db") as connection:
+                    for key, session, raw in connection.execute(
+                            "SELECT database_key,session_id,history_json FROM chat_sessions").fetchall():
+                        history = json.loads(raw)
+                        history["entries"] += seed_entries()
+                        connection.execute("UPDATE chat_sessions SET history_json=?,entry_count=? "
+                            "WHERE database_key=? AND session_id=?",
+                            (json.dumps(history, ensure_ascii=False), len(history["entries"]), key, session))
+
             environment["IDA_AGENT_PANEL_TEST_PHASE"] = phase
-            command = [str(args.ida_dir / "ida"), "-A", f"-L{root / (phase + '.ida.log')}", f"-S{driver}"]
+            selected_driver = driver.with_name("linux_chat_render_driver.py") if phase == "render" else driver
+            command = [str(args.ida_dir / "ida"), "-A", f"-L{root / (phase + '.ida.log')}", f"-S{selected_driver}"]
             command += (["-c", f"-o{root / 'sample.i64'}", str(sample)] if phase == "exercise" else [str(root / "sample.i64")])
             with (root / (phase + ".stdout.log")).open("w") as log:
                 process = subprocess.Popen(command, cwd=args.ida_dir, env=environment, stdout=log, stderr=subprocess.STDOUT)
@@ -199,6 +236,11 @@ def main():
         with sqlite3.connect(database) as connection:
             rows = connection.execute("SELECT history_json FROM chat_sessions").fetchall()
         assert any("streamed reply OK" in row[0] for row in rows), rows
+        if args.render_check:
+            from linux_chat_render_fixture import MARKDOWN, BURST
+            histories = [json.loads(row[0])["entries"] for row in rows]
+            assert any(any(e["speaker"] == "assistant" and e["text"] == MARKDOWN for e in h) for h in histories), "raw Markdown was not saved"
+            assert any(any(e["speaker"] == "assistant" and e["text"] == BURST for e in h) for h in histories), "display clipping changed raw history"
         assert database.stat().st_mode & 0o777 == 0o600
         assert not list((root / "instances").iterdir()), "instance leaked after GUI exit"
         print("panel=effort=geometry=palette=settings=streaming=tools=approval=cancel=history=restore=clean_exit=ok", flush=True)

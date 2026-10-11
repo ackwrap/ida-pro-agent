@@ -28,7 +28,7 @@ def panel():
     entry = inputs[0]
     container = entry.parentWidget()
     widget_refs.append(container)
-    output = container.findChild(QtWidgets.QPlainTextEdit)
+    output = container.findChild(QtWidgets.QTextEdit, "idaAgentChatOutput")
     assert output and output.isReadOnly()
     return entry, output
 
@@ -114,12 +114,16 @@ def check_palette_layouts():
         for label, background, foreground in (("dark", "#252525", "#eeeeee"), ("light", "#eeeeee", "#202020")):
             # IDA styles override the application palette. Apply only colors
             # to this disposable panel, as a scoped Qt stylesheet would.
-            container.setStyleSheet(original + "\nQLineEdit, QPlainTextEdit, QComboBox { "
+            container.setStyleSheet(original + "\nQLineEdit, QTextEdit, QComboBox { "
                 + f"background-color: {background}; color: {foreground}; " + "}")
             application.processEvents()
             value = measure_layout(label)
             assert combo.palette().color(QtGui.QPalette.Base).name() == background, value
             assert combo.palette().color(QtGui.QPalette.Text).name() == foreground, value
+            rendered = output.document().find("render-markdown-complete")
+            if not rendered.isNull():
+                assert rendered.charFormat().foreground().color().name() == foreground, "message body did not follow the palette"
+
     finally:
         container.setStyleSheet(original)
         application.processEvents()
@@ -212,7 +216,10 @@ def tick():
         status = "\n".join(w.text() for w in entry.parentWidget().findChildren(QtWidgets.QLabel))
         (ROOT / "progress.json").write_text(json.dumps({"stage": stage, "output": text, "status": status, "effortEnabled": effort_control().isEnabled(), "effort": effort_control().currentData(), "effortTooltip": effort_control().toolTip()}, ensure_ascii=False))
         if PHASE == "restore":
-            assert "streamed reply OK" in text, "chat history was not restored"
+            if os.environ.get("IDA_AGENT_PANEL_TEST_RENDER_CHECK"):
+                assert "render-markdown-complete" in text and "Display limit reached" in text, "bounded rich history was not restored"
+            else:
+                assert "streamed reply OK" in text, "chat history was not restored"
             return finish()
         if stage == 1:
             stage = 2
@@ -274,4 +281,5 @@ def tick():
         return -1
 
 
-ida_kernwin.register_timer(100, tick)
+if __name__ == "__main__":
+    ida_kernwin.register_timer(100, tick)

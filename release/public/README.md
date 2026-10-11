@@ -58,7 +58,7 @@ Enter the API prefix, not a complete operation URL. **Test Connection** checks m
 
 API keys and saved proxy passwords are stored as plaintext with current-user file permissions, normally in `%LOCALAPPDATA%\ida-agent\ai\providers.json`. The built-in AI sends conversation content and relevant analysis results to the selected provider. External MCP clients use their own provider settings.
 
-AI Chat source builds include an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat effort reference](ida-agent-plugin/CHAT.md).
+AI Chat source builds include an Agent-style view with Markdown, code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
 
 ### Analysis memory and workflows (source builds)
 
@@ -119,7 +119,7 @@ Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管�
 
 API Key 和已保存的代理密码使用当前用户文件权限保护，但以明文保存，通常位于 `%LOCALAPPDATA%\ida-agent\ai\providers.json`。内置 AI 会向选定供应商发送会话内容与相关分析结果。外部 MCP 客户端使用其自己的模型供应商配置。
 
-源码构建的 AI Chat 在输入行旁提供 **Effort** 选择器，可直接设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 推理强度说明](ida-agent-plugin/CHAT.md)。
+源码构建的 AI Chat 支持 Agent 样式的角色分层、Markdown、代码块及消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁的 **Effort** 选择器可设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 渲染与推理强度说明](ida-agent-plugin/CHAT.md)。
 
 ### 分析记忆与工作流（源码构建）
 

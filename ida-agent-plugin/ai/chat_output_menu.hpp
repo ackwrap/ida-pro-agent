@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QtWidgets>
+#include "ai/chat_message_view.hpp"
 
 namespace ida_agent::ai
 {
@@ -9,6 +9,6 @@ namespace ida_agent::ai
 // selected text holds a hex address or a known symbol name, the action resolves
 // it against the current database and navigates the IDA disassembly view.
 // Call once per output view; must run on the IDA UI thread (Qt event loop).
-void AttachChatOutputJumpMenu(QT::QPlainTextEdit *output);
+void AttachChatOutputJumpMenu(ChatMessageView *output);
 
 } // namespace ida_agent::ai

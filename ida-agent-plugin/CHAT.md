@@ -1,6 +1,20 @@
-# AI Chat reasoning effort
+# AI Chat
 
-The Effort selector is available in current source builds, beside the chat input. It is not included in the previously published v0.4.8 package.
+The Agent-style message view and Effort selector are available in current source builds. They are not included in the previously published v0.4.8 package.
+
+## Messages and rendering
+
+The native Qt chat separates **You**, **AI**, **Context**, **Thinking**, **Tool** and **System** messages. Body text wraps to the panel width. Completed user, AI and context messages support GitHub-style Markdown, including headings, emphasis, lists, tables, inline code and fenced code blocks. Code uses IDA's fixed-width font; message and code backgrounds follow the panel palette.
+
+Right-click within a message for **Copy Message**, which copies its complete raw text, including Markdown. Right-click a formatted code block for **Copy Code**. Ordinary selection/copy still works across messages. Selecting a mapped hexadecimal address or known symbol continues to offer **Jump To** in the same menu.
+
+During a response, text appears incrementally in the active message. Markdown is parsed once when the message completes. Each timer flush inserts at most 16 KiB across thinking and reply previews; it does not reparse previous messages. Completion replaces only the active body. When you scroll up, new output preserves your viewport and selection in retained messages. Output follows the latest message while you are already at the bottom.
+
+The display keeps the latest messages within **256 messages / 512 KiB of rendered text**. A single body displays at most **64 KiB / 1,000 lines**, with an explicit display-limit notice and complete text available through Copy Message. Markdown parsing is limited to **32 KiB / 500 lines**; larger bodies or lines over 4 KiB use plain text. Plain display splits overlong lines at UTF-8 boundaries into paragraphs of at most 4 KiB to keep Qt layout responsive; Copy Message retains the original lines. These are display limits. Raw transcript/context/history retain their existing policies (up to 4 MiB / 5,000 history entries), and persistent storage still depends on the Save Chat History setting. Older display frames are removed incrementally; opening a stored conversation materializes only the visible tail.
+
+Provider HTML is disabled and image/resource paths and URLs are not loaded. The view uses IDA's bundled Qt and needs no browser runtime.
+
+## Reasoning effort
 
 Configure a provider and enabled default model in **Provider Settings...**, then open **Open AI Chat**. Select an effort before sending a message:
 
@@ -26,3 +40,14 @@ For analysis memory and workflows, see [ANALYSIS.md](ANALYSIS.md).
 ## Validation
 
 The pure `ida_ai_chat_reasoning` test checks active-model identity, settings revisions, busy/unsupported states and save/load persistence. Provider request tests check selector-to-request serialization. The opt-in real Linux panel runner also verifies every tool round, Default omission, close/reopen/restart, native CLI geometry and light/dark colors applied to the disposable panel. These color checks exercise scoped Qt style changes rather than changing the user's IDA theme. Run it with `--scale-factor 1.5` to exercise scaled Qt rendering; it uses an isolated IDA user, test database and loopback provider.
+
+The **ida_ai_chat_ui_model** test also covers lazy line-cache rollback, clipping and UTF-8 boundaries. To exercise Markdown, actual Copy Code/Copy Message actions, 400 restored messages, a roughly 270 KiB response with an unbroken 70,000-character line, bounded renderer operations, selection/scroll preservation and GUI heartbeat timing in the real Linux panel, run:
+
+```shell
+python3 ida-agent-plugin/tests/integration/run_linux_panel.py \
+  --ida-dir /path/to/ida-pro-9.4 \
+  --plugin /path/to/build/ida-runtime/plugins/ida-agent-plugin.so \
+  --render-check --scale-factor 1.5
+```
+
+The runner records screenshots, geometry, renderer counters and timing in its disposable artifact directory. It reads SQLite only from the outer process while IDA is running. Its HTML/resource fixture and provider use isolated test data; global user settings and databases are unaffected.
