@@ -166,7 +166,7 @@ OpenCode 2、Antigravity CLI 与 Claude Code 的检测、安装/更新和移除�
 
 OpenCode 2 先通过 Scoop 的 `versions/opencode2` 或 npm 的 `@opencode/cli@2` 安装，启动命令
 仍为 `opencode`。管理页的 **Install MCP** 负责写入 MCP 配置。详见
-[OpenCode 2 安装说明](../release/public/USAGE.zh-CN.md#opencode-2-安装与配置)。
+[OpenCode 2 安装说明](../USAGE.zh-CN.md#opencode-2-安装与配置)。
 
 Grok Build 同样支持 MCP 安装/更新、移除和 Skills 链接。需要先安装 CLI 并加入 PATH；
 管理器依次检测 `gork`、`agent`、`grok` 可执行文件。

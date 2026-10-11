@@ -20,7 +20,7 @@
 
 ida-agent combines an IDA plugin, an MCP Gateway for external AI clients, and a built-in AI Console. It supports function and cross-reference inspection, pseudocode, bounded argument tracing across direct callers, guard evidence extraction, and supported IDB edits through ChangeSets.
 
-This repository contains the ida-agent source, usage guides and binary releases. Project-owned code is licensed under [MIT](LICENSE); dependencies retain their own terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). All hosted source synchronization, tests and three-platform release builds run here. Source and usage updates are pulled to `main` every 15 minutes, or by a manual public sync run. The private repository stores source and restricted build inputs only. Maintainer setup is documented in [release/README.md](release/README.md#configure-public-publishing). See the [source build guide](README.source.md#build-from-source). Older release tags created before source publication keep their original documentation snapshots; clone `main` for current source or use the named release assets to install ida-agent.
+This repository contains the ida-agent source, usage guides and binary releases. Project-owned code is licensed under [MIT](LICENSE); dependencies retain their own terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). This public repository's `main` branch is the development mainline. Source, documentation, tests and three-platform releases are maintained here directly. Pushes run the public build checks; matching `v*` tags trigger release packaging and publication. The private repository is retained for archival storage and restricted Qt build inputs. Source synchronization and its credential are no longer required. Maintainer setup is documented in [release/README.md](release/README.md#configure-public-publishing). See the [source build guide](README.source.md#build-from-source). Older release tags created before source publication keep their original documentation snapshots; clone `main` for current source or use the named release assets to install ida-agent.
 
 ### Install
 
@@ -90,7 +90,7 @@ On Windows, the manager also discovers Codex in common npm/Scoop installations a
 
 ida-agent 包含 IDA 插件、供外部 AI 客户端使用的 MCP Gateway，以及内置 AI Console。支持函数与交叉引用检查、伪代码、沿直接调用者进行有限层级的参数回溯、校验证据提取，以及通过 ChangeSet 执行支持的 IDB 修改。
 
-本仓库包含 ida-agent 源码、使用说明和二进制版本。项目自有源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。自动同步、测试和三平台构建发布全部在本公开仓库执行。源码与使用文档每 15 分钟拉取到 `main`，也可手动同步；私有仓库只存储源码和受限构建输入。维护者配置见 [发布配置说明](release/README.md#中文配置说明)。编译步骤见[中文源码说明](README.source.zh-CN.md#源码编译)。公开源码之前创建的发布标签保留原文档快照；获取当前源码请克隆 `main`，安装软件请使用带有 `ida-agent` 名称的发布附件。
+本仓库包含 ida-agent 源码、使用说明和二进制版本。项目自有源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。本公开仓库的 `main` 是开发主线，源码、文档、测试和三平台发布直接在这里维护。提交推送会触发公开构建检查，匹配版本号的 `v*` 标签会触发打包发布。私有仓库保留为历史存储和受限 Qt 构建输入的存放位置，不再需要定时源码同步或同步凭据。维护者配置见 [发布配置说明](release/README.md#中文配置说明)。编译步骤见[中文源码说明](README.source.zh-CN.md#源码编译)。公开源码之前创建的发布标签保留原文档快照；获取当前源码请克隆 `main`，安装软件请使用带有 `ida-agent` 名称的发布附件。
 
 ### 安装
 

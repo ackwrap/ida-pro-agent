@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a committed source snapshot without copying private Git history."""
+"""Legacy snapshot exporter; develop directly on public ida-pro-agent main."""
 
 from __future__ import annotations
 

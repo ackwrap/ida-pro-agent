@@ -7,10 +7,17 @@
 - `ida-agent-plugin/` is a C++17 IDA plugin: Windows includes AI/Qt by default; Linux x86_64 supports basic MCP and an opt-in AI/Qt panel (`IDA_AGENT_ENABLE_AI=ON`). `plugin.cpp` assembles services and RPC handlers; Named Pipe/Unix socket workers must not call IDA APIs directly. All IDA/Hex-Rays operations must go through `IdaExecutor`.
 - `protocol/` is the sole language-independent source of truth for the protocol between Go and C++. Protocol objects reject unknown fields, addresses use hexadecimal strings, and both implementations must share the fixtures in `protocol/testdata`.
 
+## Source Control
+
+- The canonical development repository is the public `ackwrap/ida-pro-agent`, on `main`. Push source and documentation directly to its `origin/main`; hosted tests and releases run there.
+- Private `ackwrap/ida-agent` is archival storage and holds restricted Linux/macOS Qt build inputs. It does not run Actions or synchronize source into public `main`. Preserve the public Git history when updating source; do not merge private history or restore scheduled snapshot imports.
+- Release tags belong to the public history and must match `ida-mcp/VERSION`. Push only the intended branch or release tag; private archival tags must not be published.
+
 ## Documentation Boundaries
 
 - Maintain architecture designs, development and implementation plans, and internal capability plans locally; do not commit them to Git. Place new documents of these types in `docs/local/`. The root `docs/` directory is ignored by default; `.gitignore` currently allows only `docs/UPGRADING.md`. Explicitly allow any new required public documents and their assets before linking to or committing them.
 - Continue tracking READMEs, upgrade notes, interface contracts in `protocol/`, testing instructions, and reference documentation in `skills/`.
+- Maintain public usage documentation directly in root `README.md`, `USAGE.md`, and `USAGE.zh-CN.md`; build guides are `README.source.md` and `README.source.zh-CN.md`. The retained `release/public/` templates and snapshot utilities are legacy migration assets, not the publication path.
 
 ## C/C++ Source Organization
 

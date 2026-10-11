@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synchronize from public Actions, then dispatch checks and matching releases."""
+"""Legacy synchronization utility; the public source-sync workflow is retired."""
 
 from __future__ import annotations
 

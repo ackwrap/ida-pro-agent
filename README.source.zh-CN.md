@@ -111,7 +111,7 @@
 
 便携安装时，在解压目录运行 `ida-mcp.exe -web`。本地页面可配置 Codex、OpenCode 2、Claude Code、Antigravity CLI、Grok Build 和 ZCode，并链接可选的 `ida-reverse-analysis`、`idapython` 技能。修改配置后需要重启客户端。
 
-先安装 OpenCode 2：Windows 使用 Scoop 时，依次执行 `scoop bucket add versions` 和 `scoop install versions/opencode2`；使用 npm 时执行 `npm install -g @opencode/cli@2`。启动命令仍为 `opencode`。管理页的 **Install MCP** 按钮写入 OpenCode 2 的 `mcp.servers.ida-mcp`，仅升级旧的 IDA 条目，并保留其他配置与注释。详见 [OpenCode 2 安装说明](release/public/USAGE.zh-CN.md#opencode-2-安装与配置)。
+先安装 OpenCode 2：Windows 使用 Scoop 时，依次执行 `scoop bucket add versions` 和 `scoop install versions/opencode2`；使用 npm 时执行 `npm install -g @opencode/cli@2`。启动命令仍为 `opencode`。管理页的 **Install MCP** 按钮写入 OpenCode 2 的 `mcp.servers.ida-mcp`，仅升级旧的 IDA 条目，并保留其他配置与注释。详见 [OpenCode 2 安装说明](USAGE.zh-CN.md#opencode-2-安装与配置)。
 
 Windows 下，如果管理页继承的 `PATH` 尚未更新，程序也会检查常见 npm/Scoop 安装位置，以及 Codex 桌面应用自带的 CLI。npm 启动脚本会解析到原生 `codex.exe`，检测和 MCP 配置不依赖 `PATH` 中的 Node.js。自定义安装位置可通过 `IDA_MCP_CODEX_PATH` 指定 `codex.exe` 的绝对路径，设置后重启管理页。
 
@@ -238,9 +238,9 @@ python release/build_release.py --clean
 
 ## GitHub Actions
 
-自动源码同步、Windows/Linux 构建、客户端回归和 Windows/Linux/macOS 完整发布全部在公开 [ida-pro-agent 仓库](https://github.com/ackwrap/ida-pro-agent/actions) 执行。私有 `ida-agent` 只存储源码和受限 Qt 构建输入，不再运行 Actions；本地构建脚本和单元测试继续保留。公开 CI 验证 Go/C++、Windows Qt 插件链接及安装包兼容性，需要许可的真实 IDA UI/集成测试在本地运行。工具链依赖见 [Linux 环境要求](ida-agent-plugin/README-LINUX.md#linux-environment-requirements)。
+公开 [ida-pro-agent 仓库](https://github.com/ackwrap/ida-pro-agent) 的 `main` 是开发主线。Windows/Linux 构建、客户端回归和 Windows/Linux/macOS 完整发布均在其 [Actions](https://github.com/ackwrap/ida-pro-agent/actions) 执行。私有 `ida-agent` 保留为历史存储和受限 Qt 构建输入的存放位置，不再运行 Actions；本地构建脚本和单元测试继续保留。公开 CI 验证 Go/C++、Windows Qt 插件链接及安装包兼容性，需要许可的真实 IDA UI/集成测试在本地运行。工具链依赖见 [Linux 环境要求](ida-agent-plugin/README-LINUX.md#linux-environment-requirements)。
 
-MIT 源码和使用文档由公开仓库每 15 分钟从私有 master 拉取到公开 main，也可手动同步。请在**公开仓库**配置 `IDA_AGENT_SOURCE_READ_TOKEN`，仅授权私有 `ida-agent` 的 **Contents: read**。公开工作流独立维护，源码同步不会覆盖或删除。匹配的版本标签触发公开三平台构建与发布；发布使用公开仓库自身的 `GITHUB_TOKEN`。私有 Qt 输入不会进入公开安装包。配置步骤见 [Actions 与发布说明](release/README.md#中文配置说明)，依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+源码和文档直接提交到公开 `main`，推送 `origin main` 后运行构建检查。更新 `ida-mcp/VERSION` 并推送匹配版本号的公开 `v*` 标签，即可构建发布；发布使用本仓库自身的 `GITHUB_TOKEN`。私有源码定时同步已停止。现有 `IDA_AGENT_SOURCE_READ_TOKEN` 仅用于下载 Linux/macOS 的 Qt 构建输入，只需私有 `ida-agent` 的 **Contents: read**；这些私有输入不会进入公开安装包。配置步骤见 [Actions 与发布说明](release/README.md#中文配置说明)，依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 仓库与文档
 
