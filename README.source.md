@@ -87,6 +87,8 @@ Provider settings normally live in `%LOCALAPPDATA%\ida-agent\ai\providers.json`.
 
 The built-in agent sends chat content and the analysis context/tool results used in that conversation to the selected provider. Choose a provider appropriate for the binaries and data you analyze.
 
+AI Chat source builds include an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat effort reference](ida-agent-plugin/CHAT.md).
+
 ## Analysis memory and evidence workflows
 
 Current source builds add `/memory` for persistent per-binary notes and `/workflow protection`, `/workflow function`, and `/workflow types` for evidence-oriented analysis. Enable **Tools** for the selected model. Stored evidence keeps addresses and provenance; the agent rechecks stale findings and validates reports against successful tool calls. Memory saves/deletes use the existing conversation approval policy and stay outside the IDB. These features are for the built-in agent; the external MCP catalog remains unchanged.

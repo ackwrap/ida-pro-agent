@@ -2,7 +2,6 @@
 import json
 import os
 from pathlib import Path
-import sqlite3
 import time
 import traceback
 
@@ -10,7 +9,7 @@ import ida_auto
 import ida_kernwin
 import ida_loader
 import ida_pro
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 ROOT = Path(os.environ["IDA_AGENT_PANEL_TEST_ROOT"])
 PHASE = os.environ["IDA_AGENT_PANEL_TEST_PHASE"]
@@ -34,6 +33,98 @@ def panel():
     return entry, output
 
 
+def effort_control():
+    entry, _ = panel()
+    combo = entry.parentWidget().findChild(QtWidgets.QComboBox, "idaAgentReasoningEffort")
+    assert combo is not None, "reasoning effort selector missing"
+    return combo
+
+
+def select_effort(level):
+    combo = effort_control()
+    assert combo.isEnabled(), "effort selector stayed disabled after request completion"
+    index = combo.findData(level)
+    assert index >= 0, f"missing effort level: {level}"
+    settings = ROOT / "config/ida-agent/ai/providers.json"
+    before = settings.read_bytes()
+    combo.setCurrentIndex(index)
+    assert settings.read_bytes() == before, "programmatic selection wrote model settings"
+    combo.activated.emit(index)
+    assert combo.currentData() == level, "effort selection was not accepted"
+    manager = json.loads(settings.read_text())
+    profile = next(p for p in manager["profiles"] if p["id"] == manager["activeProfileId"])
+    model = next(m for m in profile["models"] if m["id"] == profile["settings"]["model"])
+    assert model["reasoningEffort"] == level, "effort selection was not persisted"
+
+
+def measure_layout(label):
+    entry, output = panel()
+    twidget = ida_kernwin.find_widget(entry.parentWidget().windowTitle())
+    container = ida_kernwin.PluginForm.TWidgetToPyQtWidget(twidget)
+    assert container == entry.parentWidget(), "chat input parent changed"
+    combo = effort_control()
+    geometry = lambda w: [w.x(), w.y(), w.width(), w.height()]
+    value = {"panel": geometry(container), "output": geometry(output), "input": geometry(entry),
+        "effort": geometry(combo), "dpr": container.devicePixelRatioF(),
+        "palette": combo.palette().color(QtGui.QPalette.Window).name()}
+    assert output.y() == 0 and output.height() > 0, value
+    assert entry.y() == combo.y() and entry.height() == combo.height() == entry.sizeHint().height(), value
+    assert container.height() - entry.y() - entry.height() == 2, value
+    assert entry.x() + entry.width() + 2 == combo.x(), value
+    assert combo.x() + combo.width() == container.width(), value
+    native = ida_kernwin.find_widget("Output window") or ida_kernwin.find_widget("Output")
+    assert native is not None, "native Output widget missing"
+    native_container = ida_kernwin.PluginForm.TWidgetToPyQtWidget(native)
+    native_inputs = [w for w in native_container.findChildren(QtWidgets.QWidget)
+                     if w.metaObject().className() == "CLILineEdit" and w.isVisible()]
+    assert len(native_inputs) == 1, "native CLI input could not be measured"
+    native_input = native_inputs[0]
+    relative = native_input.mapTo(native_container, QtCore.QPoint(0, 0))
+    value["nativeCli"] = {"panelHeight": native_container.height(), "x": relative.x(), "y": relative.y(),
+        "width": native_input.width(), "height": native_input.height(), "hintHeight": native_input.sizeHint().height(),
+        "bottomGap": native_container.height() - relative.y() - native_input.height()}
+    report.setdefault("layouts", {})[label] = value
+    # Compare the native CLI's bottom-relative top edge. Its own font/style
+    # gives it a 23-pixel height and one-pixel bottom gap in the default Linux
+    # style; ChatPanel retains its 22-pixel input and two-pixel bottom margin.
+    if label == "native":
+        assert container.height() - entry.y() == native_container.height() - relative.y(), value
+    # The added selector must not increase the original input-row height.
+    combo.hide()
+    try:
+        container.layout().activate()
+        value["withoutEffort"] = {"inputY": entry.y(), "inputHeight": entry.height(), "outputHeight": output.height()}
+        assert entry.y() == value["input"][1] and entry.height() == value["input"][3], value
+        assert output.height() == value["output"][3], value
+    finally:
+        combo.show()
+        container.layout().activate()
+    container.grab().save(str(ROOT / (PHASE + "-" + label + ".png")))
+    return value
+
+
+def check_palette_layouts():
+    application = QtWidgets.QApplication.instance()
+    entry, output = panel()
+    container = entry.parentWidget()
+    combo = effort_control()
+    original = container.styleSheet()
+    report["geometry"] = measure_layout("native")
+    try:
+        for label, background, foreground in (("dark", "#252525", "#eeeeee"), ("light", "#eeeeee", "#202020")):
+            # IDA styles override the application palette. Apply only colors
+            # to this disposable panel, as a scoped Qt stylesheet would.
+            container.setStyleSheet(original + "\nQLineEdit, QPlainTextEdit, QComboBox { "
+                + f"background-color: {background}; color: {foreground}; " + "}")
+            application.processEvents()
+            value = measure_layout(label)
+            assert combo.palette().color(QtGui.QPalette.Base).name() == background, value
+            assert combo.palette().color(QtGui.QPalette.Text).name() == foreground, value
+    finally:
+        container.setStyleSheet(original)
+        application.processEvents()
+
+
 def send(text):
     entry, _ = panel()
     entry.setFocus()
@@ -48,17 +139,12 @@ def action(name):
 
 
 def replies_saved(count):
-    # Visible streaming text can precede the terminal event. Wait for the
-    # committed transcript before starting the next conversation turn.
-    database = ROOT / "state/ida-agent/ai/chat.db"
-    if not database.is_file():
+    # Read the outer runner's snapshot: opening Python's SQLite in this process
+    # would mix its VFS/lock bookkeeping with the plugin's private SQLite.
+    snapshot = ROOT / "history-progress.json"
+    if not snapshot.is_file():
         return False
-    connection = sqlite3.connect(database)
-    try:
-        rows = connection.execute("SELECT history_json FROM chat_sessions").fetchall()
-        return any(row[0].count("streamed reply OK") >= count for row in rows)
-    finally:
-        connection.close()
+    return json.loads(snapshot.read_text())["replies"] >= count
 
 
 def save_dialog(title):
@@ -79,13 +165,8 @@ def save_dialog(title):
 def finish():
     entry, output = panel()
     container = entry.parentWidget()
-    geometry = lambda w: [w.x(), w.y(), w.width(), w.height()]
-    report["geometry"] = {"panel": geometry(container), "output": geometry(output), "input": geometry(entry),
-        "dpr": container.devicePixelRatioF()}
-    assert entry.width() > 0 and entry.height() > 0 and output.height() > 0
-    assert output.y() + output.height() <= entry.y(), report["geometry"]
-    report["nativeCli"] = [{"class": w.metaObject().className(), "geometry": geometry(w)}
-        for w in QtWidgets.QApplication.allWidgets() if w.metaObject().className() == "CLILineEdit" and w.isVisible()]
+    assert effort_control().currentData() == "xhigh", "effort did not survive close/reopen or restart"
+    check_palette_layouts()
     entry.window().grab().save(str(ROOT / (PHASE + ".png")))
     report["ok"] = True
     (ROOT / (PHASE + ".json")).write_text(json.dumps(report, indent=2))
@@ -129,7 +210,7 @@ def tick():
         entry, output = panel()
         text = output.toPlainText()
         status = "\n".join(w.text() for w in entry.parentWidget().findChildren(QtWidgets.QLabel))
-        (ROOT / "progress.json").write_text(json.dumps({"stage": stage, "output": text, "status": status}, ensure_ascii=False))
+        (ROOT / "progress.json").write_text(json.dumps({"stage": stage, "output": text, "status": status, "effortEnabled": effort_control().isEnabled(), "effort": effort_control().currentData(), "effortTooltip": effort_control().toolTip()}, ensure_ascii=False))
         if PHASE == "restore":
             assert "streamed reply OK" in text, "chat history was not restored"
             return finish()
@@ -141,15 +222,21 @@ def tick():
             stage = 3
             save_dialog("IDA Agent Settings")
             action("ida-agent:settings")
+            return 700
         elif stage == 3:
+            select_effort("high")
             send("panel-check")
             stage = 4
         elif stage == 4 and "side effect(s) are prepared" in status:
+            assert not effort_control().isEnabled(), "effort remained editable during a tool/approval round"
             assert not (ROOT / "panel-note.txt").exists(), "file changed before approval"
             send("/y")
             stage = 5
         elif stage == 5 and "streamed reply OK" in text and replies_saved(1):
             assert (ROOT / "panel-note.txt").read_text() == "Linux panel tool OK\n"
+            if not effort_control().isEnabled():
+                return 100
+            select_effort("low")
             send("cancel-check")
             stage = 6
         elif stage == 6 and "Waiting for cancellation" in text:
@@ -159,9 +246,15 @@ def tick():
             stage = 7
             return 700
         elif stage == 7 and "AI request was cancelled." in text:
+            if not effort_control().isEnabled():
+                return 100
+            select_effort("default")
             send("after-cancel")
             stage = 8
         elif stage == 8 and text.count("streamed reply OK") >= 2 and replies_saved(2):
+            if not effort_control().isEnabled():
+                return 100
+            select_effort("xhigh")
             send("/history")
             stage = 9
             return 250

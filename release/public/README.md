@@ -58,6 +58,8 @@ Enter the API prefix, not a complete operation URL. **Test Connection** checks m
 
 API keys and saved proxy passwords are stored as plaintext with current-user file permissions, normally in `%LOCALAPPDATA%\ida-agent\ai\providers.json`. The built-in AI sends conversation content and relevant analysis results to the selected provider. External MCP clients use their own provider settings.
 
+AI Chat source builds include an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat effort reference](ida-agent-plugin/CHAT.md).
+
 ### Analysis memory and workflows (source builds)
 
 Enable **Tools** for the selected model. Use `/memory add <note>`, `/memory add-local <note>`, `/memory search <text>`, and `/memory forget <id>` to manage this binary's external analysis memory. `/new` and `/clear` keep saved notes. Use `/workflow protection [question]`, `/workflow function [question]`, or `/workflow types [question]` for reports with actual tool evidence and explicit coverage gaps. Agent memory writes follow the conversation approval policy. See the [full command and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md).
@@ -116,6 +118,8 @@ Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管�
 支持 OpenAI 风格的 **Responses / Chat Completions** 和 Anthropic 风格的 **Messages**。Base URL 填 API 前缀，例如 `https://api.openai.com/v1`，不要附加 `/responses`、`/chat/completions` 或 `/messages`，插件会自动追加。**Test Connection** 只检查模型列表接口，不能证明聊天、流式输出和工具调用均兼容；不支持模型列表的服务可尝试手动添加模型。
 
 API Key 和已保存的代理密码使用当前用户文件权限保护，但以明文保存，通常位于 `%LOCALAPPDATA%\ida-agent\ai\providers.json`。内置 AI 会向选定供应商发送会话内容与相关分析结果。外部 MCP 客户端使用其自己的模型供应商配置。
+
+源码构建的 AI Chat 在输入行旁提供 **Effort** 选择器，可直接设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 推理强度说明](ida-agent-plugin/CHAT.md)。
 
 ### 分析记忆与工作流（源码构建）
 

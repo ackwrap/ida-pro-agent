@@ -1,4 +1,5 @@
 #include "ai/provider_chat.hpp"
+#include "ai/chat_reasoning.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -109,7 +110,13 @@ void TestOpenAIResponsesRequest()
   profile.proxy.username = "proxy-user";
   profile.proxy.password = "proxy-secret";
   profile.proxy.bypass_local = false;
-  profile.models.front().reasoning_effort = ProviderReasoningEffort::High;
+  ProviderManagerDraft controls;
+  controls.profiles = {profile}; controls.active_profile_id = profile.id;
+  auto selection = MakeChatReasoningState(controls, 1, false).selection;
+  selection.effort = ProviderReasoningEffort::High;
+  Require(ApplyChatReasoningSelection(controls, 1, selection, false) == ChatReasoningChange::Changed,
+      "Responses selector failed to update model effort");
+  profile = *ActiveProvider(controls);
   profile.models.front().reasoning_summary = ProviderReasoningSummary::Detailed;
   const std::vector<ProviderChatMessage> history{
       {ProviderChatRole::Assistant, "orphan"},
@@ -167,7 +174,13 @@ void TestOpenAIChatRequestAndCrop()
   profile.settings.base_url = "https://chat.example/v1";
   profile.models.front().context_length = 4120;
   profile.models.front().max_output_tokens = 10;
-  profile.models.front().reasoning_effort = ProviderReasoningEffort::Low;
+  ProviderManagerDraft controls;
+  controls.profiles = {profile}; controls.active_profile_id = profile.id;
+  auto selection = MakeChatReasoningState(controls, 1, false).selection;
+  selection.effort = ProviderReasoningEffort::Low;
+  Require(ApplyChatReasoningSelection(controls, 1, selection, false) == ChatReasoningChange::Changed,
+      "Chat Completions selector failed to update model effort");
+  profile = *ActiveProvider(controls);
   profile.models.front().reasoning_summary = ProviderReasoningSummary::Auto;
   const std::vector<ProviderChatMessage> history{
       {ProviderChatRole::User, "old-user"},

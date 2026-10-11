@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ai/chat_reasoning.hpp"
 #include "ai/chat_script_approval.hpp"
 #include "ai/chat_transcript.hpp"
 
@@ -25,6 +26,8 @@ public:
   void SetPollHandler(std::function<void()> handler);
   void SetCloseHandler(std::function<void()> handler);
   void SetTitle(std::string title);
+  void SetReasoningHandler(std::function<void(ChatReasoningSelection)> handler);
+  void SetReasoningState(ChatReasoningState state);
   bool Open(bool focus_input = true);
   void FocusInput();
   bool SetInputText(std::string_view text);

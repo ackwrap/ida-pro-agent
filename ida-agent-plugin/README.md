@@ -15,6 +15,8 @@ Linux 独立 AI 后端已支持 HTTP、SSE、WS/WSS 和聊天会话逻辑；libc
 以固定版本静态内嵌，OpenSSL 使用系统库。启用 `IDA_AGENT_ENABLE_AI=ON` 后，
 可使用 AI Chat、供应商设置、工具审批和历史记录；Qt 运行库由 Linux IDA 9.4 提供。
 
+源码构建的 AI Chat 在输入行旁提供 **Effort** 推理强度选择器，沿用当前模型的设置与请求格式。使用与兼容性说明见 [CHAT.md](CHAT.md)。
+
 ## 分析记忆与带证据的工作流
 
 当前源码构建增加 `/memory`，用于按二进制保存、检索和管理分析笔记；`/workflow protection`、`/workflow function`、`/workflow types` 分别用于保护强度评估、函数与数据流调查、类型恢复准备。所选模型须启用 **Tools**。结论保留证据地址和来源，过期证据须重新验证，报告根据实际成功的工具调用检查覆盖范围。Agent 的记忆写入和删除沿用会话审批，存储位于 IDB 外部。

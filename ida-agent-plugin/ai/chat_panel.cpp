@@ -4,6 +4,7 @@
 #include "ai/chat_display_formatter.hpp"
 #include "ai/chat_output_menu.hpp"
 #include "ai/chat_output_view.hpp"
+#include "ai/chat_reasoning_control.hpp"
 #include "ai/chat_script_approval_dialog.hpp"
 #include "ai/chat_status_label.hpp"
 #include "ai/chat_transcript.hpp"
@@ -77,6 +78,7 @@ struct ChatPanel::Impl final : event_listener_t
     }
     if ( input != nullptr )
       QT::QObject::disconnect(input, nullptr, nullptr, nullptr);
+    reasoning_control.Detach();
     DestroyTimer();
     preview.Discard();
     reasoning_preview.Discard();
@@ -168,6 +170,7 @@ struct ChatPanel::Impl final : event_listener_t
       {
         output = nullptr;
         status_view.Detach();
+        reasoning_control.Detach();
         input = nullptr;
         widget = nullptr;
         unhook_event_listener(HT_UI, this);
@@ -220,7 +223,12 @@ struct ChatPanel::Impl final : event_listener_t
 
     layout->addWidget(output, 1);
     layout->addWidget(status_view.Widget(), 0);
-    layout->addWidget(input, 0);
+    auto *input_row = new QT::QHBoxLayout();
+    input_row->setContentsMargins(0, 0, 0, 0);
+    input_row->setSpacing(2);
+    input_row->addWidget(input, 1);
+    input_row->addWidget(reasoning_control.Create(container, input), 0);
+    layout->addLayout(input_row, 0);
     RefreshFull(true);
     status_view.Set(transient_status);
     if ( !pending_input.empty() )
@@ -463,6 +471,7 @@ struct ChatPanel::Impl final : event_listener_t
   TWidget *widget = nullptr;
   QT::QPlainTextEdit *output = nullptr;
   ChatStatusView status_view;
+  ChatReasoningControl reasoning_control;
   QT::QLineEdit *input = nullptr;
   QT::QTimer *timer = nullptr;
   int preview_start = 0;
@@ -496,6 +505,16 @@ void ChatPanel::SetPollHandler(std::function<void()> handler)
 void ChatPanel::SetCloseHandler(std::function<void()> handler)
 {
   impl_->close = std::move(handler);
+}
+
+void ChatPanel::SetReasoningHandler(std::function<void(ChatReasoningSelection)> handler)
+{
+  impl_->reasoning_control.SetHandler(std::move(handler));
+}
+
+void ChatPanel::SetReasoningState(ChatReasoningState state)
+{
+  impl_->reasoning_control.SetState(std::move(state));
 }
 
 void ChatPanel::SetTitle(std::string title)

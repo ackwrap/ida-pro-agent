@@ -9,6 +9,7 @@
 #include "ai/agent_loop.hpp"
 #include "ai/analysis_memory/session.hpp"
 
+#include <chrono>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -86,6 +87,8 @@ private:
   void ClearCurrentConversation();
   void SelectConversation(std::string_view selector);
   void SubmitChatMessage(std::string_view text);
+  void RefreshReasoningControl(bool force = false);
+  void SelectReasoningEffort(const ChatReasoningSelection &selection);
   analysis_memory::BinaryContext CaptureAnalysisContext() const;
   void ExecuteMemoryCommand(std::string_view text);
   void ExecuteWorkflowCommand(std::string_view text);
@@ -138,6 +141,8 @@ private:
   std::string conversation_session_id_ = "runtime-1";
   std::uint64_t next_runtime_session_id_ = 2;
   analysis_memory::Session analysis_session_;
+  bool reasoning_control_busy_ = false;
+  std::chrono::steady_clock::time_point reasoning_control_refresh_{};
   ChatHistoryStore history_store_;
   ChatHistoryWriter history_writer_;
   std::function<void(const char *)> lifecycle_trace_;

@@ -45,6 +45,12 @@ class Provider(BaseHTTPRequestHandler):
             messages = request["messages"]
             user = next(m for m in reversed(messages) if m["role"] == "user")
             prompt = str(user["content"])
+            if "panel-check" in prompt:
+                assert request.get("reasoning_effort") == "high", "agent/tool rounds lost selected effort"
+            elif "cancel-check" in prompt:
+                assert request.get("reasoning_effort") == "low", "changed effort was not sent"
+            elif "after-cancel" in prompt:
+                assert "reasoning_effort" not in request, "Default did not omit effort parameter"
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Connection", "close")
@@ -97,6 +103,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ida-dir", type=Path, required=True)
     parser.add_argument("--plugin", type=Path, required=True)
+    parser.add_argument("--scale-factor", choices=("1", "1.5", "2"), help="Exercise the real Qt layout at this scale")
     args = parser.parse_args()
     args.ida_dir = args.ida_dir.resolve()
     root = Path(tempfile.mkdtemp(prefix="ida-panel-", dir="/tmp")).resolve()
@@ -128,7 +135,7 @@ def main():
             "headers": [], "proxy": {"mode": "direct", "host": "", "port": 0, "username": "", "password": "", "bypassLocal": True}}]})
     private_json(settings / "settings.json", {"version": 2, "openChatOnDatabaseOpen": True,
         "focusInputOnAutoOpen": False, "loadChatHistory": True, "saveChatHistory": True,
-        "debugLogging": False, "networkLogging": False})
+        "debugLogging": True, "networkLogging": True})
     source = root / "sample.c"
     source.write_text('int main(void) { return 42; }\n')
     sample = root / "sample"
@@ -136,6 +143,8 @@ def main():
     environment = dict(os.environ, IDAUSR=str(user), XDG_CONFIG_HOME=str(config), XDG_STATE_HOME=str(state),
         IDA_AGENT_INSTANCE_DIR=str(root / "instances"), IDA_AGENT_PANEL_TEST_ROOT=str(root),
         IDA_AGENT_TEST_DIAGNOSTICS="1")
+    if args.scale_factor:
+        environment["QT_SCALE_FACTOR"] = args.scale_factor
     driver = Path(__file__).with_name("linux_panel_driver.py").resolve()
     try:
         with (root / "python.log").open("w") as log:
@@ -157,6 +166,23 @@ def main():
                                 raise RuntimeError(f"Panel failed: {report}; inspect {root}")
                         if time.monotonic() >= deadline:
                             raise RuntimeError(f"Panel test timed out; inspect {root}")
+                        database = state / "ida-agent/ai/chat.db"
+                        if database.is_file():
+                            connection = sqlite3.connect(database, timeout=0.1)
+                            try:
+                                rows = connection.execute("SELECT history_json FROM chat_sessions").fetchall()
+                                replies = max((row[0].count("streamed reply OK") for row in rows), default=0)
+                            except sqlite3.OperationalError as error:
+                                # The file can appear before initialization creates the table.
+                                if "no such table" not in str(error) and "locked" not in str(error):
+                                    raise
+                                replies = 0
+                            finally:
+                                connection.close()
+                            # Only this external process reads SQLite; the GUI reads JSON.
+                            snapshot = root / "history-progress.tmp"
+                            snapshot.write_text(json.dumps({"replies": replies}))
+                            snapshot.replace(root / "history-progress.json")
                         time.sleep(0.1)
                     result = process.returncode
                 finally:
@@ -175,7 +201,7 @@ def main():
         assert any("streamed reply OK" in row[0] for row in rows), rows
         assert database.stat().st_mode & 0o777 == 0o600
         assert not list((root / "instances").iterdir()), "instance leaked after GUI exit"
-        print("panel=settings=streaming=tools=approval=cancel=history=restore=clean_exit=ok", flush=True)
+        print("panel=effort=geometry=palette=settings=streaming=tools=approval=cancel=history=restore=clean_exit=ok", flush=True)
     finally:
         server.shutdown()
         server.server_close()

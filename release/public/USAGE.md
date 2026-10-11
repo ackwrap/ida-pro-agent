@@ -61,6 +61,8 @@ API keys and saved proxy passwords are stored as plaintext in user-private files
 
 The selected provider receives conversation content and relevant analysis context/results. Remove credentials before sharing configuration or logs.
 
+AI Chat source builds include an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat effort reference](ida-agent-plugin/CHAT.md).
+
 ### Analysis memory and workflows (source builds)
 
 Enable **Tools** for the selected model. Use `/memory add <note>`, `/memory add-local <note>`, `/memory search <text>`, and `/memory forget <id>` to manage this binary's external analysis memory. `/new` and `/clear` keep saved notes. Use `/workflow protection [question]`, `/workflow function [question]`, or `/workflow types [question]` for reports with actual tool evidence and explicit coverage gaps. Agent memory writes follow the conversation approval policy. See the [full command and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md).

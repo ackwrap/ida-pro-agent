@@ -74,12 +74,18 @@ AiMenuController::AiMenuController(
     }
     AiMenuRegistry::Instance().RefreshRequestActions();
   });
+  chat_panel_.SetReasoningHandler([this](ChatReasoningSelection selection)
+  {
+    try { SelectReasoningEffort(selection); }
+    catch (...) { msg("[ida-agent] reasoning effort selection failed\n"); }
+  });
   chat_panel_.SetPollHandler([this]()
   {
     try
     {
       PollHistoryWrite();
       PollChatRequest();
+      RefreshReasoningControl();
     }
     catch ( ... )
     {
@@ -265,6 +271,7 @@ void AiMenuController::DatabaseInitialized() noexcept
 
 void AiMenuController::OpenChat()
 {
+  RefreshReasoningControl(true);
   if ( !chat_panel_.Open(true) )
     warning("AUTOHIDE NONE\nUnable to open the IDA Agent AI panel.");
   else
@@ -565,6 +572,7 @@ void AiMenuController::MaybeAutoOpenChat()
   {
     return;
   }
+  RefreshReasoningControl(true);
   if ( chat_panel_.Open(settings.focus_input_on_auto_open) )
     auto_opened_ = true;
   else

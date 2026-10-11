@@ -125,6 +125,7 @@ if((CMAKE_SYSTEM_NAME STREQUAL "Linux" OR APPLE) AND (IDA_AGENT_BUILD_AI_BACKEND
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AnalysisMemory.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ChatReasoning.cmake")
 
 ida_add_plugin(ida_agent_plugin
     SOURCES
@@ -218,6 +219,7 @@ if(IDA_AGENT_ENABLE_AI)
         ai/ai_menu.cpp
         ai/ai_menu_chat.cpp
         ai/ai_menu_analysis.cpp
+        ai/ai_menu_reasoning.cpp
         ai/ai_menu_context.cpp
         ai/ai_menu_selection.cpp
         ai/ai_menu_state.cpp
@@ -230,6 +232,8 @@ if(IDA_AGENT_ENABLE_AI)
         ai/chat_output_menu.cpp
         ai/chat_output_view.cpp
         ai/chat_panel.cpp
+        ai/chat_reasoning.cpp
+        ai/chat_reasoning_control.cpp
         ai/chat_script_approval.cpp
         ai/chat_script_approval_dialog.cpp
         ai/chat_status_label.cpp
@@ -602,6 +606,7 @@ if(BUILD_TESTING)
 
     add_executable(ida_ai_provider_chat_test
         tests/unit/ai/provider_chat_test.cpp
+        ai/chat_reasoning.cpp
         ai/provider_chat.cpp
         ai/provider_chat_wire.cpp
         ai/provider_chat_decode.cpp

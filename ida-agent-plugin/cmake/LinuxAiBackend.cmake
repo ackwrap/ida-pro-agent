@@ -17,6 +17,7 @@ endif()
 set(IDA_AGENT_AI_BACKEND_SOURCES
     ai/plugin_settings.cpp
     ai/provider_settings_model.cpp
+    ai/chat_reasoning.cpp
     ai/provider_settings_store.cpp
     ${IDA_AGENT_PROVIDER_URL_SOURCE}
     ai/chat_history_store.cpp
