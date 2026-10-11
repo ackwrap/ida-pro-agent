@@ -9,6 +9,8 @@
 #include <string_view>
 #include <vector>
 
+void RunProviderPromptTests();
+
 namespace
 {
 
@@ -704,6 +706,7 @@ void TestClaudeDecode()
 
 int main()
 {
+  RunProviderPromptTests();
   TestOpenAIResponsesRequest();
   TestOpenAIChatRequestAndCrop();
   TestBudgetBoundaryAndOutputClamp();

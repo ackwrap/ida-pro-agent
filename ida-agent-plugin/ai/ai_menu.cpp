@@ -201,6 +201,7 @@ void AiMenuController::Stop(bool unregister_actions) noexcept
   auto_opened_ = false;
   history_store_opened_ = false;
   analysis_session_.Reset();
+  project_instructions_.Reset();
   database_context_id_ = -1;
   const auto total = std::chrono::duration_cast<std::chrono::milliseconds>(
       menu_removed_at - started_at);
@@ -473,6 +474,9 @@ bool AiMenuController::ExecuteCliLine(const char *line)
       break;
     case CliCommandKind::Context:
       ShowContextUsage(true);
+      break;
+    case CliCommandKind::ProjectInstructions:
+      ExecuteInstructionsCommand(command.text);
       break;
     case CliCommandKind::AnalysisMemory:
       ExecuteMemoryCommand(command.text);

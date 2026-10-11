@@ -7,6 +7,7 @@
 #include "ai/agent_effect_coordinator.hpp"
 #include "ai/agent_effect_policy.hpp"
 #include "ai/agent_loop.hpp"
+#include "ai/agent_project_instructions.hpp"
 #include "ai/analysis_memory/session.hpp"
 
 #include <chrono>
@@ -90,9 +91,12 @@ private:
   void RefreshReasoningControl(bool force = false);
   void SelectReasoningEffort(const ChatReasoningSelection &selection);
   analysis_memory::BinaryContext CaptureAnalysisContext() const;
+  void ExecuteInstructionsCommand(std::string_view text);
   void ExecuteMemoryCommand(std::string_view text);
   void ExecuteWorkflowCommand(std::string_view text);
   void BeginAnalysisTurn();
+  std::string ProjectSystemPrompt(bool agent_tools);
+  void ApplyProjectInstructionContext(std::vector<ProviderChatMessage> &messages) const;
   std::string AnalysisSystemPrompt(std::string_view text);
   bool PrepareAnalysisTool(const AgentToolCall &call, std::size_t index);
   AgentToolResult DecideMemoryEffect(const PendingEffectCall &effect, bool confirm);
@@ -141,6 +145,7 @@ private:
   std::string conversation_session_id_ = "runtime-1";
   std::uint64_t next_runtime_session_id_ = 2;
   analysis_memory::Session analysis_session_;
+  AgentProjectInstructionCache project_instructions_;
   bool reasoning_control_busy_ = false;
   std::chrono::steady_clock::time_point reasoning_control_refresh_{};
   ChatHistoryStore history_store_;

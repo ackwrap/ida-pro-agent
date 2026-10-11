@@ -20,7 +20,7 @@
 
 ida-agent combines an IDA plugin, an MCP Gateway for external AI clients, and a built-in AI Console. It supports function and cross-reference inspection, pseudocode, bounded argument tracing across direct callers, guard evidence extraction, and supported IDB edits through ChangeSets.
 
-This repository contains the ida-agent source, usage guides and binary releases. Project-owned code is licensed under [MIT](LICENSE); dependencies retain their own terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Source and usage updates are automatically synchronized to `main`, where Windows/Linux build and test workflows run. See the [source build guide](README.source.md#build-from-source). Older release tags created before source publication keep their original documentation snapshots; clone `main` for current source or use the named release assets to install ida-agent.
+This repository contains the ida-agent source, usage guides and binary releases. Project-owned code is licensed under [MIT](LICENSE); dependencies retain their own terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). All hosted source synchronization, tests and three-platform release builds run here. Source and usage updates are pulled to `main` every 15 minutes, or by a manual public sync run. The private repository stores source and restricted build inputs only. Maintainer setup is documented in [release/README.md](release/README.md#configure-public-publishing). See the [source build guide](README.source.md#build-from-source). Older release tags created before source publication keep their original documentation snapshots; clone `main` for current source or use the named release assets to install ida-agent.
 
 ### Install
 
@@ -58,13 +58,15 @@ Enter the API prefix, not a complete operation URL. **Test Connection** checks m
 
 API keys and saved proxy passwords are stored as plaintext with current-user file permissions, normally in `%LOCALAPPDATA%\ida-agent\ai\providers.json`. The built-in AI sends conversation content and relevant analysis results to the selected provider. External MCP clients use their own provider settings.
 
-AI Chat source builds include an Agent-style view with Markdown, code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
+AI Chat 0.4.9 includes a full-height right sidebar with Agent-style roles and emojis, balanced message spacing, Markdown, syntax-highlighted code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
 
-### Analysis memory and workflows (source builds)
+### Analysis memory and workflows
 
 Enable **Tools** for the selected model. Use `/memory add <note>`, `/memory add-local <note>`, `/memory search <text>`, and `/memory forget <id>` to manage this binary's external analysis memory. `/new` and `/clear` keep saved notes. Use `/workflow protection [question]`, `/workflow function [question]`, or `/workflow types [question]` for reports with actual tool evidence and explicit coverage gaps. Agent memory writes follow the conversation approval policy. See the [full command and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md).
 
-These features are in current source builds and are not included in v0.4.8. The stable UI ABI remains IDA 9.4 / Qt 6.8.2; the Windows 9.5 experimental path requires strict ABI preflight and still needs live acceptance.
+Project instructions are checked once in the current IDB directory, in the order `AGENTS.md`, `Agents.md`, then `agents.md`. Later requests, new conversations and context compaction reuse the cached result, including a missing file. Use `/instructions` to view its status and `/instructions reload` to read changes while chat is idle; switching projects or reopening the database also refreshes it. A complete UTF-8 file up to 32 KiB is included as required model context. Project rules take priority over historical notes; current user instructions and the live approval policy retain priority. See the [project instruction reference](ida-agent-plugin/CHAT.md#response-and-tool-behavior).
+
+These features are included in v0.4.9 and later packages. The stable UI ABI remains IDA 9.4 / Qt 6.8.2; the Windows 9.5 experimental path requires strict ABI preflight and still needs live acceptance.
 
 ### MCP clients
 
@@ -88,7 +90,7 @@ On Windows, the manager also discovers Codex in common npm/Scoop installations a
 
 ida-agent 包含 IDA 插件、供外部 AI 客户端使用的 MCP Gateway，以及内置 AI Console。支持函数与交叉引用检查、伪代码、沿直接调用者进行有限层级的参数回溯、校验证据提取，以及通过 ChangeSet 执行支持的 IDB 修改。
 
-本仓库包含 ida-agent 源码、使用说明和二进制版本。项目自有源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。源码与使用文档自动同步到 `main`，公开运行 Windows/Linux 构建和测试，编译步骤见[中文源码说明](README.source.zh-CN.md#源码编译)。公开源码之前创建的发布标签保留原文档快照；获取当前源码请克隆 `main`，安装软件请使用带有 `ida-agent` 名称的发布附件。
+本仓库包含 ida-agent 源码、使用说明和二进制版本。项目自有源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。自动同步、测试和三平台构建发布全部在本公开仓库执行。源码与使用文档每 15 分钟拉取到 `main`，也可手动同步；私有仓库只存储源码和受限构建输入。维护者配置见 [发布配置说明](release/README.md#中文配置说明)。编译步骤见[中文源码说明](README.source.zh-CN.md#源码编译)。公开源码之前创建的发布标签保留原文档快照；获取当前源码请克隆 `main`，安装软件请使用带有 `ida-agent` 名称的发布附件。
 
 ### 安装
 
@@ -119,13 +121,15 @@ Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管�
 
 API Key 和已保存的代理密码使用当前用户文件权限保护，但以明文保存，通常位于 `%LOCALAPPDATA%\ida-agent\ai\providers.json`。内置 AI 会向选定供应商发送会话内容与相关分析结果。外部 MCP 客户端使用其自己的模型供应商配置。
 
-源码构建的 AI Chat 支持 Agent 样式的角色分层、Markdown、代码块及消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁的 **Effort** 选择器可设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 渲染与推理强度说明](ida-agent-plugin/CHAT.md)。
+0.4.9 的 AI Chat 默认停靠在全高右侧栏，支持 Agent 样式的角色分层与 Emoji、适中的消息间距、Markdown、带语法高亮的代码块及消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁的 **Effort** 选择器可设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 渲染与推理强度说明](ida-agent-plugin/CHAT.md)。
 
-### 分析记忆与工作流（源码构建）
+### 分析记忆与工作流
 
 在所选模型中启用 **Tools**。用 `/memory add <笔记>`、`/memory add-local <笔记>`、`/memory search <关键词>` 和 `/memory forget <编号>` 管理当前二进制的外部分析记忆。`/new`、`/clear` 保留已存笔记。`/workflow protection [问题]`、`/workflow function [问题]`、`/workflow types [问题]` 分别提供保护强度评估、函数与数据流调查、类型恢复准备；报告使用实际工具证据并明确未完成的范围。Agent 的记忆写入沿用会话审批。详见[完整命令与 IDA 9.5 验收说明](ida-agent-plugin/ANALYSIS.md)。
 
-上述功能已进入当前源码，尚未包含在 v0.4.8 包中。稳定 UI ABI 仍是 IDA 9.4 / Qt 6.8.2；Windows 9.5 实验路径要求严格 ABI 预检，实机验收仍待完成。
+项目规则首次使用时在当前 IDB 所在目录按 `AGENTS.md`、`Agents.md`、`agents.md` 的顺序检查，后续请求、新建会话和上下文压缩均复用缓存；未找到文件的结果也会缓存。聊天空闲时用 `/instructions` 查看状态，用 `/instructions reload` 读取文件变更；切换项目或重新打开数据库也会刷新。32 KiB 以内的完整 UTF-8 文件会作为必要模型上下文发送。项目规则优先于历史记忆，当前用户指令和会话审批策略仍保留优先级。详见[项目规则说明](ida-agent-plugin/CHAT.md#response-and-tool-behavior)。
+
+上述功能包含在 v0.4.9 及后续发布包中。稳定 UI ABI 仍是 IDA 9.4 / Qt 6.8.2；Windows 9.5 实验路径要求严格 ABI 预检，实机验收仍待完成。
 
 ### MCP 客户端
 
@@ -144,6 +148,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - 只有支持的 ChangeSet 修改提供预览、应用和回滚；任意脚本没有沙箱，也不会自动回滚。
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
+
+### Version 0.4.9 / 0.4.9 版本
+
+Version 0.4.9 adds the right-side Agent-style chat view, code syntax highlighting, the per-model Effort selector, analysis memory/workflows, prompt and tool-recovery improvements, and cached project instructions. Use `/instructions` to view the cache and `/instructions reload` to refresh it. See the [release notes](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.9.md).
+
+0.4.9 加入右侧 Agent 样式聊天区、代码高亮、按模型保存的 Effort、分析记忆与工作流、提示词和工具恢复优化，以及项目规则首次读取后的缓存。`/instructions` 查看缓存状态，`/instructions reload` 手动刷新。详见[发布说明](https://github.com/ackwrap/ida-pro-agent/blob/main/release/notes/0.4.9.md)。
 
 ### Version 0.4.8 / 0.4.8 版本
 

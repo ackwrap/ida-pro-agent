@@ -11,6 +11,7 @@ namespace ida_agent::ai
 
 inline constexpr std::string_view AgentToolSearchName = "ida_tool_search";
 
+bool IsValidAgentToolCall(const AgentToolCall &call);
 const AgentToolDefinition &AgentToolSearchDefinition();
 std::vector<AgentToolDefinition> InitialAgentToolDefinitions(
     const std::vector<AgentToolDefinition> &catalog);
@@ -22,6 +23,7 @@ public:
   void Reset() noexcept;
 
   bool IsActive(std::string_view name) const noexcept;
+  bool IsKnown(std::string_view name) const noexcept;
   const std::vector<AgentToolDefinition> &ActiveDefinitions() const noexcept;
   std::optional<AgentToolResult> Invoke(const AgentToolCall &call);
 

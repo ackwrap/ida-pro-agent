@@ -498,6 +498,8 @@ struct AgentToolCall
   std::string arguments_json;
 };
 
+enum class AgentToolFailureKind { None, ToolUnavailable };
+
 struct AgentToolResult
 {
   std::string call_id;
@@ -505,6 +507,8 @@ struct AgentToolResult
   bool success = false;
   std::string output;
   std::string safe_message;
+  // Runtime-only provenance for an inert call rejected before dispatch.
+  AgentToolFailureKind failure_kind = AgentToolFailureKind::None;
 };
 
 inline std::optional<std::size_t> AgentToolResultContentBytes(

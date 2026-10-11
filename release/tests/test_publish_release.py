@@ -26,6 +26,7 @@ class FakeGitHub:
         self.calls = []
         self.corrupt_upload = False
         self.empty_repository = False
+        self.target_commit = PUBLIC_HEAD
         self.fail_upload = False
         self.hide_created_from_list = False
         self.invalid_created_draft = False
@@ -40,7 +41,7 @@ class FakeGitHub:
             assert path == f"repos/{REPOSITORY}/releases"
             request = json.loads(payload.read_text(encoding="utf-8"))
             self.calls.append(("api", "create", request))
-            assert request["target_commitish"] == PUBLIC_HEAD
+            assert request["target_commitish"] == self.target_commit
             assert request["draft"] is True
             assert publisher.MARKER in request["body"] and "PRIVATE_SOURCE" not in request["body"]
             self.release = {"id": 7, "tag_name": request["tag_name"], "draft": True,
@@ -53,10 +54,10 @@ class FakeGitHub:
             if self.hide_created_from_list:
                 return []
             return [copy.deepcopy(self.release)] if self.release else []
-        if path.endswith("/commits/main"):
+        if path.endswith("/commits/main") or path.endswith(f"/commits/{self.target_commit}"):
             if self.empty_repository:
                 raise RuntimeError("Repository is empty")
-            return {"sha": PUBLIC_HEAD}
+            return {"sha": self.target_commit}
         if path.endswith("/assets?per_page=100"):
             return copy.deepcopy(self.remote)
         if path.endswith("/releases/7"):
@@ -103,12 +104,11 @@ class PublishReleaseTests(unittest.TestCase):
     def draft(self, body=publisher.MARKER):
         return {"id": 7, "tag_name": "v0.3.0", "draft": True, "body": body}
 
-    def test_repository_selection_rejects_urls_options_and_source(self):
+    def test_repository_selection_rejects_urls_and_options(self):
         for value in ("https://github.com/example/downloads", "--repo", "../source", "a/b.git", "a/b/c"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 publisher.validate_repository(value)
-        with self.assertRaises(ValueError):
-            publisher.validate_repository("Owner/Source", "owner/source")
+        self.assertEqual(publisher.validate_repository("Owner/Source"), "Owner/Source")
         self.assertEqual(publisher.validate_repository(REPOSITORY), REPOSITORY)
 
     def test_allowlist_excludes_unrelated_assets(self):
@@ -179,6 +179,38 @@ class PublishReleaseTests(unittest.TestCase):
         upload = github.calls[1]
         self.assertEqual(list(upload[3:3 + len(self.assets)]), [str(path) for path in self.assets])
         self.assertFalse(github.release["draft"])
+
+    def test_same_public_repository_uses_tested_commit(self):
+        github = FakeGitHub(self.assets)
+        github.target_commit = "b" * 40
+        publisher.publish(github, REPOSITORY, "0.3.0", self.assets,
+                          target_commit=github.target_commit)
+        request = next(call[2] for call in github.calls if call[:2] == ("api", "create"))
+        self.assertEqual(request["target_commitish"], github.target_commit)
+        self.assertFalse(github.release["draft"])
+
+    def test_invalid_tested_commit_is_rejected_before_writes(self):
+        github = FakeGitHub(self.assets)
+        with self.assertRaises(ValueError):
+            publisher.publish(github, REPOSITORY, "0.3.0", self.assets, target_commit="main")
+        self.assertEqual(github.calls, [])
+
+    def test_cli_uses_workflow_sha_only_for_same_public_repository(self):
+        fixture_root = self.directory / "source"
+        (fixture_root / "ida-mcp").mkdir(parents=True)
+        (fixture_root / "ida-mcp/VERSION").write_text("0.3.0\n")
+        for caller in (REPOSITORY, "example/private-source"):
+            with self.subTest(caller=caller):
+                github = FakeGitHub(self.assets)
+                github.target_commit = "b" * 40 if caller == REPOSITORY else PUBLIC_HEAD
+                environment = {"GH_TOKEN": "fixture-token", "GITHUB_REPOSITORY": caller,
+                               "GITHUB_SHA": "b" * 40, "IDA_AGENT_RELEASE_REPOSITORY": REPOSITORY}
+                argv = ["publish_release.py", "--assets", str(self.directory)]
+                with patch.dict(os.environ, environment), patch.object(sys, "argv", argv):
+                    with patch.object(publisher, "ROOT", fixture_root), patch.object(publisher, "GitHub", return_value=github):
+                        self.assertEqual(publisher.main(), 0)
+                request = next(call[2] for call in github.calls if call[:2] == ("api", "create"))
+                self.assertEqual(request["target_commitish"], github.target_commit)
 
     def test_creation_does_not_require_immediate_list_visibility(self):
         github = FakeGitHub(self.assets)

@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <optional>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -16,6 +17,10 @@ inline constexpr std::string_view AgentLoopLimitMessage =
     "IDA analysis tool loop exceeded a time or resource boundary.";
 inline constexpr std::string_view AgentLoopBuildMessage =
     "Unable to continue the IDA analysis tool loop.";
+
+inline constexpr std::size_t MaxAgentToolRecoveryRounds = 3;
+inline constexpr std::string_view AgentLoopRecoveryLimitMessage =
+    "Unavailable tool calls exceeded the recovery limit; no calls in this round ran.";
 
 enum class AgentLoopState
 {
@@ -63,6 +68,8 @@ private:
   std::size_t result_bytes_ = 0;
   ProviderAgentExchange pending_exchange_;
   AgentToolCatalogSession tool_catalog_;
+  std::map<std::string, AgentToolResult> unavailable_results_;
+  std::size_t recovery_rounds_ = 0;
   std::chrono::steady_clock::time_point deadline_paused_at_{};
   AgentLoopState state_ = AgentLoopState::Idle;
 };

@@ -344,18 +344,22 @@ bool ValidateAgentOptions(
     for ( const AgentToolCall &call : exchange.calls )
     {
       Json parsed;
+      const AgentToolResult *result = FindResult(exchange, call);
+      const bool unavailable = result != nullptr
+          && result->failure_kind == AgentToolFailureKind::ToolUnavailable;
       if ( call.id.empty() || call.id.size() > MaxAgentToolCallIdBytes
           || call.name.empty() || call.name.size() > MaxAgentToolNameBytes
-          || tool_names.find(call.name) == tool_names.end()
+          || (tool_names.find(call.name) == tool_names.end() && !unavailable)
           || !call_ids.insert(call.id).second
           || !ParseArgumentsObject(call.name, call.arguments_json, parsed) )
       {
         return false;
       }
-      const AgentToolResult *result = FindResult(exchange, call);
       const std::size_t result_limit = call.name == "ida_file_read"
           ? MaxAgentFileToolResultBytes : MaxAgentToolResultBytes;
       if ( result == nullptr || result->name != call.name
+          || (unavailable && (result->success || !result->output.empty()))
+          || (result->failure_kind != AgentToolFailureKind::None && !unavailable)
           || result->output.size() > result_limit
           || result->safe_message.size() > result_limit
           || (!result->success
@@ -515,9 +519,12 @@ ProviderChatBuildResult BuildRequest(
 
 ProviderChatBuildResult BuildProviderChatRequest(
     const ProviderProfileDraft &profile,
-    const std::vector<ProviderChatMessage> &messages)
+    const std::vector<ProviderChatMessage> &messages,
+    std::string_view system_prompt)
 {
-  return BuildRequest(profile, messages, nullptr);
+  ProviderChatAgentOptions options;
+  options.system_prompt.assign(system_prompt);
+  return BuildRequest(profile, messages, &options);
 }
 
 ProviderChatBuildResult BuildProviderAgentRequest(

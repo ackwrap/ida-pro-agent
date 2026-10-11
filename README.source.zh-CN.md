@@ -238,9 +238,9 @@ python release/build_release.py --clean
 
 ## GitHub Actions
 
-Windows 工作流验证 Gateway、构建包含 AI UI 的完整插件并运行 C++ 单元测试；版本标签或手动发布构建还会生成便携 ZIP 和安装器。Linux 工作流在 Ubuntu 24.04 上构建基础 MCP 插件与独立 AI 后端，并运行包含 Agent 和面板模型的 Go/C++ 测试；真实 Linux Qt 面板测试在本地使用已授权的 IDA 和图形会话运行。工具链和系统依赖见 [Linux 环境要求](ida-agent-plugin/README-LINUX.md#linux-environment-requirements)。这些 CI 构建使用公开的 SDK 依赖，无需私有下载地址或已安装的 IDA；跨仓库发布使用下文说明的独立令牌。触发与下载产物的步骤见 [Actions 配置说明](release/README.md#中文配置说明)。
+自动源码同步、Windows/Linux 构建、客户端回归和 Windows/Linux/macOS 完整发布全部在公开 [ida-pro-agent 仓库](https://github.com/ackwrap/ida-pro-agent/actions) 执行。私有 `ida-agent` 只存储源码和受限 Qt 构建输入，不再运行 Actions；本地构建脚本和单元测试继续保留。公开 CI 验证 Go/C++、Windows Qt 插件链接及安装包兼容性，需要许可的真实 IDA UI/集成测试在本地运行。工具链依赖见 [Linux 环境要求](ida-agent-plugin/README-LINUX.md#linux-environment-requirements)。
 
-项目自有源码采用 [MIT 许可证](LICENSE)，从 `ackwrap/ida-agent` 的 master 自动同步到公开仓库 [`ackwrap/ida-pro-agent`](https://github.com/ackwrap/ida-pro-agent) 的 main。公开仓库运行 Windows/Linux 源码构建与测试；完整三平台发布包继续在开发仓库中使用对应平台的 Qt 构建输入生成。版本标签会在验证后自动将二进制包发布到公开仓库 [`ackwrap/ida-pro-agent`](https://github.com/ackwrap/ida-pro-agent/releases)；手动运行只有勾选 **publish** 才会发布。请在私有仓库配置 Secret `IDA_AGENT_RELEASE_TOKEN`，授权写入公开仓库的 Contents。同步保留公开仓库历史和已有发布标签，排除凭据、本地计划与私有 Qt 链接包。第三方许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，同步与发布配置详见 [发布配置说明](release/README.md#中文配置说明)。官方 runner 不运行需要许可的真实 IDA 集成测试。
+MIT 源码和使用文档由公开仓库每 15 分钟从私有 master 拉取到公开 main，也可手动同步。请在**公开仓库**配置 `IDA_AGENT_SOURCE_READ_TOKEN`，仅授权私有 `ida-agent` 的 **Contents: read**。公开工作流独立维护，源码同步不会覆盖或删除。匹配的版本标签触发公开三平台构建与发布；发布使用公开仓库自身的 `GITHUB_TOKEN`。私有 Qt 输入不会进入公开安装包。配置步骤见 [Actions 与发布说明](release/README.md#中文配置说明)，依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 仓库与文档
 

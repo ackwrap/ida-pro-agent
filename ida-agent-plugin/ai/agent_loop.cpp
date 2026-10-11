@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <unordered_set>
 
 namespace ida_agent::ai
 {
@@ -50,17 +51,35 @@ AgentLoopStep AgentLoop::BeginToolRound(
     Reset();
     return Failure(AgentLoopLimitMessage);
   }
-  if ( std::any_of(
-           calls.begin(), calls.end(),
-           [this](const AgentToolCall &call)
-           {
-             return !tool_catalog_.IsActive(call.name);
-           }) )
+  std::unordered_set<std::string> ids;
+  std::map<std::string, AgentToolResult> unavailable;
+  for ( const auto &call : calls )
+  {
+    if ( !IsValidAgentToolCall(call) || !ids.insert(call.id).second )
+    {
+      Reset();
+      return Failure(AgentLoopBuildMessage);
+    }
+    if ( !tool_catalog_.IsActive(call.name) )
+    {
+      const std::string message = tool_catalog_.IsKnown(call.name)
+          ? "tool_not_loaded: No operation ran. Use ida_tool_search with this exact tool name "
+            "and retry in a later round after its schema is advertised."
+          : "unknown_tool: No operation ran. Use ida_tool_search with short English capability "
+            "terms and select an advertised tool instead of inventing a name.";
+      unavailable.emplace(call.id, AgentToolResult{call.id, call.name, false, {}, message,
+          AgentToolFailureKind::ToolUnavailable});
+    }
+  }
+  if ( !unavailable.empty() && recovery_rounds_ >= MaxAgentToolRecoveryRounds )
   {
     Reset();
-    return Failure(AgentLoopBuildMessage);
+    return Failure(AgentLoopRecoveryLimitMessage);
   }
-
+  if ( !unavailable.empty() )
+    ++recovery_rounds_;
+  // Snapshot before any search in this round loads new definitions.
+  unavailable_results_ = std::move(unavailable);
   state_ = AgentLoopState::ExecutingTools;
   pending_exchange_ = {};
   pending_exchange_.assistant_text = std::move(assistant_text);
@@ -73,6 +92,9 @@ std::optional<AgentToolResult> AgentLoop::InvokeCatalogTool(
 {
   if ( state_ != AgentLoopState::ExecutingTools )
     return std::nullopt;
+  const auto unavailable = unavailable_results_.find(call.id);
+  if ( unavailable != unavailable_results_.end() && unavailable->second.name == call.name )
+    return unavailable->second;
   return tool_catalog_.Invoke(call);
 }
 
@@ -92,6 +114,17 @@ AgentLoopStep AgentLoop::CompleteToolRound(
     AgentToolResult &result = results[index];
     const AgentToolCall &call = pending_exchange_.calls[index];
     if ( result.call_id != call.id || result.name != call.name )
+    {
+      Reset();
+      return Failure(AgentLoopBuildMessage);
+    }
+    const auto deferred = unavailable_results_.find(call.id);
+    if ( (deferred != unavailable_results_.end()
+            && (result.success || !result.output.empty()
+                || result.safe_message != deferred->second.safe_message
+                || result.failure_kind != AgentToolFailureKind::ToolUnavailable))
+        || (deferred == unavailable_results_.end()
+            && result.failure_kind != AgentToolFailureKind::None) )
     {
       Reset();
       return Failure(AgentLoopBuildMessage);
@@ -117,6 +150,7 @@ AgentLoopStep AgentLoop::CompleteToolRound(
   options_.exchanges.push_back(std::move(pending_exchange_));
   options_.tools = tool_catalog_.ActiveDefinitions();
   pending_exchange_ = {};
+  unavailable_results_.clear();
   return BuildNext();
 }
 
@@ -134,6 +168,8 @@ void AgentLoop::Reset() noexcept
   result_bytes_ = 0;
   pending_exchange_ = {};
   tool_catalog_.Reset();
+  unavailable_results_.clear();
+  recovery_rounds_ = 0;
   deadline_paused_at_ = {};
   state_ = AgentLoopState::Idle;
 }

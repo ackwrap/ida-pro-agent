@@ -1,5 +1,7 @@
 #include "ai/ai_menu.hpp"
 #include "ai/agent_prompt.hpp"
+#include "ai/agent_project_instructions.hpp"
+#include "ai/provider_agent_protocol.hpp"
 #include "ai/agent_tool_registry.hpp"
 #include <cctype>
 #include <stdexcept>
@@ -36,10 +38,71 @@ void AiMenuController::BeginAnalysisTurn()
   analysis_session_.BeginTurn(CaptureAnalysisContext());
 }
 
+std::string AiMenuController::ProjectSystemPrompt(bool agent_tools)
+{
+  std::string prompt = BuildChatSystemPrompt(agent_tools);
+  const std::size_t workflow_bytes = agent_tools ? analysis_session_.WorkflowPrompt().size() : 0;
+  const std::size_t budget = prompt.size() <= MaxProviderSystemPromptBytes
+      && workflow_bytes <= MaxProviderSystemPromptBytes - prompt.size()
+      ? MaxProviderSystemPromptBytes - prompt.size() - workflow_bytes : 0;
+  try
+  {
+    // Capture the IDB path through the main-thread executor; file reads use that fixed root.
+    const auto snapshot = agent_tools_.AnalysisContext();
+    if (!snapshot.is_object()
+        || snapshot.at("databaseContextId").get<std::ptrdiff_t>() != database_context_id_) return prompt;
+    const auto &instructions = project_instructions_.Get(snapshot.at("idb").get<std::string>());
+    prompt += BuildProjectInstructionsPrompt(instructions, budget);
+  }
+  catch (...) { /* Unavailable project storage must not crash the chat panel. */ }
+  return prompt;
+}
+
+void AiMenuController::ApplyProjectInstructionContext(std::vector<ProviderChatMessage> &messages) const
+{
+  for (auto message = messages.rbegin(); message != messages.rend(); ++message)
+    if (message->role == ProviderChatRole::User)
+    {
+      message->text = WithProjectInstructions(project_instructions_.Snapshot(), message->text);
+      return;
+    }
+}
+
 std::string AiMenuController::AnalysisSystemPrompt(std::string_view text)
 {
   analysis_session_.Bind(CaptureAnalysisContext());
-  return std::string(AgentSystemPrompt()) + analysis_session_.Prompt(text);
+  std::string prompt = ProjectSystemPrompt(true);
+  const std::size_t budget = prompt.size() < MaxProviderSystemPromptBytes
+      ? MaxProviderSystemPromptBytes - prompt.size() : 0;
+  prompt += analysis_session_.Prompt(text, budget);
+  return prompt;
+}
+
+void AiMenuController::ExecuteInstructionsCommand(std::string_view text)
+{
+  if (HasActiveRequest())
+  {
+    chat_panel_.AppendSystem("Cancel the active request before inspecting or reloading project instructions.");
+    return;
+  }
+  if (!text.empty() && text != "reload")
+  {
+    chat_panel_.AppendSystem("Use /instructions for cached project guidance, or /instructions reload to read it again.");
+    return;
+  }
+  if (text == "reload") project_instructions_.Reset();
+  ProjectSystemPrompt(false);
+  const auto &instructions = project_instructions_.Snapshot();
+  if (instructions.status == AgentProjectInstructionStatus::NotLoaded)
+    chat_panel_.AppendSystem("Project instructions: no file was safely loaded. Use /instructions reload after adding one.");
+  else
+  {
+    const char *state = instructions.status == AgentProjectInstructionStatus::Loaded ? "cached"
+        : instructions.status == AgentProjectInstructionStatus::NeedsRead ? "requires a file-tool read" : "unavailable";
+    chat_panel_.AppendSystem("Project instructions: " + instructions.path + " (" + state + ", "
+        + std::to_string(instructions.size) + " bytes). Use /instructions reload after changes.");
+  }
+  RefreshContextUsage();
 }
 
 void AiMenuController::ExecuteMemoryCommand(std::string_view text)

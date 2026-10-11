@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
 
-本文对应 ida-agent 0.4.8。插件与 Gateway 请使用同一发布包中的版本。
+本文对应 ida-agent 0.4.9。插件与 Gateway 请使用同一发布包中的版本。
 
 ### 自动更新检测
 
@@ -61,13 +61,15 @@ API Key 和保存的代理密码以明文存放在当前用户私有文件中。
 
 所选供应商会收到会话内容与相关分析上下文、工具结果。分享配置或日志前请移除凭据。
 
-源码构建的 AI Chat 支持 Agent 样式的角色分层、Markdown、代码块及消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁的 **Effort** 选择器可设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 渲染与推理强度说明](ida-agent-plugin/CHAT.md)。
+0.4.9 的 AI Chat 默认停靠在全高右侧栏，支持 Agent 样式的角色分层与 Emoji、适中的消息间距、Markdown、带语法高亮的代码块及消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁的 **Effort** 选择器可设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 渲染与推理强度说明](ida-agent-plugin/CHAT.md)。
 
-### 分析记忆与工作流（源码构建）
+### 分析记忆与工作流
 
 在所选模型中启用 **Tools**。用 `/memory add <笔记>`、`/memory add-local <笔记>`、`/memory search <关键词>` 和 `/memory forget <编号>` 管理当前二进制的外部分析记忆。`/new`、`/clear` 保留已存笔记。`/workflow protection [问题]`、`/workflow function [问题]`、`/workflow types [问题]` 分别提供保护强度评估、函数与数据流调查、类型恢复准备；报告使用实际工具证据并明确未完成的范围。Agent 的记忆写入沿用会话审批。详见[完整命令与 IDA 9.5 验收说明](ida-agent-plugin/ANALYSIS.md)。
 
-上述功能已进入当前源码，尚未包含在 v0.4.8 包中。稳定 UI ABI 仍是 IDA 9.4 / Qt 6.8.2；Windows 9.5 实验路径要求严格 ABI 预检，实机验收仍待完成。
+项目规则首次使用时在当前 IDB 所在目录按 `AGENTS.md`、`Agents.md`、`agents.md` 的顺序检查，后续请求、新建会话和上下文压缩均复用缓存；未找到文件的结果也会缓存。聊天空闲时用 `/instructions` 查看状态，用 `/instructions reload` 读取文件变更；切换项目或重新打开数据库也会刷新。32 KiB 以内的完整 UTF-8 文件会作为必要模型上下文发送。项目规则优先于历史记忆，当前用户指令和会话审批策略仍保留优先级。详见[项目规则说明](ida-agent-plugin/CHAT.md#response-and-tool-behavior)。
+
+上述功能包含在 v0.4.9 及后续发布包中。稳定 UI ABI 仍是 IDA 9.4 / Qt 6.8.2；Windows 9.5 实验路径要求严格 ABI 预检，实机验收仍待完成。
 
 ### 外部 MCP 客户端：使用配置管理页
 

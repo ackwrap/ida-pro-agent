@@ -11,7 +11,7 @@ import ida_loader
 import ida_pro
 from PySide6 import QtCore, QtGui, QtWidgets
 import linux_panel_driver as base
-from linux_chat_render_fixture import MARKDOWN, BURST
+from linux_chat_render_fixture import MARKDOWN, BURST, CPP_CODE, PYTHON_CODE, JSON_CODE
 
 ROOT = base.ROOT
 START = time.monotonic()
@@ -73,7 +73,57 @@ def copy_action(output, cursor, name, expected):
     output.setTextCursor(old_selection)
     output.verticalScrollBar().setValue(output.verticalScrollBar().maximum() if old_bottom else old_scroll)
     assert not error, error
-    assert QtWidgets.QApplication.clipboard().text() == expected, name
+    assert QtWidgets.QApplication.clipboard().text() == expected, (name, "expected", expected, "actual", QtWidgets.QApplication.clipboard().text())
+
+
+def check_syntax_colors(output, label):
+    document = output.document()
+    cases = (
+        ("keyword", "return 42;", 0), ("number", "return 42;", 7),
+        ("type", "int answer()", 0), ("function", "answer()", 0),
+        ("string", "return 0x10", 0), ("comment", "return 99;", 0),
+        ("blockComment", "still commented", 0),
+        ("isolatedKeyword", "return 31415;", 0),
+        ("pythonKeyword", "def inspect(ea):", 0), ("pythonString", "still a string", 0),
+        ("instruction", "mov rax", 0), ("register", "rax, 0x20", 0),
+        ("assemblyNumber", "0x20", 0), ("jsonProperty", '"size": 42', 1),
+        ("jsonNumber", '"size": 42', 8), ("jsonKeyword", '"valid": true', 9),
+        ("inferredType", "_DWORD check_size", 0),
+    )
+    def luminance(color):
+        linear = lambda value: value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+        return 0.2126 * linear(color.redF()) + 0.7152 * linear(color.greenF()) + 0.0722 * linear(color.blueF())
+    colors = {}
+    for name, needle, offset in cases:
+        cursor = document.find(needle)
+        assert not cursor.isNull(), (name, needle)
+        position = cursor.selectionStart() - cursor.block().position() + offset
+        formats = cursor.block().layout().formats()
+        value = next((f for f in formats if f.start <= position < f.start + f.length), None)
+        assert value is not None, (name, label, cursor.block().text(), [(f.start, f.length) for f in formats])
+        color = value.format.foreground().color()
+        background = cursor.blockFormat().background().color()
+        ink, base_lum = luminance(color), luminance(background)
+        ratio = (max(ink, base_lum) + 0.05) / (min(ink, base_lum) + 0.05)
+        assert ratio >= 4.49, (name, label, color.name(), background.name(), ratio)
+        assert color != output.palette().color(QtGui.QPalette.Text), (name, "code stayed monochrome")
+        colors[name] = color.name()
+    assert len({colors[k] for k in ("keyword", "number", "string", "comment")}) == 4, colors
+    assert colors["isolatedKeyword"] == colors["keyword"], "comment state leaked across same-language fences"
+    assert colors["blockComment"] == colors["comment"], "C++ comment state lost between lines"
+    assert colors["pythonString"] == colors["string"], "Python triple string lost between lines"
+    unknown = document.find("return 31337")
+    assert not unknown.isNull() and not unknown.block().layout().formats(), "unknown language was guessed"
+    for frame in document.rootFrame().childFrames():
+        spans = 0
+        block = document.findBlock(frame.firstPosition())
+        while block.isValid() and block.position() < frame.lastPosition():
+            ranges = block.layout().formats()
+            assert len(ranges) <= 256, "per-line highlight span budget exceeded"
+            spans += len(ranges)
+            block = block.next()
+        assert spans <= 4096, "per-message highlight span budget exceeded"
+    report.setdefault("syntaxColors", {})[label] = colors
 
 
 def finish():
@@ -82,7 +132,7 @@ def finish():
         "median": sorted(heartbeats)[len(heartbeats) // 2]}
     report["heartbeatByStageMs"] = {key: max(values) for key, values in heartbeat_phases.items()}
     assert max(heartbeats) < 1500, "GUI heartbeat stalled for more than 1.5 seconds"
-    base.check_palette_layouts()
+    base.check_palette_layouts(check_syntax_colors)
     report["layouts"] = base.report.get("layouts")
     _, output = base.panel()
     report["final"] = stats(output)
@@ -125,6 +175,13 @@ def tick():
             document = output.document()
             heading = document.find("Render check")
             report["codeBlockText"] = document.find("return 42;").block().text()
+            report["codeBlocks"] = []
+            block = document.find("int answer()").block()
+            while block.isValid() and "render-markdown-complete" not in block.text():
+                report["codeBlocks"].append({"text": block.text(),
+                    "properties": {str(k): str(v) for k, v in block.blockFormat().properties().items()},
+                    "overlays": len(block.layout().formats())})
+                block = block.next()
             report["headingProperties"] = {str(k): str(v) for k, v in heading.blockFormat().properties().items()}
             assert heading.blockFormat().headingLevel() == 2, "Markdown heading not rendered"
             bold = document.find("evidence", document.find("Render check"))
@@ -135,7 +192,10 @@ def tick():
                 for f in m.childFrames()), "Markdown table missing"
             report["bottom"] = [output.verticalScrollBar().value(), output.verticalScrollBar().maximum()]
             assert output.verticalScrollBar().value() == output.verticalScrollBar().maximum(), "new replies did not follow bottom"
-            copy_action(output, code, "idaAgentCopyCode", "int answer() {\n    return 42;\n}")
+            copy_action(output, code, "idaAgentCopyCode", CPP_CODE)
+            copy_action(output, document.find("return 31415;"), "idaAgentCopyCode", "return 31415;")
+            copy_action(output, document.find("def inspect(ea):"), "idaAgentCopyCode", PYTHON_CODE)
+            copy_action(output, document.find('"size": 42'), "idaAgentCopyCode", JSON_CODE)
             copy_action(output, code, "idaAgentCopyMessage", MARKDOWN)
             thinking = document.find("thinking-check: comparing evidence")
             role = document.find("\U0001f4ad Thinking")
@@ -152,7 +212,7 @@ def tick():
             output.parentWidget().setMinimumHeight(400)
             QtWidgets.QApplication.processEvents()
             report["readableCaptureMinHeight"] = 400
-            base.check_palette_layouts()
+            base.check_palette_layouts(check_syntax_colors)
             for label in ("native", "dark", "light"):
                 (ROOT / ("markdown-" + label + ".png")).write_bytes(
                     (ROOT / ("render-" + label + ".png")).read_bytes())

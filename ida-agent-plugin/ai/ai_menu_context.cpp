@@ -69,13 +69,16 @@ bool AiMenuController::RefreshContextUsage()
   {
     ProviderChatAgentOptions options;
     options.system_prompt = AnalysisSystemPrompt({});
+    ApplyProjectInstructionContext(messages);
     options.tools = InitialAgentToolDefinitions(
         ContextAgentTools(agent_tools_));
     build = BuildProviderAgentRequest(*active, messages, options);
   }
   else
   {
-    build = BuildProviderChatRequest(*active, messages);
+    const auto prompt = ProjectSystemPrompt(false);
+    ApplyProjectInstructionContext(messages);
+    build = BuildProviderChatRequest(*active, messages, prompt);
   }
   CaptureContextUsage(build, messages.size(), agent_enabled);
   return context_usage_.valid;
@@ -131,7 +134,7 @@ void AiMenuController::CompactContext(bool automatic)
       {ProviderChatRole::User, plan->prompt},
   };
   ProviderChatBuildResult build =
-      BuildProviderChatRequest(compact_profile, messages);
+      BuildProviderChatRequest(compact_profile, messages, ChatCompactionSystemPrompt());
   if ( build.error )
   {
     chat_panel_.AppendSystem(

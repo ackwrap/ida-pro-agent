@@ -58,6 +58,13 @@ int main()
           "workflow command arguments mismatch");
   Require(ParseCliCommand("/memoryextra").kind == CliCommandKind::Unknown, "memory command accepted invalid prefix");
   Require(ParseCliCommand("/workflowextra types").kind == CliCommandKind::Unknown, "workflow command accepted invalid prefix");
+  Require(ParseCliCommand("/instructions").kind == CliCommandKind::ProjectInstructions,
+      "project instruction status command mismatch");
+  const auto instructions = ParseCliCommand(" /instructions   reload ");
+  Require(instructions.kind == CliCommandKind::ProjectInstructions && instructions.text == "reload",
+      "project instruction reload command mismatch");
+  Require(ParseCliCommand("/instructionsextra").kind == CliCommandKind::Unknown,
+      "project instruction command accepted invalid prefix");
   Require(ParseCliCommand("/ctx").kind == CliCommandKind::Context, "context command mismatch");
   Require(ParseCliCommand("/context").kind == CliCommandKind::Context, "context alias mismatch");
   Require(ParseCliCommand("/missing").kind == CliCommandKind::Unknown, "unknown command mismatch");
@@ -89,7 +96,7 @@ int main()
   const std::vector<CliCommandDefinition> &commands = AvailableCliCommands();
   const std::vector<std::string_view> expected_command_order{
       "/help", "/new", "/clear", "/compact", "/cancel", "/y", "/n", "/provider", "/providers",
-      "/config", "/model", "/models", "/status", "/history", "/session", "/memory", "/workflow", "/ctx", "/context",
+      "/config", "/model", "/models", "/status", "/history", "/session", "/memory", "/workflow", "/instructions", "/ctx", "/context",
   };
   Require(commands.size() == expected_command_order.size(), "command suggestion count mismatch");
   std::unordered_set<std::string_view> command_names;

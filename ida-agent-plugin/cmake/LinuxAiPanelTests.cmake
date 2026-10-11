@@ -24,6 +24,7 @@ target_link_libraries(ida_ai_agent_tool_registry_test PRIVATE ida_ai_backend)
 
 add_executable(ida_ai_agent_loop_test
     tests/unit/ai/agent_loop_test.cpp
+    tests/unit/ai/agent_recovery_test.cpp
     ai/agent_effect_coordinator.cpp
     ai/agent_loop.cpp
     ai/agent_prompt.cpp
@@ -86,6 +87,9 @@ target_link_libraries(ida_ai_agent_effect_service_test PRIVATE ida_ai_backend)
 
 add_executable(ida_ai_agent_file_service_test
     tests/unit/ai/agent_file_service_test.cpp
+    tests/unit/ai/agent_project_instructions_test.cpp
+    ai/agent_prompt.cpp
+    ai/agent_project_instructions.cpp
     ai/agent_effect_digest.cpp
     ai/agent_file_service_linux.cpp
 )

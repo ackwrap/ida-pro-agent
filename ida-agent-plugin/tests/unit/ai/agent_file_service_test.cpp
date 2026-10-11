@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+void RunAgentProjectInstructionTests(const std::filesystem::path &parent);
+
 namespace
 {
 using namespace ida_agent::ai;
@@ -364,6 +366,7 @@ int main()
     TestMutations(service, root);
     TestPathAndObjectSafety(service, root);
     TestScriptsAndNoIdb(service, root);
+    RunAgentProjectInstructionTests(root);
     fs::remove_all(root);
     return 0;
   }

@@ -165,7 +165,8 @@ struct ProviderChatDecodeResult
 
 ProviderChatBuildResult BuildProviderChatRequest(
     const ProviderProfileDraft &profile,
-    const std::vector<ProviderChatMessage> &messages);
+    const std::vector<ProviderChatMessage> &messages,
+    std::string_view system_prompt = {});
 
 ProviderChatBuildResult BuildProviderAgentRequest(
     const ProviderProfileDraft &profile,

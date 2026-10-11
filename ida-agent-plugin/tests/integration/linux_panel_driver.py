@@ -103,13 +103,15 @@ def measure_layout(label):
     return value
 
 
-def check_palette_layouts():
+def check_palette_layouts(render_check=None):
     application = QtWidgets.QApplication.instance()
     entry, output = panel()
     container = entry.parentWidget()
     combo = effort_control()
     original = container.styleSheet()
     report["geometry"] = measure_layout("native")
+    if render_check:
+        render_check(output, "native")
     try:
         for label, background, foreground in (("dark", "#252525", "#eeeeee"), ("light", "#eeeeee", "#202020")):
             # IDA styles override the application palette. Apply only colors
@@ -118,6 +120,8 @@ def check_palette_layouts():
                 + f"background-color: {background}; color: {foreground}; " + "}")
             application.processEvents()
             value = measure_layout(label)
+            if render_check:
+                render_check(output, label)
             assert combo.palette().color(QtGui.QPalette.Base).name() == background, value
             assert combo.palette().color(QtGui.QPalette.Text).name() == foreground, value
             rendered = output.document().find("render-markdown-complete")
@@ -261,6 +265,19 @@ def tick():
         elif stage == 8 and text.count("streamed reply OK") >= 2 and replies_saved(2):
             if not effort_control().isEnabled():
                 return 100
+            if os.environ.get("IDA_AGENT_PANEL_TEST_INSTRUCTIONS_CHECK"):
+                send("/instructions reload")
+                send("instructions-refresh-check")
+                stage = 12
+                return 100
+            select_effort("xhigh")
+            send("/history")
+            stage = 9
+            return 250
+        elif stage == 12 and text.count("streamed reply OK") >= 3 and replies_saved(3):
+            if not effort_control().isEnabled():
+                return 100
+            report["instructions_reload"] = True
             select_effort("xhigh")
             send("/history")
             stage = 9

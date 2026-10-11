@@ -1,4 +1,5 @@
 #include "ai/chat_message_view.hpp"
+#include "ai/chat_code_highlight.hpp"
 #include "ai/chat_render_budget.hpp"
 #include "ai/chat_output_view.hpp"
 
@@ -11,8 +12,6 @@ class MarkdownDocument final : public QT::QTextDocument
 protected:
   QT::QVariant loadResource(int, const QT::QUrl &) override { return {}; }
 };
-
-constexpr int CodeGroupProperty = QT::QTextFormat::UserProperty + 171;
 
 QT::QColor Mix(const QT::QColor &base, const QT::QColor &accent, int percent)
 {
@@ -51,9 +50,11 @@ void ChatMessageView::RenderMessage(Message &message, std::string_view text)
   {
     MarkdownDocument source;
     source.setDefaultFont(font());
-    source.setMarkdown(ToQString(visible),
+    const auto prepared = PrepareChatCodeMarkdown(visible);
+    source.setMarkdown(ToQString(prepared.text),
         QT::QTextDocument::MarkdownFeatures(QT::QTextDocument::MarkdownDialectGitHub)
             | QT::QTextDocument::MarkdownNoHTML);
+    RestoreChatCodeGroups(source, prepared);
     const auto first_format = source.begin().blockFormat();
     cursor.insertFragment(QT::QTextDocumentFragment(&source));
     // Inserting a fragment merges its first paragraph with the destination.
@@ -116,17 +117,22 @@ void ChatMessageView::StyleMessage(Message &message)
 
   auto code_font = QT::QFontDatabase::systemFont(QT::QFontDatabase::FixedFont);
   code_font.setFixedPitch(true);
-  int group = 0;
+  int fallback_group = 100000;
+  int previous_group = 0;
+  QT::QString previous_language;
   bool previous_code = false;
   for ( auto block = BodyCursor(message).block();
         block.isValid() && block.position() < message.frame->lastPosition();
         block = block.next() )
   {
     const bool code = IsCodeBlock(block);
-    if ( code && !previous_code )
-      ++group;
     auto block_format = block.blockFormat();
-    block_format.clearProperty(CodeGroupProperty);
+    int group = block_format.property(ChatCodeGroupProperty).toInt();
+    const auto language = block_format.property(QT::QTextFormat::BlockCodeLanguage).toString();
+    if ( code && group == 0 )
+      group = !previous_code || language != previous_language ? ++fallback_group : previous_group;
+    if ( !code )
+      block_format.clearProperty(ChatCodeGroupProperty);
     const double top_limit = block_format.headingLevel() > 0 ? 4 : 2;
     if ( block_format.topMargin() > top_limit )
       block_format.setTopMargin(top_limit);
@@ -134,11 +140,12 @@ void ChatMessageView::StyleMessage(Message &message)
       block_format.setBottomMargin(2);
     if ( code )
     {
-      block_format.setProperty(CodeGroupProperty, group);
+      block_format.setProperty(ChatCodeGroupProperty, group);
       block_format.setBackground(Mix(base, text, 7));
       block_format.setLeftMargin(4);
       block_format.setRightMargin(4);
-      block_format.setTopMargin(0);
+      block_format.setTopMargin(previous_code && group != previous_group
+          ? QT::QFontMetricsF(font(), this).lineSpacing() / 3.0 : 0);
       block_format.setBottomMargin(0);
       QT::QTextCursor code_cursor(block);
       code_cursor.setPosition(block.position() + block.length() - 1,
@@ -164,7 +171,11 @@ void ChatMessageView::StyleMessage(Message &message)
       inline_code.mergeCharFormat(fixed);
     }
     previous_code = code;
+    previous_group = group;
+    previous_language = language;
   }
+  if ( !message.preview )
+    ApplyChatCodeHighlighting(message.frame, colors);
 }
 
 QT::QString ChatMessageView::CopyMessageAt(const QT::QTextCursor &cursor) const
@@ -179,15 +190,15 @@ QT::QString ChatMessageView::CopyMessageAt(const QT::QTextCursor &cursor) const
 QT::QString ChatMessageView::CopyCodeAt(const QT::QTextCursor &cursor) const
 {
   auto block = cursor.block();
-  const auto property = block.blockFormat().property(CodeGroupProperty);
+  const auto property = block.blockFormat().property(ChatCodeGroupProperty);
   if ( !property.isValid() )
     return {};
   while ( block.previous().isValid()
-      && block.previous().blockFormat().property(CodeGroupProperty) == property
+      && block.previous().blockFormat().property(ChatCodeGroupProperty) == property
       && QT::QTextCursor(block.previous()).currentFrame() == cursor.currentFrame() )
     block = block.previous();
   QT::QString result("");
-  while ( block.isValid() && block.blockFormat().property(CodeGroupProperty) == property
+  while ( block.isValid() && block.blockFormat().property(ChatCodeGroupProperty) == property
       && QT::QTextCursor(block).currentFrame() == cursor.currentFrame() )
   {
     if ( !result.isEmpty() )

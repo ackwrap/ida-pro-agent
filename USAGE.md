@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide describes ida-agent 0.4.8. Use the plugin and Gateway from the same release package.
+This guide describes ida-agent 0.4.9. Use the plugin and Gateway from the same release package.
 
 ### Automatic update checks
 
@@ -61,13 +61,15 @@ API keys and saved proxy passwords are stored as plaintext in user-private files
 
 The selected provider receives conversation content and relevant analysis context/results. Remove credentials before sharing configuration or logs.
 
-AI Chat source builds include an Agent-style view with Markdown, code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
+AI Chat 0.4.9 includes a full-height right sidebar with Agent-style roles and emojis, balanced message spacing, Markdown, syntax-highlighted code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
 
-### Analysis memory and workflows (source builds)
+### Analysis memory and workflows
 
 Enable **Tools** for the selected model. Use `/memory add <note>`, `/memory add-local <note>`, `/memory search <text>`, and `/memory forget <id>` to manage this binary's external analysis memory. `/new` and `/clear` keep saved notes. Use `/workflow protection [question]`, `/workflow function [question]`, or `/workflow types [question]` for reports with actual tool evidence and explicit coverage gaps. Agent memory writes follow the conversation approval policy. See the [full command and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md).
 
-These features are in current source builds and are not included in v0.4.8. The stable UI ABI remains IDA 9.4 / Qt 6.8.2; the Windows 9.5 experimental path requires strict ABI preflight and still needs live acceptance.
+Project instructions are checked once in the current IDB directory, in the order `AGENTS.md`, `Agents.md`, then `agents.md`. Later requests, new conversations and context compaction reuse the cached result, including a missing file. Use `/instructions` to view its status and `/instructions reload` to read changes while chat is idle; switching projects or reopening the database also refreshes it. A complete UTF-8 file up to 32 KiB is included as required model context. Project rules take priority over historical notes; current user instructions and the live approval policy retain priority. See the [project instruction reference](ida-agent-plugin/CHAT.md#response-and-tool-behavior).
+
+These features are included in v0.4.9 and later packages. The stable UI ABI remains IDA 9.4 / Qt 6.8.2; the Windows 9.5 experimental path requires strict ABI preflight and still needs live acceptance.
 
 ### External MCP client: configuration manager
 

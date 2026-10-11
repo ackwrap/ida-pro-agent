@@ -103,7 +103,7 @@ void AiMenuController::SubmitChatMessage(std::string_view text)
     return;
   }
 
-  const std::vector<ProviderChatMessage> messages =
+  std::vector<ProviderChatMessage> messages =
       BuildConversationMessages(chat_panel_.Entries());
 
   const ProviderModelDraft *model = SelectedChatModel(*active);
@@ -124,10 +124,12 @@ void AiMenuController::SubmitChatMessage(std::string_view text)
     const auto &analysis = analysis_memory::ToolDefinitions();
     tools.insert(tools.end(), analysis.begin(), analysis.end());
     BeginAnalysisTurn();
+    const auto prompt = AnalysisSystemPrompt(text);
+    ApplyProjectInstructionContext(messages);
     AgentLoopStep step = agent_loop_.Begin(
         *active,
         messages,
-        AnalysisSystemPrompt(text),
+        prompt,
         std::move(tools));
     if ( step.error )
     {
@@ -145,7 +147,9 @@ void AiMenuController::SubmitChatMessage(std::string_view text)
       PersistTranscript();
       return;
     }
-    build = BuildProviderChatRequest(*active, messages);
+    const auto prompt = ProjectSystemPrompt(false);
+    ApplyProjectInstructionContext(messages);
+    build = BuildProviderChatRequest(*active, messages, prompt);
   }
   if ( build.error )
   {

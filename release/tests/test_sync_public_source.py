@@ -97,6 +97,7 @@ class SourceSyncTests(unittest.TestCase):
 
     def test_repeat_snapshot_is_noop(self):
         revision, files = self.publish_fixture()
+        self.assertNotIn(b"\r\n", (self.public / sync.MANIFEST).read_bytes())
         self.assertFalse(sync.apply_snapshot(self.public, revision, files))
         self.assertEqual(git(self.public, "status", "--porcelain").stdout, b"")
 
@@ -109,6 +110,41 @@ class SourceSyncTests(unittest.TestCase):
         self.assertFalse((self.public / "ida-mcp/main.go").exists())
         self.assertTrue((self.public / "PUBLIC_ONLY.md").exists())
         self.assertIn(b"D\tida-mcp/main.go", git(self.public, "diff", "--cached", "--name-status").stdout)
+
+    def test_source_workflows_never_overwrite_public_workflows(self):
+        name = ".github/workflows/windows-build.yml"
+        self.write(self.source, name, "private workflow\n")
+        commit(self.source)
+        self.write(self.public, name, "public-owned workflow\n")
+        commit(self.public)
+        revision, files = sync.snapshot(self.source)
+        self.assertNotIn(name, files)
+        sync.apply_snapshot(self.public, revision, files)
+        self.assertEqual((self.public / name).read_text(), "public-owned workflow\n")
+        self.assertNotIn(name, json.loads((self.public / sync.MANIFEST).read_text())["files"])
+
+    def test_legacy_manifest_relinquishes_workflow_without_deleting_it(self):
+        self.publish_fixture()
+        name = ".github/workflows/windows-build.yml"
+        self.write(self.public, name, "public-owned workflow\n")
+        path = self.public / sync.MANIFEST
+        manifest = json.loads(path.read_text())
+        manifest["files"].append(name)
+        path.write_text(json.dumps(manifest))
+        commit(self.public)
+        revision, files = sync.snapshot(self.source)
+        sync.apply_snapshot(self.public, revision, files)
+        self.assertEqual((self.public / name).read_text(), "public-owned workflow\n")
+        self.assertNotIn(name, json.loads(path.read_text())["files"])
+        self.assertNotIn(name.encode(), git(self.public, "diff", "--cached", "--name-only").stdout)
+
+    def test_incoming_workflow_is_rejected_before_any_write(self):
+        revision, files = sync.snapshot(self.source)
+        files[".github/workflows/windows-build.yml"] = ("100644", b"unexpected workflow")
+        before = (self.public / "README.md").read_bytes()
+        with self.assertRaisesRegex(ValueError, "public repository"):
+            sync.apply_snapshot(self.public, revision, files)
+        self.assertEqual((self.public / "README.md").read_bytes(), before)
 
     def test_dirty_public_checkout_is_refused(self):
         self.write(self.public, "README.md", "unsaved public edit")

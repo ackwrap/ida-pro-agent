@@ -216,6 +216,19 @@ AgentToolResult SearchFailure(const AgentToolCall &call)
 
 } // namespace
 
+bool IsValidAgentToolCall(const AgentToolCall &call)
+{
+  if ( !ValidCallId(call.id) || !ValidCallId(call.name)
+      || call.name.size() > MaxAgentToolNameBytes )
+    return false;
+  const auto limit = call.name == "ida_file_mutate"
+      ? MaxAgentFileToolArgumentsBytes : MaxAgentToolArgumentsBytes;
+  if ( call.arguments_json.empty() || call.arguments_json.size() > limit )
+    return false;
+  const auto arguments = Json::parse(call.arguments_json, nullptr, false);
+  return arguments.is_object();
+}
+
 const AgentToolDefinition &AgentToolSearchDefinition()
 {
   static const AgentToolDefinition definition{
@@ -281,6 +294,12 @@ bool AgentToolCatalogSession::IsActive(std::string_view name) const noexcept
       {
         return definition.name == name;
       });
+}
+
+bool AgentToolCatalogSession::IsKnown(std::string_view name) const noexcept
+{
+  return name == AgentToolSearchName || std::any_of(catalog_.begin(), catalog_.end(),
+      [name](const AgentToolDefinition &definition) { return definition.name == name; });
 }
 
 const std::vector<AgentToolDefinition> &

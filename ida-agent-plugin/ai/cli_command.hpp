@@ -28,6 +28,7 @@ enum class CliCommandKind
   Context,
   AnalysisMemory,
   AnalysisWorkflow,
+  ProjectInstructions,
   Unknown,
 };
 

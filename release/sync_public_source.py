@@ -21,6 +21,7 @@ ROOT_FILES = {
     ".gitattributes", ".gitignore", ".gitmodules", "AGENTS.md", "LICENSE",
     "THIRD_PARTY_NOTICES.md", "README.md", "README.zh-CN.md",
 }
+PUBLIC_OWNED_PREFIXES = (".github/workflows/",)
 SOURCE_DIRS = {"ida-agent-plugin", "ida-mcp", "mcp-test-project", "protocol", "release", "skills"}
 PUBLIC_DOCS = {"README.md", "USAGE.md", "USAGE.zh-CN.md"}
 DOC_RENAMES = {"README.md": "README.source.md", "README.zh-CN.md": "README.source.zh-CN.md"}
@@ -43,6 +44,10 @@ def safe_name(name: str) -> bool:
     return bool(parts) and not name.startswith("/") and "\\" not in name and all(
         part.lower() not in {".", "..", ".git"} for part in parts
     ) and str(PurePosixPath(name)) == name and ":" not in name
+
+
+def public_owned(name: str) -> bool:
+    return any(name.startswith(prefix) for prefix in PUBLIC_OWNED_PREFIXES)
 
 
 def allowed_source(name: str) -> bool:
@@ -88,6 +93,8 @@ def snapshot(source: Path, revision: str = "HEAD") -> tuple[str, dict[str, tuple
             name = member.name
             if name not in entries or not member.isfile():
                 raise ValueError(f"Unexpected archive member: {name}")
+            if public_owned(name):
+                continue
             mode = entries[name][0]
             stream = tar.extractfile(member)
             if stream is None:
@@ -104,7 +111,7 @@ def snapshot(source: Path, revision: str = "HEAD") -> tuple[str, dict[str, tuple
         public_name = DOC_RENAMES.get(name, name)
         if mode == "160000":
             files[name] = (mode, oid.encode())
-        elif public_name not in files:
+        elif not public_owned(name) and public_name not in files:
             raise ValueError(f"Archive omitted tracked source: {name}")
     for name in PUBLIC_DOCS:
         source_name = f"release/public/{name}"
@@ -155,6 +162,10 @@ def apply_snapshot(destination: Path, commit: str, files: dict[str, tuple[str, b
         old_files = set(manifest["files"])
         if not all(isinstance(name, str) and allowed_public(name) for name in old_files):
             raise ValueError("The source manifest contains an unapproved path")
+    # Relinquish legacy manifest ownership without deleting public workflows.
+    old_files = {name for name in old_files if not public_owned(name)}
+    if any(public_owned(name) for name in files):
+        raise ValueError("Public workflows must be maintained in the public repository")
     if not all(allowed_public(name) for name in files):
         raise ValueError("The source snapshot contains an unapproved path")
     # Check every path before writing or removing any managed file.
@@ -182,7 +193,7 @@ def apply_snapshot(destination: Path, commit: str, files: dict[str, tuple[str, b
     manifest = {"format_version": 1, "source_repository": SOURCE_REPOSITORY,
                 "source_commit": commit, "version": files["ida-mcp/VERSION"][1].decode().strip(),
                 "files": sorted(files)}
-    (destination / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (destination / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
     regular = {name for name, (mode, _) in files.items() if mode != "160000"}
     staged = sorted(regular | (old_files - files.keys()) | {MANIFEST})
     paths = b"".join(f":(literal){name}".encode() + b"\0" for name in staged)

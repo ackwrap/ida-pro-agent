@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the complete three-platform release to a separate public repository."""
+"""Publish the complete three-platform release to a public repository."""
 
 from __future__ import annotations
 
@@ -50,11 +50,11 @@ class GitHub:
         return [item for page in value for item in page] if paginate else value
 
 
-def validate_repository(repository: str, source: str = "") -> str:
+def validate_repository(repository: str) -> str:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._-]*", repository):
         raise ValueError("Release repository must be owner/repo, without a URL or .git suffix.")
-    if repository.endswith(".git") or repository.lower() == source.lower():
-        raise ValueError("Select a separate public release repository, not the source repository.")
+    if repository.endswith(".git"):
+        raise ValueError("Release repository must not include a .git suffix.")
     return repository
 
 
@@ -126,12 +126,15 @@ def verify_assets(remote: list[dict], assets: list[Path]) -> None:
             raise RuntimeError(f"Remote release asset does not match the local package: {path.name}")
 
 
-def publish(github: GitHub, repository: str, version: str, assets: list[Path]) -> str:
+def publish(github: GitHub, repository: str, version: str, assets: list[Path],
+            target_commit: str | None = None) -> str:
     metadata = github.api(f"repos/{repository}")
     if metadata.get("private") is not False or metadata.get("visibility") != "public":
         raise ValueError("The release destination must be a public repository.")
     if metadata.get("archived") or not metadata.get("permissions", {}).get("push"):
         raise ValueError("The release token needs Contents: write on an active public repository.")
+    if target_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", target_commit):
+        raise ValueError("The tested public commit must be a complete SHA-1.")
     tag = f"v{version}"
     releases = github.api(f"repos/{repository}/releases?per_page=100", paginate=True)
     matches = [item for item in releases if item["tag_name"] == tag]
@@ -155,11 +158,13 @@ def publish(github: GitHub, repository: str, version: str, assets: list[Path]) -
         notes = Path(temporary) / "release-notes.md"
         notes.write_text(release_notes(version), encoding="utf-8", newline="\n")
         if release is None:
-            # Resolve a commit belonging to the PUBLIC repository, never GITHUB_SHA.
-            branch = quote(metadata["default_branch"], safe="")
-            head = github.api(f"repos/{repository}/commits/{branch}")
+            # Accept a workflow SHA only when the caller builds this public repository.
+            ref = quote(target_commit or metadata["default_branch"], safe="")
+            head = github.api(f"repos/{repository}/commits/{ref}")
             if not re.fullmatch(r"[0-9a-f]{40}", head.get("sha", "")):
                 raise RuntimeError("Initialize the public repository with a README commit first.")
+            if target_commit is not None and head["sha"] != target_commit:
+                raise RuntimeError("GitHub did not confirm the tested public commit.")
             payload = Path(temporary) / "create-release.json"
             payload.write_text(json.dumps({
                 "tag_name": tag, "target_commitish": head["sha"],
@@ -191,7 +196,6 @@ def main() -> int:
     try:
         repository = validate_repository(
             os.environ.get("IDA_AGENT_RELEASE_REPOSITORY", DEFAULT_REPOSITORY),
-            os.environ.get("GITHUB_REPOSITORY", ""),
         )
         version = (ROOT / "ida-mcp/VERSION").read_text(encoding="ascii").strip()
         assets = collect_assets(args.assets, version)
@@ -200,8 +204,10 @@ def main() -> int:
                               "assets": {path.name: sha256(path) for path in assets}}, indent=2))
             return 0
         if not os.environ.get("GH_TOKEN"):
-            raise ValueError("Set the source repository secret IDA_AGENT_RELEASE_TOKEN before publishing.")
-        url = publish(GitHub(), repository, version, assets)
+            raise ValueError("Set GH_TOKEN with Contents: write on the public repository before publishing.")
+        target_commit = (os.environ.get("GITHUB_SHA")
+                         if repository.lower() == os.environ.get("GITHUB_REPOSITORY", "").lower() else None)
+        url = publish(GitHub(), repository, version, assets, target_commit=target_commit)
         print(f"Published: {url}")
         if os.environ.get("GITHUB_STEP_SUMMARY"):
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:

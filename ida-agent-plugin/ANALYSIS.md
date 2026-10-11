@@ -1,6 +1,6 @@
 # Analysis memory, workflows, and IDA 9.5 acceptance
 
-These features are available in current source builds. They are not included in the previously published v0.4.8 package. Use the built-in **Open AI Chat** with a model whose **Tools** capability is enabled in Provider Manager.
+Analysis memory and workflows are included in v0.4.9 and later packages. Use the built-in **Open AI Chat** with a model whose **Tools** capability is enabled in Provider Manager.
 
 ## Analysis memory
 
@@ -38,7 +38,7 @@ The private SQLite store is outside the IDB:
 - Linux: `${XDG_STATE_HOME:-$HOME/.local/state}/ida-agent/ai/analysis-memory.db`
 - macOS: `~/Library/Application Support/ida-agent/ai/analysis-memory.db`
 
-FTS5 is used when the linked SQLite supports it; otherwise parameterized literal search remains available, including Chinese text and quotes. Automatic retrieval prioritizes the current function/address, relevant terms and recent global notes. It injects at most six complete records within an 8 KiB memory budget. Each fact is at most 4 KiB with at most eight evidence references; storage is limited to 512 records per binary and 8192 overall. Remove obsolete notes when capacity is reached. A storage failure permits ordinary chat and read-only workflows to continue.
+FTS5 is used when the linked SQLite supports it; otherwise parameterized literal search remains available, including Chinese text and quotes. Automatic retrieval prioritizes the current function/address, relevant terms and recent global notes. The complete system prompt shares an 8 KiB UTF-8 byte budget: built-in instructions, project-file metadata and the active workflow have priority, and automatic retrieval injects at most six complete memory records that fit the remaining space. It never slices workflow JSON, memory JSON or a multibyte character. A deliberately smaller budget keeps a complete workflow lookup reminder when the full workflow does not fit. Each fact is at most 4 KiB with at most eight evidence references; storage is limited to 512 records per binary and 8192 overall. Remove obsolete notes when capacity is reached. A storage failure permits ordinary chat and read-only workflows to continue.
 
 The built-in agent discovers these underscore-named tools through `ida_tool_search`:
 

@@ -25,6 +25,7 @@ const std::vector<CliCommandDefinition> Commands{
     {"/session", "Switch conversation by list number or ID", CliCommandKind::SelectSession},
     {"/memory", "Search and manage this binary's analysis memory", CliCommandKind::AnalysisMemory},
     {"/workflow", "Run protection, function, or type-recovery analysis", CliCommandKind::AnalysisWorkflow},
+    {"/instructions", "Show cached project guidance; reload to read changes", CliCommandKind::ProjectInstructions},
     {"/ctx", "Show detailed model context usage", CliCommandKind::Context},
     {"/context", "Show detailed model context usage", CliCommandKind::Context},
 };
@@ -58,7 +59,8 @@ CliCommand ParseCliCommand(std::string_view line)
       return {command.kind, {}};
     if ( (command.kind == CliCommandKind::SelectSession
           || command.kind == CliCommandKind::AnalysisMemory
-          || command.kind == CliCommandKind::AnalysisWorkflow)
+          || command.kind == CliCommandKind::AnalysisWorkflow
+          || command.kind == CliCommandKind::ProjectInstructions)
         && line.size() > command.command.size()
         && line.substr(0, command.command.size()) == command.command
         && std::isspace(

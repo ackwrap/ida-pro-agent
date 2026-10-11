@@ -205,6 +205,7 @@ if(IDA_AGENT_ENABLE_AI)
         ai/agent_file_service.cpp
         ai/agent_loop.cpp
         ai/agent_prompt.cpp
+        ai/agent_project_instructions.cpp
         ai/agent_tool_catalog.cpp
         ai/agent_tool_composites.cpp
         ai/agent_tool_definitions.cpp
@@ -232,6 +233,9 @@ if(IDA_AGENT_ENABLE_AI)
         ai/chat_render_budget.cpp
         ai/chat_message_view.cpp
         ai/chat_message_styles.cpp
+        ai/chat_code_tokens.cpp
+        ai/chat_code_fences.cpp
+        ai/chat_code_highlight.cpp
         ai/chat_output_menu.cpp
         ai/chat_output_view.cpp
         ai/chat_panel.cpp
@@ -340,6 +344,13 @@ if(WIN32 AND IDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN AND CMAKE_BUILD_TYPE STREQUAL "D
 endif()
 
 if(BUILD_TESTING)
+    if(IDA_AGENT_ENABLE_AI)
+        add_executable(ida_ai_chat_code_tokens_test
+            tests/unit/ai/chat_code_tokens_test.cpp ai/chat_code_tokens.cpp ai/chat_code_fences.cpp)
+        target_include_directories(ida_ai_chat_code_tokens_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+        target_compile_features(ida_ai_chat_code_tokens_test PRIVATE cxx_std_17)
+        add_test(NAME ida_ai_chat_code_tokens COMMAND ida_ai_chat_code_tokens_test)
+    endif()
     add_executable(ida_update_check_test
         tests/unit/ai/update_check_test.cpp ai/update_check.cpp ai/update_store.cpp)
     target_include_directories(ida_update_check_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -495,6 +506,7 @@ if(BUILD_TESTING)
 
     add_executable(ida_ai_agent_loop_test
         tests/unit/ai/agent_loop_test.cpp
+        tests/unit/ai/agent_recovery_test.cpp
         ai/agent_effect_coordinator.cpp
         ai/agent_loop.cpp
         ai/agent_prompt.cpp
@@ -558,6 +570,9 @@ if(BUILD_TESTING)
 
     add_executable(ida_ai_agent_file_service_test
         tests/unit/ai/agent_file_service_test.cpp
+        tests/unit/ai/agent_project_instructions_test.cpp
+        ai/agent_prompt.cpp
+        ai/agent_project_instructions.cpp
         ai/agent_effect_digest.cpp
         ai/agent_file_service.cpp
     )
@@ -610,6 +625,8 @@ if(BUILD_TESTING)
 
     add_executable(ida_ai_provider_chat_test
         tests/unit/ai/provider_chat_test.cpp
+        tests/unit/ai/provider_prompt_test.cpp
+        ai/agent_prompt.cpp
         ai/chat_reasoning.cpp
         ai/provider_chat.cpp
         ai/provider_chat_wire.cpp
@@ -622,6 +639,7 @@ if(BUILD_TESTING)
     target_link_libraries(ida_ai_provider_chat_test PRIVATE
         nlohmann_json::nlohmann_json
         winhttp
+        ida_ai_analysis
     )
     add_test(NAME ida_ai_provider_chat COMMAND ida_ai_provider_chat_test)
 

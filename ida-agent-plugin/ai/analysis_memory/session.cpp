@@ -159,11 +159,27 @@ void Session::Observe(const std::vector<AgentToolResult> &results)
   }
 }
 
-std::string Session::Prompt(std::string_view user_text)
+std::string Session::WorkflowPrompt() const
 {
-  std::string prompt;
-  if (!workflow_.empty()) prompt = "\nActive analysis workflow:\n" + Workflow(workflow_).dump();
-  if (!available_) return prompt;
+  return workflow_.empty() ? std::string{} : "\nActive analysis workflow:\n" + Workflow(workflow_).dump();
+}
+
+std::string Session::Prompt(std::string_view user_text, std::size_t budget)
+{
+  budget = (std::min)(budget, MaxContextBytes);
+  if (budget == 0) return {};
+  std::string prompt = WorkflowPrompt();
+  if (!workflow_.empty())
+  {
+    if (prompt.size() > budget)
+    {
+      // Keep a complete marker; never slice workflow JSON or UTF-8 records.
+      prompt = "\nActive analysis workflow: " + workflow_
+          + ". Read its steps with ida_analysis_workflow_get before reporting.\n";
+      if (prompt.size() > budget) return {};
+    }
+  }
+  if (!available_ || prompt.size() == budget) return prompt;
   try
   {
     std::vector<Fact> facts;
@@ -194,7 +210,7 @@ std::string Session::Prompt(std::string_view user_text)
     }
     flush();
     append(store_.Find({"", 6, {}, true, true}));
-    prompt += BuildMemoryContext(facts, context_);
+    prompt += BuildMemoryContext(facts, context_, budget - prompt.size());
   }
   catch (...) { /* Storage failure must not prevent ordinary chat. */ }
   return prompt;

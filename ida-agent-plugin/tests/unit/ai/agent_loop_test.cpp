@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+void RunAgentRecoveryTests();
+
 namespace
 {
 
@@ -243,9 +245,15 @@ void TestUnknownAndLimits()
       "agent loop setup failed");
   const std::vector<AgentToolCall> unknown_calls{
       {"call-1", "ida_database_save", "{}"}};
-  Require(loop.BeginToolRound(unknown_calls, "").error
+  Require(!loop.BeginToolRound(unknown_calls, "").error,
+          "unloaded side-effect call could not be recovered");
+  const auto unavailable = loop.InvokeCatalogTool(unknown_calls.front());
+  Require(unavailable && !unavailable->success && unavailable->output.empty()
+              && unavailable->failure_kind == AgentToolFailureKind::ToolUnavailable
               && exports_calls == 0 && string_calls == 0,
-          "unloaded side-effect tool was not rejected before execution");
+          "unloaded side-effect call was not inert");
+  Require(!loop.CompleteToolRound({*unavailable}).error,
+          "unloaded side-effect failure could not reach the provider");
 
   Require(!loop.Begin(
       MakeProfile(), {{ProviderChatRole::User, "Inspect."}},
@@ -350,6 +358,7 @@ int main()
 {
   try
   {
+    RunAgentRecoveryTests();
     TestToolCatalogSearch();
     TestSuccessfulRound();
     TestUnknownAndLimits();

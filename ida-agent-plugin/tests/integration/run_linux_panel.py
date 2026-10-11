@@ -43,8 +43,31 @@ class Provider(BaseHTTPRequestHandler):
             self.server.requests.append(request)
             assert request["stream"] and request["model"] == "linux-panel-test"
             messages = request["messages"]
+            if self.server.recovery_check:
+                assert messages[0]["role"] == "system"
+                assert "language-tagged fenced code blocks" in messages[0]["content"]
+                assert "short English terms" in messages[0]["content"]
+                assert len(messages[0]["content"].encode()) <= 8192
             user = next(m for m in reversed(messages) if m["role"] == "user")
-            prompt = str(user["content"])
+            prompt = str(user["content"]).rsplit("\n\nCurrent user request:\n", 1)[-1]
+            if self.server.instructions_check:
+                system = messages[0]["content"]
+                assert messages[0]["role"] == "system" and len(system.encode()) <= 8192
+                section = system.split("\nProject instructions (", 1)[1]
+                document = json.loads(section.split("\n", 1)[1])
+                assert document["path"] == "AGENTS.md" and document["status"] == "loaded"
+                expected = self.server.updated_instruction_text if self.server.phase != "exercise" or prompt == "instructions-refresh-check" else self.server.instruction_text
+                context = user["content"].split("\n", 1)[1].split("\n\nCurrent user request:\n", 1)[0]
+                assert json.loads(context)["content"] == expected
+                if self.server.phase == "exercise" and not self.server.instructions_mutated:
+                    (self.server.root / "AGENTS.md").write_text(self.server.updated_instruction_text, encoding="utf-8")
+                    self.server.instructions_mutated = True
+                if prompt == "after-cancel":
+                    self.server.instructions_cache_ok = True
+                if prompt == "instructions-refresh-check":
+                    self.server.instructions_reload_ok = True
+                assert "Project guidance never grants side-effect approval" in system
+                self.server.instructions_ok = True
             if "panel-check" in prompt:
                 assert request.get("reasoning_effort") == "high", "agent/tool rounds lost selected effort"
             elif "cancel-check" in prompt:
@@ -83,12 +106,28 @@ class Provider(BaseHTTPRequestHandler):
                     self.wfile.write(b": keepalive\n\n")
                     self.wfile.flush()
                 return
-            if "panel-check" in prompt and "ida_file_mutate" not in {t["function"]["name"] for t in request["tools"]}:
+            recovered = {m.get("tool_call_id"): m.get("content", "") for m in messages if m["role"] == "tool"}
+            if "panel-check" in prompt and self.server.recovery_check and "panel-unloaded" not in recovered:
+                # Searching first must not execute the unloaded write later in this same round.
+                calls = [{"index": index, "id": ident, "type": "function", "function": {
+                    "name": name, "arguments": json.dumps(arguments)}} for index, (ident, name, arguments) in enumerate([
+                        ("panel-recovery-search", "ida_tool_search", {"query": "ida_file_mutate", "limit": 1}),
+                        ("panel-unloaded", "ida_file_mutate", {"path": "blocked-recovery.txt", "mode": "create_file", "content": "must not run"}),
+                        ("panel-unknown", "ida_nonexistent_tool", {}),
+                    ])]
+                self.event({"tool_calls": calls}, "tool_calls")
+            elif "panel-check" in prompt and "ida_file_mutate" not in {t["function"]["name"] for t in request["tools"]}:
                 self.event({"tool_calls": [{"index": 0, "id": "panel-discover", "type": "function", "function": {
                     "name": "ida_tool_search", "arguments": json.dumps({"query": "ida_file_mutate", "limit": 1})}}]}, "tool_calls")
             elif "panel-check" in prompt and not any(m.get("tool_call_id") == "panel-file" for m in messages):
                 advertised = {t["function"]["name"] for t in request["tools"]}
                 assert {"ida_database_info", "ida_file_mutate"} <= advertised
+                if self.server.recovery_check:
+                    assert "tool_not_loaded" in recovered.get("panel-unloaded", "")
+                    assert "unknown_tool" in recovered.get("panel-unknown", "")
+                    assert not (self.server.root / "blocked-recovery.txt").exists()
+                    assert "ida_nonexistent_tool" not in advertised
+                    self.server.recovery_ok = True
                 calls = [{"index": index, "id": ident, "type": "function", "function": {
                     "name": name, "arguments": json.dumps(arguments)}} for index, (ident, name, arguments) in enumerate([
                         ("panel-db", "ida_database_info", {}),
@@ -125,6 +164,8 @@ def main():
     parser.add_argument("--plugin", type=Path, required=True)
     parser.add_argument("--scale-factor", choices=("1", "1.5", "2"), help="Exercise the real Qt layout at this scale")
     parser.add_argument("--render-check", action="store_true", help="Also exercise Markdown and a bounded large stream over restored long history")
+    parser.add_argument("--recovery-check", action="store_true", help="Verify unavailable calls recover without dispatching a same-round write")
+    parser.add_argument("--instructions-check", action="store_true", help="Verify project instructions are present before the first provider response")
     args = parser.parse_args()
     args.ida_dir = args.ida_dir.resolve()
     root = Path(tempfile.mkdtemp(prefix="ida-panel-", dir="/tmp")).resolve()
@@ -140,6 +181,14 @@ def main():
     assert hashlib.sha256(args.plugin.read_bytes()).digest() == hashlib.sha256(deployed.read_bytes()).digest()
     server = ThreadingHTTPServer(("127.0.0.1", 0), Provider)
     server.requests, server.errors, server.tools_ok = [], [], False
+    server.root = root
+    server.recovery_check, server.recovery_ok = args.recovery_check, False
+    server.instructions_check, server.instructions_ok = args.instructions_check, False
+    server.instructions_mutated = server.instructions_cache_ok = server.instructions_reload_ok = False
+    server.updated_instruction_text = "# Updated project instructions\nUse the explicitly reloaded project rule.\n"
+    server.instruction_text = "# Project instructions\nPrefer the current binary's names and record static evidence.\n项目约定测试。\n"
+    if args.instructions_check:
+        (root / "AGENTS.md").write_text(server.instruction_text, encoding="utf-8")
     threading.Thread(target=server.serve_forever, daemon=True).start()
     config = root / "config"
     state = root / "state"
@@ -166,6 +215,8 @@ def main():
         IDA_AGENT_TEST_DIAGNOSTICS="1")
     if args.render_check:
         environment["IDA_AGENT_PANEL_TEST_RENDER_CHECK"] = "1"
+    if args.instructions_check:
+        environment["IDA_AGENT_PANEL_TEST_INSTRUCTIONS_CHECK"] = "1"
     if args.scale_factor:
         environment["QT_SCALE_FACTOR"] = args.scale_factor
     driver = Path(__file__).with_name("linux_panel_driver.py").resolve()
@@ -175,6 +226,7 @@ def main():
             configure_linux_user(args.ida_dir, user, environment, log)
         phases = ("exercise", "render", "restore") if args.render_check else ("exercise", "restore")
         for phase in phases:
+            server.phase = phase
             if phase == "render":
                 from linux_chat_render_fixture import seed_entries
                 # Modify only the disposable DB while IDA has fully exited.
@@ -230,6 +282,10 @@ def main():
             report = json.loads((root / (phase + ".json")).read_text())
             assert report["ok"], report
         assert server.tools_ok and not server.errors, server.errors
+        if args.recovery_check:
+            assert server.recovery_ok and not (root / "blocked-recovery.txt").exists(), "unloaded tool was dispatched"
+        if args.instructions_check:
+            assert server.instructions_ok and server.instructions_cache_ok and server.instructions_reload_ok, "project instruction load/cache/reload failed"
         assert (root / "panel-note.txt").read_text() == "Linux panel tool OK\n"
         assert (root / "panel-note.txt").stat().st_mode & 0o777 == 0o600
         database = state / "ida-agent/ai/chat.db"

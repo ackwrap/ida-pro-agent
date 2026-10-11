@@ -32,7 +32,8 @@ public:
   void Observe(const std::vector<AgentToolResult> &results);
   bool SelectWorkflow(std::string_view name);
   const std::string &ActiveWorkflow() const noexcept { return workflow_; }
-  std::string Prompt(std::string_view user_text);
+  std::string WorkflowPrompt() const;
+  std::string Prompt(std::string_view user_text, std::size_t budget = MaxContextBytes);
   std::string Command(std::string_view command, std::string_view session);
   nlohmann::json Status() const;
   std::string CompletionNotice() const;
