@@ -1,10 +1,11 @@
 name: macOS Universal 2 package
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
   workflow_call:
+    secrets:
+      IDA_AGENT_SOURCE_READ_TOKEN:
+        required: true
 
 permissions:
   contents: read
@@ -20,7 +21,7 @@ defaults:
 jobs:
   package:
     name: Full macOS Universal 2 ZIP and DMG
-    if: github.event.repository.private
+    if: github.repository == 'ackwrap/ida-pro-agent' && !github.event.repository.private && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: macos-15
     timeout-minutes: 90
     steps:
@@ -37,11 +38,12 @@ jobs:
           python-version: '3.11'
       - name: Download private Qt build inputs
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.IDA_AGENT_SOURCE_READ_TOKEN }}
         run: |
+          test -n "$GH_TOKEN" || { echo "Configure IDA_AGENT_SOURCE_READ_TOKEN in the public repository." >&2; exit 1; }
           mkdir -p build/macos-inputs
           gh release download macos-build-inputs-ida94-qt682-v1 \
-            --repo "$GITHUB_REPOSITORY" \
+            --repo ackwrap/ida-agent \
             --pattern ida94-qt682-macos-universal2-v1.tar.gz \
             --dir build/macos-inputs
           cd build/macos-inputs
