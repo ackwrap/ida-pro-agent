@@ -5,6 +5,37 @@
 
 namespace ida_agent::ai
 {
+namespace
+{
+// Resize through the public Qt splitter API: IDA can ignore dimensions passed
+// to set_dock_pos() when a newly created widget is already docked.
+void SetDefaultDockWidth(TWidget *widget)
+{
+  auto *child = reinterpret_cast<QT::QWidget *>(widget);
+  for ( auto *parent = child->parentWidget(); parent != nullptr;
+        child = parent, parent = parent->parentWidget() )
+  {
+    auto *splitter = QT::qobject_cast<QT::QSplitter *>(parent);
+    if ( splitter == nullptr )
+      continue;
+    const int index = splitter->indexOf(child);
+    if ( index < 0 )
+      continue;
+    auto sizes = splitter->sizes();
+    if ( splitter->orientation() != QT::Qt::Horizontal || sizes.size() != 2 )
+      return;
+    const int available = sizes[0] + sizes[1];
+    if ( available > 0 )
+    {
+      sizes[index] = available / 3;
+      sizes[1 - index] = available - sizes[index];
+      splitter->setSizes(sizes);
+    }
+    return;
+  }
+}
+} // namespace
+
 
 ChatPanel::Impl::~Impl()
 {
@@ -35,10 +66,11 @@ bool ChatPanel::Impl::Open(bool focus_input)
 
   display_widget(
       widget,
-      WOPN_PERSIST | WOPN_NOT_CLOSED_BY_ESC | WOPN_DP_RIGHT,
-      "Output window");
-  if ( !set_dock_pos(title.c_str(), "Output window", DP_RIGHT) )
-    set_dock_pos(title.c_str(), "Output", DP_RIGHT);
+      WOPN_PERSIST | WOPN_NOT_CLOSED_BY_ESC | WOPN_DP_RIGHT);
+  // A null destination docks against the desktop, spanning the work area
+  // beside both the disassembly and Output panes.
+  if ( set_dock_pos(title.c_str(), nullptr, DP_RIGHT) )
+    SetDefaultDockWidth(widget);
   if ( focus_input )
     FocusInput();
   return true;

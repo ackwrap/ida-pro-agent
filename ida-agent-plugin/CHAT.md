@@ -2,6 +2,8 @@
 
 The Agent-style message view and Effort selector are available in current source builds. They are not included in the previously published v0.4.8 package.
 
+AI Chat opens as a full-height sidebar on the right of the IDA work area, beside the disassembly and Output panes. Its initial width is approximately one third of the main window, in Qt logical pixels. Drag the divider or dock title to resize or move it; opening an already visible chat activates it without changing its placement.
+
 ## Messages and rendering
 
 The native Qt chat separates **You**, **AI**, **Context**, **Thinking**, **Tool** and **System** messages. Body text wraps to the panel width. Completed user, AI and context messages support GitHub-style Markdown, including headings, emphasis, lists, tables, inline code and fenced code blocks. Code uses IDA's fixed-width font; message and code backgrounds follow the panel palette.
