@@ -137,6 +137,12 @@ def tick():
             assert output.verticalScrollBar().value() == output.verticalScrollBar().maximum(), "new replies did not follow bottom"
             copy_action(output, code, "idaAgentCopyCode", "int answer() {\n    return 42;\n}")
             copy_action(output, code, "idaAgentCopyMessage", MARKDOWN)
+            thinking = document.find("thinking-check: comparing evidence")
+            role = document.find("[Thinking]")
+            assert not thinking.isNull() and role.block() == thinking.block(), "thinking label did not stay inline"
+            assert role.charFormat().fontWeight() >= QtGui.QFont.DemiBold
+            assert thinking.charFormat().fontWeight() == output.font().weight(), "role weight leaked into thinking body"
+            copy_action(output, thinking, "idaAgentCopyMessage", "thinking-check: comparing evidence")
             assert value["resets"] == initial["resets"], "stream reset the whole document"
             assert value["markdownPasses"] == initial["markdownPasses"] + 2, "Markdown parsed during every delta"
             report["markdown"] = value

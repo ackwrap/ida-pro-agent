@@ -76,13 +76,12 @@ void ChatMessageView::StyleMessage(Message &message)
   const auto base = colors.color(QT::QPalette::Base);
   const auto text = colors.color(QT::QPalette::Text);
   const auto accent = colors.color(QT::QPalette::Highlight);
-  const bool primary = message.speaker == ChatSpeaker::User
-      || message.speaker == ChatSpeaker::Assistant || message.speaker == ChatSpeaker::Context;
+  const bool primary = !message.inline_role;
   const bool user = message.speaker == ChatSpeaker::User;
   auto format = message.frame->frameFormat();
-  format.setPadding(primary ? 8 : 4);
-  format.setTopMargin(3);
-  format.setBottomMargin(3);
+  format.setPadding(primary ? 4 : 2);
+  format.setTopMargin(0);
+  format.setBottomMargin(0);
   format.setBorder(1);
   format.setBorderStyle(QT::QTextFrameFormat::BorderStyle_Solid);
   format.setBorderBrush(Mix(base, primary ? accent : text, primary ? 30 : 12));
@@ -91,7 +90,7 @@ void ChatMessageView::StyleMessage(Message &message)
 
   QT::QTextCursor header = message.frame->firstCursorPosition();
   const auto header_text = header.block();
-  header.setPosition(header_text.position() + header_text.length() - 1,
+  header.setPosition(header_text.position() + message.role_length,
       QT::QTextCursor::KeepAnchor);
   QT::QTextCharFormat role;
   auto role_font = font();
@@ -101,7 +100,7 @@ void ChatMessageView::StyleMessage(Message &message)
   header.mergeCharFormat(role);
   header.setPosition(header_text.position());
   auto header_block = header.blockFormat();
-  header_block.setBottomMargin(primary ? 5 : 2);
+  header_block.setBottomMargin(primary ? 1 : 0);
   header.setBlockFormat(header_block);
 
   QT::QTextCursor body = BodyCursor(message);
@@ -125,12 +124,19 @@ void ChatMessageView::StyleMessage(Message &message)
       ++group;
     auto block_format = block.blockFormat();
     block_format.clearProperty(CodeGroupProperty);
+    const double top_limit = block_format.headingLevel() > 0 ? 4 : 2;
+    if ( block_format.topMargin() > top_limit )
+      block_format.setTopMargin(top_limit);
+    if ( block_format.bottomMargin() > 2 )
+      block_format.setBottomMargin(2);
     if ( code )
     {
       block_format.setProperty(CodeGroupProperty, group);
       block_format.setBackground(Mix(base, text, 7));
-      block_format.setLeftMargin(8);
-      block_format.setRightMargin(8);
+      block_format.setLeftMargin(4);
+      block_format.setRightMargin(4);
+      block_format.setTopMargin(0);
+      block_format.setBottomMargin(0);
       QT::QTextCursor code_cursor(block);
       code_cursor.setPosition(block.position() + block.length() - 1,
           QT::QTextCursor::KeepAnchor);

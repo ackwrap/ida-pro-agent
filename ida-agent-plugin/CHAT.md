@@ -6,7 +6,7 @@ AI Chat opens as a full-height sidebar on the right of the IDA work area, beside
 
 ## Messages and rendering
 
-The native Qt chat separates **You**, **AI**, **Context**, **Thinking**, **Tool** and **System** messages. Body text wraps to the panel width. Completed user, AI and context messages support GitHub-style Markdown, including headings, emphasis, lists, tables, inline code and fenced code blocks. Code uses IDA's fixed-width font; message and code backgrounds follow the panel palette.
+The native Qt chat separates **You**, **AI**, **Context**, **Thinking**, **Tool** and **System** messages. Body text wraps to the panel width. Completed user, AI and context messages support GitHub-style Markdown, including headings, emphasis, lists, tables, inline code and fenced code blocks. Code uses IDA's fixed-width font; message and code backgrounds follow the panel palette. Compact spacing keeps system, tool and thinking labels on the first body line; user, AI and context messages retain a separate role header. Small card padding and message gaps leave more room for content without reducing the body font size.
 
 Right-click within a message for **Copy Message**, which copies its complete raw text, including Markdown. Right-click a formatted code block for **Copy Code**. Ordinary selection/copy still works across messages. Selecting a mapped hexadecimal address or known symbol continues to offer **Jump To** in the same menu.
 

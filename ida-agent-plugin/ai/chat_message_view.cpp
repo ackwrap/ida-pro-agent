@@ -74,7 +74,7 @@ ChatMessageView::ChatMessageView(QT::QWidget *parent) : QT::QTextEdit(parent)
   setLineWrapMode(QT::QTextEdit::WidgetWidth);
   setWordWrapMode(QT::QTextOption::WrapAtWordBoundaryOrAnywhere);
   setFont(QT::QFontDatabase::systemFont(QT::QFontDatabase::GeneralFont));
-  document()->setDocumentMargin(8);
+  document()->setDocumentMargin(4);
   QT::QObject::connect(verticalScrollBar(), &QT::QScrollBar::valueChanged, this,
       [this](int value)
       {
@@ -145,8 +145,14 @@ ChatMessageView::Message &ChatMessageView::InsertMessage(ChatSpeaker speaker, bo
       ? document()->characterCount() - 1 : before->frame->firstPosition() - 1);
   Message message;
   message.frame = cursor.insertFrame(QT::QTextFrameFormat());
+  // Frame insertion can inherit the compact root separator's paragraph style.
+  // Reset the real header/body before inserting readable content.
+  cursor.setBlockFormat(QT::QTextBlockFormat());
+  cursor.setBlockCharFormat(QT::QTextCharFormat());
   message.speaker = speaker;
   message.preview = preview;
+  message.inline_role = speaker == ChatSpeaker::System || speaker == ChatSpeaker::Tool
+      || speaker == ChatSpeaker::Thinking;
   const char *label = "[System]";
   switch ( speaker )
   {
@@ -157,16 +163,46 @@ ChatMessageView::Message &ChatMessageView::InsertMessage(ChatSpeaker speaker, bo
     case ChatSpeaker::Tool: label = "[Tool]"; break;
     case ChatSpeaker::System: break;
   }
-  cursor.insertText(QT::QString::fromLatin1(label));
-  cursor.insertBlock(QT::QTextBlockFormat(), QT::QTextCharFormat());
+  const auto role_label = QT::QString::fromLatin1(label);
+  message.role_length = static_cast<int>(role_label.size());
+  cursor.insertText(role_label);
+  if ( message.inline_role )
+    cursor.insertText(" ");
+  else
+    cursor.insertBlock(QT::QTextBlockFormat(), QT::QTextCharFormat());
   auto inserted = messages_.insert(before, std::move(message));
+  CompactSeparator(inserted->frame->firstPosition() - 1);
+  CompactSeparator(inserted->frame->lastPosition() + 1);
   StyleMessage(*inserted);
   return *inserted;
 }
 
 QT::QTextCursor ChatMessageView::BodyCursor(const Message &message) const
 {
+  if ( message.inline_role )
+  {
+    QT::QTextCursor cursor(document());
+    cursor.setPosition(message.frame->firstPosition() + message.role_length + 1);
+    return cursor;
+  }
   return QT::QTextCursor(document()->findBlock(message.frame->firstPosition()).next());
+}
+
+void ChatMessageView::CompactSeparator(int position)
+{
+  if ( position < 0 || position >= document()->characterCount() )
+    return;
+  const auto block = document()->findBlock(position);
+  QT::QTextCursor cursor(block);
+  if ( !block.isValid() || !block.text().isEmpty()
+      || cursor.currentFrame() != document()->rootFrame() )
+    return;
+  QT::QTextBlockFormat spacing;
+  spacing.setLineHeight(2, QT::QTextBlockFormat::FixedHeight);
+  cursor.setBlockFormat(spacing);
+  QT::QTextCharFormat empty;
+  empty.setFontPointSize(1);
+  cursor.setBlockCharFormat(empty);
 }
 
 ChatMessageView::Message *ChatMessageView::FindPreview(ChatSpeaker speaker)

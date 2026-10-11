@@ -35,6 +35,8 @@ private:
     std::size_t consumed = 0;
     std::size_t lines = 1;
     std::size_t line_bytes = 0;
+    int role_length = 0;
+    bool inline_role = false;
     bool preview = false;
     bool limited = false;
   };
@@ -42,6 +44,7 @@ private:
   Message &InsertMessage(ChatSpeaker speaker, bool preview);
   Message *FindPreview(ChatSpeaker speaker);
   QT::QTextCursor BodyCursor(const Message &message) const;
+  void CompactSeparator(int position);
   void RenderMessage(Message &message, std::string_view text);
   std::size_t FlushMessage(Message &message, std::string_view text, std::size_t budget);
   void StyleMessage(Message &message);
