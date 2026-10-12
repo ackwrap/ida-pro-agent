@@ -23,7 +23,9 @@ void Require(bool condition, const char *message)
 
 int main()
 {
-  const auto root = std::filesystem::temp_directory_path()
+  // macOS TMPDIR may pass through /var -> /private/var. Give the store
+  // a real fixture directory, as the chat history store tests already do.
+  const auto root = std::filesystem::canonical(std::filesystem::temp_directory_path())
       / ("ida-history-writer-" + std::to_string(
           std::chrono::steady_clock::now().time_since_epoch().count()));
   const auto path = root / "chat.db";

@@ -62,13 +62,25 @@ void RunAgentProjectInstructionTests(const fs::path &parent)
         "instruction discovery reused stale cached content");
     fs::remove(root / name);
   }
-#ifndef _WIN32
   Write(root / "AGENTS.md", "canonical");
-  Write(root / "Agents.md", "alias");
-  Require(LoadAgentProjectInstructions(files).content == "canonical", "canonical guidance lost filename priority");
-  fs::remove(root / "AGENTS.md");
-  fs::remove(root / "Agents.md");
-#endif
+  // Probe the fixture volume: macOS can use either case-sensitive or
+  // case-insensitive APFS, independently of the platform compile definitions.
+  if (!fs::exists(root / "Agents.md"))
+  {
+    Write(root / "Agents.md", "alias");
+    Write(root / "agents.md", "lowercase");
+    Require(LoadAgentProjectInstructions(files).content == "canonical", "canonical guidance lost filename priority");
+    fs::remove(root / "AGENTS.md");
+    Require(LoadAgentProjectInstructions(files).content == "alias", "mixed-case guidance lost filename priority");
+    fs::remove(root / "Agents.md");
+    Require(LoadAgentProjectInstructions(files).content == "lowercase", "lowercase guidance fallback failed");
+    fs::remove(root / "agents.md");
+  }
+  else
+  {
+    Require(LoadAgentProjectInstructions(files).content == "canonical", "case-insensitive guidance alias failed");
+    fs::remove(root / "AGENTS.md");
+  }
   Write(root / "AGENTS.md", "");
   Require(LoadAgentProjectInstructions(files).status == AgentProjectInstructionStatus::Loaded,
       "empty instruction file was not a complete read");
