@@ -112,6 +112,8 @@ separately and is not increased by the compiler setting.
 
 All runners execute in the public repository. A direct developer push starts the matching checks through the ordinary `push` event; there is no source-sync schedule or dispatch bridge. The release `publish` job runs after Windows, Linux and macOS packaging succeeds and receives the public repository's `GITHUB_TOKEN` with **Contents: write**. Build jobs have read-only repository tokens; only the private Qt download step receives the input-read secret. Windows packaging reuses its tested Release DLL through `build_release.py --plugin`.
 
+The publisher checks that the destination is public and active, then relies on GitHub's release API to enforce the token's **Contents: write** permission. Repository `permissions.push` metadata does not describe an installation token's scope and may be absent for `GITHUB_TOKEN`; it is not a publishing precondition. If GitHub denies draft creation, the publisher stops before uploading packages or publishing the release.
+
 ## Configure public publishing
 
 1. Use **ackwrap/ida-pro-agent `main`** for source development. Clone the public repository or point the checkout's `origin` at `https://github.com/ackwrap/ida-pro-agent.git`, then track `origin/main`. Keep any private checkout/history separately; use the already published source as the base for public commits.

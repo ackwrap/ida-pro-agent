@@ -131,8 +131,11 @@ def publish(github: GitHub, repository: str, version: str, assets: list[Path],
     metadata = github.api(f"repos/{repository}")
     if metadata.get("private") is not False or metadata.get("visibility") != "public":
         raise ValueError("The release destination must be a public repository.")
-    if metadata.get("archived") or not metadata.get("permissions", {}).get("push"):
-        raise ValueError("The release token needs Contents: write on an active public repository.")
+    if metadata.get("archived"):
+        raise ValueError("Releases cannot be published to an archived repository.")
+    # Repository push metadata is not the token's Contents scope and can be
+    # absent for GitHub Actions installation tokens. Release mutations enforce
+    # authorization at GitHub; a denied draft creation stops before any upload.
     if target_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", target_commit):
         raise ValueError("The tested public commit must be a complete SHA-1.")
     tag = f"v{version}"

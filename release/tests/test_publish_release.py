@@ -28,6 +28,7 @@ class FakeGitHub:
         self.empty_repository = False
         self.target_commit = PUBLIC_HEAD
         self.fail_upload = False
+        self.fail_create = False
         self.hide_created_from_list = False
         self.invalid_created_draft = False
         self.list_reads = 0
@@ -41,6 +42,8 @@ class FakeGitHub:
             assert path == f"repos/{REPOSITORY}/releases"
             request = json.loads(payload.read_text(encoding="utf-8"))
             self.calls.append(("api", "create", request))
+            if self.fail_create:
+                raise RuntimeError("Resource not accessible by integration")
             assert request["target_commitish"] == self.target_commit
             assert request["draft"] is True
             assert publisher.MARKER in request["body"] and "PRIVATE_SOURCE" not in request["body"]
@@ -237,13 +240,39 @@ class PublishReleaseTests(unittest.TestCase):
         self.assertEqual(arguments[arguments.index("--method") + 1], "POST")
         self.assertEqual(arguments[arguments.index("--input") + 1], str(payload))
 
-    def test_private_archived_and_readonly_destinations_are_rejected_before_writes(self):
-        for change in ({"private": True}, {"visibility": "internal"}, {"archived": True}, {"permissions": {"push": False}}):
+    def test_private_and_archived_destinations_are_rejected_before_writes(self):
+        for change in ({"private": True}, {"visibility": "internal"}, {"archived": True}):
             github = FakeGitHub(self.assets)
             github.metadata.update(change)
             with self.subTest(change=change), self.assertRaises(ValueError):
                 publisher.publish(github, REPOSITORY, "0.3.0", self.assets)
             self.assertEqual(github.calls, [])
+
+    def test_repository_push_metadata_does_not_prejudge_release_permission(self):
+        for permissions in (None, {}, {"push": False}):
+            with self.subTest(permissions=permissions):
+                github = FakeGitHub(self.assets)
+                if permissions is None:
+                    del github.metadata["permissions"]
+                else:
+                    github.metadata["permissions"] = permissions
+                url = publisher.publish(github, REPOSITORY, "0.3.0", self.assets)
+                self.assertEqual(url, f"https://github.com/{REPOSITORY}/releases/tag/v0.3.0")
+                self.assertEqual([call[1] for call in github.calls], ["create", "upload", "edit"])
+                self.assertFalse(github.release["draft"])
+
+    def test_release_api_permission_denial_prevents_upload_and_publication(self):
+        for permissions in (None, {"push": True}):
+            with self.subTest(permissions=permissions):
+                github = FakeGitHub(self.assets)
+                if permissions is None:
+                    del github.metadata["permissions"]
+                github.fail_create = True
+                with self.assertRaisesRegex(RuntimeError, "Resource not accessible"):
+                    publisher.publish(github, REPOSITORY, "0.3.0", self.assets)
+                self.assertEqual([call[1] for call in github.calls], ["create"])
+                self.assertIsNone(github.release)
+                self.assertEqual(github.remote, [])
 
     def test_empty_destination_is_rejected_before_writes(self):
         github = FakeGitHub(self.assets)
