@@ -58,6 +58,8 @@ included installation instructions. Close IDA before installing either platform.
 
 Open **Provider Settings...**, select the OpenAI or Claude preset, or add a custom provider. Set the API mode, Base URL, and API key. Use **Refresh Models** or **Add Model...**, choose a default model/provider, save, then open **Open AI Chat**.
 
+Current source builds also support **Ctrl+Shift+A** to open AI Chat or focus its input if already open. Customize **Open AI Chat** (`ida-agent:ai:open`) in IDA's shortcut settings. This shortcut will be included in the next release after v0.4.10.
+
 | API mode | Base URL example | Endpoint appended by the plugin |
 | --- | --- | --- |
 | OpenAI Responses | `https://api.openai.com/v1` | `/responses` |
@@ -126,6 +128,8 @@ Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管�
 ### 配置供应商
 
 打开 **Provider Settings...**，选择 OpenAI、Claude 预设或添加自定义供应商，填写 API 模式、Base URL 和 API Key。通过 **Refresh Models** 获取模型，或用 **Add Model...** 手动添加模型 ID，设置默认模型和供应商，保存后打开 **Open AI Chat**。
+
+当前源码构建也支持 **Ctrl+Shift+A** 打开 AI Chat；窗口已打开时直接聚焦输入框。可以在 IDA 快捷键设置中修改 **Open AI Chat**（`ida-agent:ai:open`）的按键。此快捷键将包含在 v0.4.10 之后的下一次发布中。
 
 支持 OpenAI 风格的 **Responses / Chat Completions** 和 Anthropic 风格的 **Messages**。Base URL 填 API 前缀，例如 `https://api.openai.com/v1`，不要附加 `/responses`、`/chat/completions` 或 `/messages`，插件会自动追加。**Test Connection** 只检查模型列表接口，不能证明聊天、流式输出和工具调用均兼容；不支持模型列表的服务可尝试手动添加模型。
 

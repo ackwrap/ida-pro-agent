@@ -45,6 +45,8 @@ macOS packages use ad-hoc signatures and are not Developer ID notarized. See the
 4. Enable the model, set a default model and provider, then save with **Apply** or **OK**.
 5. Open **Edit → Plugins → IDA Agent → Open AI Chat** and request an analysis.
 
+Current source builds support **Ctrl+Shift+A** to open AI Chat and focus its input. Repeating the shortcut reuses the existing panel and preserves the conversation and draft. Customize **Open AI Chat** (`ida-agent:ai:open`) in IDA's shortcut settings. The shortcut will be included in the next release after v0.4.10.
+
 | API mode | Base URL example | Operation appended by the plugin |
 | --- | --- | --- |
 | Responses | `https://api.openai.com/v1` | `/responses` |

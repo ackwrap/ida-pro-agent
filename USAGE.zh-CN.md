@@ -45,6 +45,8 @@ macOS 包使用临时签名，未做 Developer ID 公证。各平台安装细节
 4. 启用模型，设置默认模型与默认供应商，通过 **Apply** 或 **OK** 保存。
 5. 打开 **Edit → Plugins → IDA Agent → Open AI Chat**，发送分析请求。
 
+当前源码构建支持 **Ctrl+Shift+A** 打开 AI Chat 并聚焦输入框。再次按下会复用现有窗口，保留对话与输入草稿。可以在 IDA 快捷键设置中修改 **Open AI Chat**（`ida-agent:ai:open`）的按键。此快捷键将包含在 v0.4.10 之后的下一次发布中。
+
 | API 模式 | Base URL 示例 | 插件追加的操作路径 |
 | --- | --- | --- |
 | Responses | `https://api.openai.com/v1` | `/responses` |

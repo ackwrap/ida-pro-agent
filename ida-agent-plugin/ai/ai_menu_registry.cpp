@@ -48,10 +48,11 @@ struct ActionDefinition
   const char *tooltip;
   ActionKind kind;
   bool popup_only;
+  const char *shortcut = nullptr;
 };
 
 constexpr std::array<ActionDefinition, 9> Actions{{
-    {"ida-agent:ai:open", "Open AI Chat", "Open the IDA Agent AI chat panel", ActionKind::OpenChat, false},
+    {"ida-agent:ai:open", "Open AI Chat", "Open and focus the IDA Agent AI chat input", ActionKind::OpenChat, false, "Ctrl-Shift-A"},
     {"ida-agent:ai:providers", "Provider Settings...", "Configure OpenAI or Claude providers", ActionKind::ProviderSettings, false},
     {"ida-agent:settings", "Settings...", "Configure IDA Agent plugin behavior", ActionKind::PluginSettings, false},
     {"ida-agent:updates", "Check for Updates...", "Check the public stable release", ActionKind::CheckUpdates, false},
@@ -312,7 +313,7 @@ struct AiMenuRegistry::Impl
           definition.label,
           &handlers[index],
           action_owner_,
-          nullptr,
+          definition.shortcut,
           definition.tooltip,
           -1,
           ADF_NO_UNDO | ADF_GLOBAL | ADF_OT_PLUGIN,
