@@ -16,6 +16,16 @@
 | Linux x64, Ubuntu 24.04 baseline | `*-linux-x64.tar.gz`, including full AI Chat / 包含完整 AI Chat |
 | macOS 15+, Intel and Apple Silicon | `*-macos-universal2.dmg` or `*-macos-universal2.zip` |
 
+## Linux preview / Linux 预览
+
+Ubuntu 24.04 · IDA Professional 9.4 · ida-agent 0.4.10.
+
+Real Linux UI captured at **100% scaling (1920 × 1080)**, showing pseudocode, AI Chat, syntax-highlighted code and the Effort selector. The binary and conversation are demonstrations. Click the image to open the original PNG.
+
+**100% 缩放实机截图（1920 × 1080）**，展示伪代码、AI Chat、代码语法高亮和 Effort 推理强度选择。程序与对话内容均为演示示例；点击图片查看原始 PNG。
+
+[![Linux IDA Agent preview at 100% scaling](assets/screenshots/ida-agent-linux-100.png)](assets/screenshots/ida-agent-linux-100.png)
+
 ## English
 
 ida-agent combines an IDA plugin, an MCP Gateway for external AI clients, and a built-in AI Console. It supports function and cross-reference inspection, pseudocode, bounded argument tracing across direct callers, guard evidence extraction, and supported IDB edits through ChangeSets.
