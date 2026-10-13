@@ -2,8 +2,8 @@
 
 The packages include the MCP Gateway, client skills and full AI Chat plugin for
 **Ubuntu 24.04+ or Debian 13+, amd64, and IDA Professional 9.4** with its bundled
-Qt 6.8.2. The current source adds the `.deb` installer for the next release after
-v0.4.10; earlier releases provide the portable tar.gz only. The plugin requires
+Qt 6.8.2. Version 0.5.0 and later include the `.deb` installer; earlier releases
+provide the portable tar.gz only. The plugin requires
 glibc 2.38 or newer, so Ubuntu 22.04 and Debian 12 are not supported by these binaries.
 
 IDA and Qt libraries are supplied by your separate IDA installation. curl and
@@ -86,7 +86,7 @@ with your distribution, architecture, IDA version, reproduction steps and logs w
 ## 中文
 
 支持 **Ubuntu 24.04 及后续、Debian 13 及后续，amd64，IDA Professional 9.4 / Qt 6.8.2**。
-当前源码新增 `.deb` 安装包，会随 v0.4.10 之后的下一次发布提供；旧版仍使用 tar.gz。
+0.5.0 及后续版本提供 `.deb` 安装包；旧版使用 tar.gz，便携包仍然保留。
 插件要求 glibc 2.38，当前二进制不支持 Ubuntu 22.04 和 Debian 12。
 
 关闭 IDA / IDAT，下载同一版本的 `.deb` 和 `.sha256` 文件。将下面的 `VERSION` 替换为实际版本：

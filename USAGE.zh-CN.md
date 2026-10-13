@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
 
-本文说明已发布功能与当前源码新增的 Linux 安装方式。插件与 Gateway 请使用同一发布包中的版本。
+本文说明 0.5.0 版本的使用方式，包括 Linux 图形安装器。插件与 Gateway 请使用同一发布包中的版本。
 
 ### 自动更新检测
 
@@ -22,7 +22,7 @@ Qt 插件和本地 Web 管理页默认在后台检测公开仓库 [`ackwrap/ida-
 | Linux amd64，Ubuntu 24.04+ / Debian 13+ | 使用 `sudo apt install ./ida-agent-VERSION-linux-x64.deb` 安装，再从应用菜单打开 **IDA Agent** 并点击 **安装插件**；保留 tar.gz 便携包。 | `.deb`：`/usr/bin/ida-mcp`；便携包保留 Gateway 与 `skills/`。 |
 | macOS 15+，Intel / Apple Silicon | 打开 DMG，运行 **IDA Agent Installer.app** 并点击 **Install**。默认插件目录为 `~/.idapro/plugins/`；自定义用户目录时选择对应的 `IDAUSR`。 | `~/Library/Application Support/ida-agent/bin/ida-mcp` |
 
-`.deb` 已加入当前源码，会随 v0.4.10 之后的下一次发布提供。将 `VERSION` 替换为下载的版本号。安装窗口包含项目图标、中英文标签、IDA 用户目录选择和 **打开管理页**；APT 自动安装系统依赖，用户插件安装使用普通用户，不加 sudo。详见 [Linux 安装、迁移与卸载说明](release/linux/INSTALL.md)。
+0.5.0 及后续版本提供 `.deb` 安装包。将 `VERSION` 替换为下载的版本号。安装窗口包含项目图标、中英文标签、IDA 用户目录选择和 **打开管理页**；APT 自动安装系统依赖，用户插件安装使用普通用户，不加 sudo。详见 [Linux 安装、迁移与卸载说明](release/linux/INSTALL.md)。
 
 启动 IDA，打开二进制或 IDB，在 **Edit → Plugins → IDA Agent** 中使用插件。实时分析时保持数据库打开，Gateway 与 IDA 使用同一操作系统用户。
 
@@ -48,7 +48,7 @@ macOS 包使用临时签名，未做 Developer ID 公证。各平台安装细节
 4. 启用模型，设置默认模型与默认供应商，通过 **Apply** 或 **OK** 保存。
 5. 打开 **Edit → Plugins → IDA Agent → Open AI Chat**，发送分析请求。
 
-当前源码构建支持 **Ctrl+Shift+A** 打开 AI Chat 并聚焦输入框。再次按下会复用现有窗口，保留对话与输入草稿。可以在 IDA 快捷键设置中修改 **Open AI Chat**（`ida-agent:ai:open`）的按键。此快捷键将包含在 v0.4.10 之后的下一次发布中。
+**0.5.0** 及后续版本支持 **Ctrl+Shift+A** 打开 AI Chat 并聚焦输入框。再次按下会复用现有窗口，保留对话与输入草稿。可以在 IDA 快捷键设置中修改 **Open AI Chat**（`ida-agent:ai:open`）的按键。
 
 | API 模式 | Base URL 示例 | 插件追加的操作路径 |
 | --- | --- | --- |

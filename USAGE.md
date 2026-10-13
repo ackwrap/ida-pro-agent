@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide covers released features and the Linux installer added in current source builds. Use the plugin and Gateway from the same release package.
+This guide covers version 0.5.0, including the Linux desktop installer. Use the plugin and Gateway from the same release package.
 
 ### Automatic update checks
 
@@ -22,7 +22,7 @@ Use IDA Professional 9.4 for your platform with its bundled Qt 6.8.2. Pseudocode
 | Linux amd64, Ubuntu 24.04+ / Debian 13+ | Install the `.deb` with `sudo apt install ./ida-agent-VERSION-linux-x64.deb`; open **IDA Agent** from the application menu and click **Install plugin**. Portable tar.gz remains available. | `.deb`: `/usr/bin/ida-mcp`; portable: keep `ida-mcp` and `skills/` together. |
 | macOS 15+, Intel and Apple Silicon | Open the DMG, run **IDA Agent Installer.app**, and click **Install**. The default plugin directory is `~/.idapro/plugins/`; select your `IDAUSR` if customized. | `~/Library/Application Support/ida-agent/bin/ida-mcp` |
 
-The `.deb` is available in current source builds and the next release after v0.4.10. Replace `VERSION` with the downloaded version. Its setup window includes the product icon, English/Chinese labels, a custom IDA user directory selector and **Open manager**. Run setup as your normal user; APT installs system dependencies. See the [Linux installation and removal guide](release/linux/INSTALL.md).
+The `.deb` installer is included in version 0.5.0 and later. Replace `VERSION` with the downloaded version. Its setup window includes the product icon, English/Chinese labels, a custom IDA user directory selector and **Open manager**. Run setup as your normal user; APT installs system dependencies. See the [Linux installation and removal guide](release/linux/INSTALL.md).
 
 Start IDA and open a binary or IDB. The plugin appears under **Edit → Plugins → IDA Agent**. A database must remain open for live analysis. Use the Gateway under the same OS user as IDA.
 
@@ -48,7 +48,7 @@ macOS packages use ad-hoc signatures and are not Developer ID notarized. See the
 4. Enable the model, set a default model and provider, then save with **Apply** or **OK**.
 5. Open **Edit → Plugins → IDA Agent → Open AI Chat** and request an analysis.
 
-Current source builds support **Ctrl+Shift+A** to open AI Chat and focus its input. Repeating the shortcut reuses the existing panel and preserves the conversation and draft. Customize **Open AI Chat** (`ida-agent:ai:open`) in IDA's shortcut settings. The shortcut will be included in the next release after v0.4.10.
+Version **0.5.0** and later support **Ctrl+Shift+A** to open AI Chat and focus its input. Repeating the shortcut reuses the existing panel and preserves the conversation and draft. Customize **Open AI Chat** (`ida-agent:ai:open`) in IDA's shortcut settings.
 
 | API mode | Base URL example | Operation appended by the plugin |
 | --- | --- | --- |

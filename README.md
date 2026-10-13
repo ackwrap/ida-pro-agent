@@ -41,13 +41,13 @@ This repository contains the ida-agent source, usage guides and binary releases.
 
 The installer has a separate `.sha256` file; the portable ZIP includes per-file `SHA256SUMS.txt`. IDA itself and Qt runtime DLLs are not bundled.
 
-For **Ubuntu 24.04+ / Debian 13+ amd64**, the current source adds a `.deb` installer
-for the next release after v0.4.10. Close IDA, install the downloaded file with
+Starting with **v0.5.0**, **Ubuntu 24.04+ / Debian 13+ amd64** packages include a
+`.deb` installer. Close IDA, install the downloaded file with
 `sudo apt install ./ida-agent-VERSION-linux-x64.deb`, then open **IDA Agent** from
 the application menu. The window has the shared product icon, supports English
 and Chinese, and installs the plugin for your IDA user directory. **Open manager**
 opens client configuration in your browser; the Gateway is `/usr/bin/ida-mcp`.
-后续 Linux 发布新增 `.deb` 安装包：安装后从应用菜单打开带图标的 **IDA Agent**，
+v0.5.0 新增 Linux `.deb` 安装包：安装后从应用菜单打开带图标的 **IDA Agent**，
 选择 IDA 用户目录并点击 **安装插件**，或点击 **打开管理页** 配置外部客户端。
 
 The tar.gz portable package remains available. For installation, migration,
@@ -64,7 +64,7 @@ included installation instructions. Close IDA before installing either platform.
 
 Open **Provider Settings...**, select the OpenAI or Claude preset, or add a custom provider. Set the API mode, Base URL, and API key. Use **Refresh Models** or **Add Model...**, choose a default model/provider, save, then open **Open AI Chat**.
 
-Current source builds also support **Ctrl+Shift+A** to open AI Chat or focus its input if already open. Customize **Open AI Chat** (`ida-agent:ai:open`) in IDA's shortcut settings. This shortcut will be included in the next release after v0.4.10.
+Version **0.5.0** and later also support **Ctrl+Shift+A** to open AI Chat or focus its input if already open. Customize **Open AI Chat** (`ida-agent:ai:open`) in IDA's shortcut settings.
 
 | API mode | Base URL example | Endpoint appended by the plugin |
 | --- | --- | --- |
@@ -135,7 +135,7 @@ Apple Silicon 通用插件和 Gateway。安装后的 `.command` 启动配置管�
 
 打开 **Provider Settings...**，选择 OpenAI、Claude 预设或添加自定义供应商，填写 API 模式、Base URL 和 API Key。通过 **Refresh Models** 获取模型，或用 **Add Model...** 手动添加模型 ID，设置默认模型和供应商，保存后打开 **Open AI Chat**。
 
-当前源码构建也支持 **Ctrl+Shift+A** 打开 AI Chat；窗口已打开时直接聚焦输入框。可以在 IDA 快捷键设置中修改 **Open AI Chat**（`ida-agent:ai:open`）的按键。此快捷键将包含在 v0.4.10 之后的下一次发布中。
+**0.5.0** 及后续版本支持 **Ctrl+Shift+A** 打开 AI Chat；窗口已打开时直接聚焦输入框。可以在 IDA 快捷键设置中修改 **Open AI Chat**（`ida-agent:ai:open`）的按键。
 
 支持 OpenAI 风格的 **Responses / Chat Completions** 和 Anthropic 风格的 **Messages**。Base URL 填 API 前缀，例如 `https://api.openai.com/v1`，不要附加 `/responses`、`/chat/completions` 或 `/messages`，插件会自动追加。**Test Connection** 只检查模型列表接口，不能证明聊天、流式输出和工具调用均兼容；不支持模型列表的服务可尝试手动添加模型。
 
@@ -168,6 +168,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - 只有支持的 ChangeSet 修改提供预览、应用和回滚；任意脚本没有沙箱，也不会自动回滚。
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
+
+### Version 0.5.0 / 0.5.0 版本
+
+Version 0.5.0 adds a Linux `.deb` installer for Ubuntu 24.04+ and Debian 13+ amd64, with application-menu and window icons, English/Chinese setup, and per-user plugin installation. AI Chat opens with **Ctrl+Shift+A**. Portable Linux packages remain available. See the [release notes](release/notes/0.5.0.md) and [Linux installation guide](release/linux/INSTALL.md).
+
+0.5.0 新增面向 Ubuntu 24.04+ / Debian 13+ amd64 的 Linux `.deb` 安装包，包含应用菜单与窗口图标、中英文设置界面和用户级插件安装。**Ctrl+Shift+A** 可打开 AI Chat，继续提供 Linux 便携包。详见[发布说明](release/notes/0.5.0.md)和[Linux 安装指南](release/linux/INSTALL.md)。
 
 ### Version 0.4.9 / 0.4.9 版本
 

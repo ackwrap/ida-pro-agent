@@ -157,12 +157,12 @@ git switch main
 
 For an existing checkout already tracking the public repository, pull with `git pull --ff-only origin main`. Commit reviewed source and documentation changes, then use `git push origin main` to trigger build checks. Follow the scoped validation in [AGENTS.md](../AGENTS.md).
 
-For example, after updating `ida-mcp/VERSION` to **0.4.10**, validating and committing the change:
+For example, after updating `ida-mcp/VERSION` to **0.5.0**, validating and committing the change:
 
 ```sh
 git push origin main
-git tag -a v0.4.10 -m "ida-agent 0.4.10"
-git push origin refs/tags/v0.4.10
+git tag -a v0.5.0 -m "ida-agent 0.5.0"
+git push origin refs/tags/v0.5.0
 ```
 
 Use a new version for each release. Push the intended public tag explicitly so private archival tags are not included. Older public tags created before source publication retain their original documentation snapshots; current source is on `main`.
