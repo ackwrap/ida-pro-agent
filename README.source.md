@@ -4,7 +4,7 @@
 
 > [!IMPORTANT]
 > **Windows x64 desktop, Linux/WSL2 x86_64 and macOS Universal 2 source builds.**
-> The supported host is **IDA Professional 9.4**, with its bundled **Qt 6.8.2** runtime. Ubuntu 24.04 x86_64 supports MCP and the opt-in AI Chat panel; see [Linux build and usage](ida-agent-plugin/README-LINUX.md). macOS Universal 2 source builds and packaging are described in [macOS build and usage](ida-agent-plugin/README-MACOS.md). Linux packaging remains unsupported.
+> The supported host is **IDA Professional 9.4**, with its bundled **Qt 6.8.2** runtime. Ubuntu 24.04 x86_64 supports MCP and the opt-in AI Chat panel; see [Linux build and usage](ida-agent-plugin/README-LINUX.md). macOS Universal 2 source builds and packaging are described in [macOS build and usage](ida-agent-plugin/README-MACOS.md). Linux `.deb` and portable packages target Ubuntu 24.04+ / Debian 13+ amd64; see the [Linux packaging guide](release/README.md#linux-scripted-packaging).
 
 An IDA security analysis assistant with two entry points:
 
@@ -150,7 +150,7 @@ Configure the client's MCP URL as `http://127.0.0.1:8743/mcp`. Non-loopback list
 
 | Area | Current boundary |
 | --- | --- |
-| Platform and host | Windows x64 supports the full desktop plugin. Ubuntu 24.04 x86_64 supports MCP and an opt-in AI panel with Linux IDA 9.4. macOS 15+ supports Universal 2 builds; arm64 runtime validation is pending. Linux release packages remain unsupported. |
+| Platform and host | Windows x64 supports the full desktop plugin. Ubuntu 24.04 x86_64 supports MCP and an opt-in AI panel with Linux IDA 9.4. macOS 15+ supports Universal 2 builds; arm64 runtime validation is pending. Linux `.deb` and portable release packages target Ubuntu 24.04+ / Debian 13+ amd64. |
 | Hex-Rays and target coverage | Pseudocode and semantic argument/guard analysis require a compatible decompiler and license. Semantic integration fixtures cover Windows x64 targets with `/Od` and `/O2`; they do not validate every processor architecture or binary pattern. |
 | Cross-function tracing | `analysis.trace_argument_callers` expands known direct callers, defaults to 2 levels, and permits at most 5. It does not recover unknown indirect callers, native tail calls, callee-return summaries, or heap aliases. Recursion and prototype/ABI mismatches stop expansion. Known caller coverage is not proof of a complete caller set. |
 | Guard evidence | `analysis.guard_evidence` is function-local. Comparisons and required CFG edges do not prove sufficient validation, runtime path feasibility, safety, or exploitability. There is no symbolic path solver or loop-invariant solver. |

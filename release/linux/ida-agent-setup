@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+"""Install the IDA plugin for this user or open the local client manager."""
+import argparse
+from pathlib import Path
+import sys
+
+# Resolve the /usr/bin link before importing the adjacent packaged modules.
+PAYLOAD = Path(__file__).resolve().parent
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(PAYLOAD))
+import ida_agent_installer as installer
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument("--install-plugin", action="store_true")
+    actions.add_argument("--remove-plugin", action="store_true")
+    actions.add_argument("--status", action="store_true")
+    actions.add_argument("--manager", action="store_true")
+    actions.add_argument("--stop-manager", action="store_true")
+    parser.add_argument("--ida-user-dir", type=Path, default=installer.default_user_directory(),
+                        help="IDA user directory, default: IDAUSR or ~/.idapro")
+    parser.add_argument("--replace", action="store_true", help="back up an existing plugin before installation")
+    args = parser.parse_args()
+    if args.replace and not args.install_plugin:
+        parser.error("--replace requires --install-plugin")
+    try:
+        if args.status:
+            print(installer.plugin_status(PAYLOAD, args.ida_user_dir))
+            return 0
+        installer.require_normal_user()
+        if args.install_plugin or args.remove_plugin:
+            installer.require_ida_closed()
+        if args.install_plugin:
+            target, backup = installer.install_plugin(PAYLOAD, args.ida_user_dir, replace=args.replace)
+            print(f"Installed plugin: {target}")
+            if backup:
+                print(f"Previous plugin backup: {backup}")
+        elif args.remove_plugin:
+            print(f"Removed managed plugin: {installer.remove_plugin(PAYLOAD, args.ida_user_dir)}")
+        elif args.stop_manager:
+            print("Manager stopped." if installer.stop_manager(PAYLOAD) else "No managed manager is running.")
+        elif args.manager:
+            print(installer.open_manager(PAYLOAD))
+        else:
+            from ida_agent_installer_gui import show_installer
+            show_installer(PAYLOAD, args.ida_user_dir)
+        return 0
+    except (OSError, RuntimeError, ImportError) as error:
+        print(f"IDA Agent: {error}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -65,7 +65,7 @@ def collect_assets(directory: Path, version: str) -> list[Path]:
     filenames = [f"ida-agent-{version}-{platform}{suffix}"
                  for platform, suffixes in (
                      ("windows-x64", (".zip", "-setup.exe", "-setup.exe.sha256")),
-                     ("linux-x64", (".tar.gz", ".tar.gz.sha256")),
+                     ("linux-x64", (".tar.gz", ".tar.gz.sha256", ".deb", ".deb.sha256")),
                      ("macos-universal2", (".zip", ".zip.sha256", ".dmg", ".dmg.sha256")))
                  for suffix in suffixes]
     assets = [directory / name for name in filenames]
@@ -92,7 +92,7 @@ Requires **IDA Professional 9.4** and its bundled **Qt 6.8.2** for the selected 
 | Platform / 平台 | Downloads / 下载 |
 | --- | --- |
 | Windows x64 | `*-windows-x64-setup.exe` installer / 安装器；`*-windows-x64.zip` portable / 便携包 |
-| Linux x64 (Ubuntu 24.04 baseline) | `*-linux-x64.tar.gz`: Gateway, full AI Chat plugin and client skills / Gateway、完整 AI Chat 插件及客户端技能 |
+| Linux x64, Ubuntu 24.04+ / Debian 13+ | `*-linux-x64.deb` desktop installer / 图形安装设置；`*-linux-x64.tar.gz` portable / 便携包 |
 | macOS 15+, Intel + Apple Silicon | `*-macos-universal2.dmg` installer / 安装器；`*-macos-universal2.zip` portable / 便携包 |
 
 Close IDA before installing or upgrading. Extracted packages contain per-file `SHA256SUMS.txt`;

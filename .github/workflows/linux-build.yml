@@ -34,6 +34,11 @@ jobs:
           go -C ida-mcp test ./...
           go -C ida-mcp test -race ./...
           go -C ida-mcp build ./...
+      - name: Install build and packaging test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev ca-certificates openssl python3-websockets binutils \
+            librsvg2-bin desktop-file-utils appstream
       - name: Test public source sync and Gateway compatibility
         run: |
           python3 -m unittest discover -s release/tests -p 'test_*.py'
@@ -41,10 +46,7 @@ jobs:
           go -C ida-mcp build -o ../build/gateway/ida-mcp .
           python3 mcp-test-project/verify_stdio.py build/gateway/ida-mcp
           python3 mcp-test-project/verify_compatibility.py build/gateway/ida-mcp --http
-      - name: Install AI backend development dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev ca-certificates openssl python3-websockets binutils
+
       - name: Configure and build plugin and independent AI backend
         run: |
           cmake -S ida-agent-plugin -B build/linux-plugin -G Ninja \

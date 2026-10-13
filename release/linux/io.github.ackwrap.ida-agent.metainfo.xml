@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.ackwrap.ida-agent</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>IDA Agent</name>
+  <summary>AI Chat and MCP integration for IDA Professional</summary>
+  <summary xml:lang="zh-CN">IDA Professional 的 AI Chat 与 MCP 集成</summary>
+  <description>
+    <p>Install the IDA Agent plugin for your user and open the local configuration manager for external AI clients. Requires a separately installed and licensed IDA Professional 9.4 with its bundled Qt 6.8.2.</p>
+    <p xml:lang="zh-CN">为当前用户安装 IDA Agent 插件，并打开外部 AI 客户端的本地配置管理页。需要单独安装并许可的 IDA Professional 9.4 及其自带的 Qt 6.8.2。</p>
+  </description>
+  <launchable type="desktop-id">io.github.ackwrap.ida-agent.desktop</launchable>
+  <icon type="stock">ida-agent</icon>
+  <url type="homepage">https://github.com/ackwrap/ida-pro-agent</url>
+  <url type="bugtracker">https://github.com/ackwrap/ida-pro-agent/issues</url>
+  <developer id="io.github.ackwrap"><name>ackwrap</name></developer>
+  <categories><category>Development</category><category>Debugger</category></categories>
+  <content_rating type="oars-1.1"/>
+</component>

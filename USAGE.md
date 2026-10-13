@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide describes ida-agent 0.4.9. Use the plugin and Gateway from the same release package.
+This guide covers released features and the Linux installer added in current source builds. Use the plugin and Gateway from the same release package.
 
 ### Automatic update checks
 
@@ -19,15 +19,18 @@ Use IDA Professional 9.4 for your platform with its bundled Qt 6.8.2. Pseudocode
 | Platform | Installation | Gateway |
 | --- | --- | --- |
 | Windows x64 | Close IDA and run the `*-windows-x64-setup.exe` installer. For the ZIP, copy `plugins/ida-agent-plugin.dll` to `%APPDATA%\Hex-Rays\IDA Pro\plugins`. | Installer default: `%LOCALAPPDATA%\Programs\ida-agent\ida-mcp.exe` |
-| Linux x64, Ubuntu 24.04 baseline | Extract the tar.gz, run `sha256sum -c SHA256SUMS.txt`, and copy `plugins/ida-agent-plugin.so` to `${IDAUSR:-$HOME/.idapro}/plugins/` with IDA closed. Install system OpenSSL 3 and CA certificates. | Keep the extracted `ida-mcp` and `skills/` in a stable directory. |
+| Linux amd64, Ubuntu 24.04+ / Debian 13+ | Install the `.deb` with `sudo apt install ./ida-agent-VERSION-linux-x64.deb`; open **IDA Agent** from the application menu and click **Install plugin**. Portable tar.gz remains available. | `.deb`: `/usr/bin/ida-mcp`; portable: keep `ida-mcp` and `skills/` together. |
 | macOS 15+, Intel and Apple Silicon | Open the DMG, run **IDA Agent Installer.app**, and click **Install**. The default plugin directory is `~/.idapro/plugins/`; select your `IDAUSR` if customized. | `~/Library/Application Support/ida-agent/bin/ida-mcp` |
+
+The `.deb` is available in current source builds and the next release after v0.4.10. Replace `VERSION` with the downloaded version. Its setup window includes the product icon, English/Chinese labels, a custom IDA user directory selector and **Open manager**. Run setup as your normal user; APT installs system dependencies. See the [Linux installation and removal guide](release/linux/INSTALL.md).
 
 Start IDA and open a binary or IDB. The plugin appears under **Edit → Plugins → IDA Agent**. A database must remain open for live analysis. Use the Gateway under the same OS user as IDA.
 
 For Linux headless use, launch through the package's wrapper so IDAT can find its matching Qt libraries:
 
 ```sh
-./idat-with-agent /absolute/path/to/ida-9.4/idat [your usual IDA arguments]
+# Installed .deb (portable tar.gz uses ./idat-with-agent):
+idat-with-agent /absolute/path/to/ida-9.4/idat [your usual IDA arguments]
 ```
 
 macOS packages use ad-hoc signatures and are not Developer ID notarized. See the installation instructions included in each package for platform details.
@@ -81,7 +84,7 @@ On Windows, open the installed shortcut or run:
 & "$env:LOCALAPPDATA\Programs\ida-agent\ida-mcp.exe" -web
 ```
 
-For portable Windows use, run `ida-mcp.exe -web` from the extracted directory. On Linux, run `./ida-mcp -web`; keep the terminal open and use the local URL printed in its log. On macOS, open **Open IDA Agent.command** beside the installed Gateway, then open the local URL shown in Terminal.
+For portable Windows use, run `ida-mcp.exe -web` from the extracted directory. With the Linux `.deb`, use **IDA Agent → Open manager**. With the portable archive, run `./ida-mcp -web`; keep the terminal open and use the local URL printed in its log. On macOS, open **Open IDA Agent.command** beside the installed Gateway, then open the local URL shown in Terminal.
 
 The manager supports Codex, OpenCode 2, Claude Code, Antigravity CLI, Grok Build and ZCode. Use **Install MCP** / **Update MCP** on the relevant client card to install/update the `ida-mcp` entry. Where available, link the optional skills:
 

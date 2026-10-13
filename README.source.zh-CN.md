@@ -4,7 +4,7 @@
 
 > [!IMPORTANT]
 > **支持 Windows x64 桌面版、Linux/WSL2 x86_64 和 macOS Universal 2 源码构建。**
-> 支持的宿主为 **IDA Professional 9.4**，使用其自带的 **Qt 6.8.2**。Ubuntu 24.04 x86_64 支持 MCP 和可选的 AI Chat 面板，见 [构建与使用说明](ida-agent-plugin/README-LINUX.md)。macOS 双架构构建与打包见 [macOS 说明](ida-agent-plugin/README-MACOS.md)；Linux 安装包尚未支持。
+> 支持的宿主为 **IDA Professional 9.4**，使用其自带的 **Qt 6.8.2**。Ubuntu 24.04 x86_64 支持 MCP 和可选的 AI Chat 面板，见 [构建与使用说明](ida-agent-plugin/README-LINUX.md)。macOS 双架构构建与打包见 [macOS 说明](ida-agent-plugin/README-MACOS.md)；Linux `.deb` 和便携包面向 Ubuntu 24.04+ / Debian 13+ amd64，见 [Linux 打包说明](release/README.md#linux-scripted-packaging)。
 
 面向 IDA 的安全分析助手，提供两个使用入口：
 
@@ -150,7 +150,7 @@ ZCode 使用原生用户级配置 `~/.zcode/cli/config.json` 中的 `mcp.servers
 
 | 范围 | 当前边界 |
 | --- | --- |
-| 平台与宿主 | Windows x64 支持完整桌面插件；Ubuntu 24.04 x86_64 与 Linux IDA 9.4 支持 MCP 和可选 AI 面板。macOS 15+ 支持 Universal 2 构建，arm64 运行验收待完成；Linux 发布包尚未支持。 |
+| 平台与宿主 | Windows x64 支持完整桌面插件；Ubuntu 24.04 x86_64 与 Linux IDA 9.4 支持 MCP 和可选 AI 面板。macOS 15+ 支持 Universal 2 构建，arm64 运行验收待完成；Linux `.deb` 和便携发布包面向 Ubuntu 24.04+ / Debian 13+ amd64。 |
 | Hex-Rays 与目标覆盖 | 伪代码和语义参数/校验分析需要兼容的反编译器及许可。语义集成样本覆盖 Windows x64 目标的 `/Od`、`/O2` 编译结果，并未验证所有处理器架构或二进制模式。 |
 | 跨函数追踪 | `analysis.trace_argument_callers` 只沿已知直接调用方展开，默认 2 层，最多 5 层。不恢复未知间接调用者、原生尾调用、被调函数返回值摘要或堆别名；递归及原型/ABI 不匹配会停止展开。已知调用者全部处理完毕也不代表调用者集合完整。 |
 | 校验证据 | `analysis.guard_evidence` 仅在单个函数内工作。比较条件和必经 CFG 分支不能证明校验充分、运行路径可行、程序安全或漏洞可利用；当前没有符号路径求解器或循环不变量求解器。 |

@@ -96,7 +96,7 @@ class PublishReleaseTests(unittest.TestCase):
         self.zip.write_bytes(b"portable package")
         self.installer.write_bytes(b"installer")
         self.checksum.write_text(f"{publisher.sha256(self.installer)}  {self.installer.name}\n", encoding="ascii")
-        for platform, suffixes in (("linux-x64", (".tar.gz",)), ("macos-universal2", (".zip", ".dmg"))):
+        for platform, suffixes in (("linux-x64", (".tar.gz", ".deb")), ("macos-universal2", (".zip", ".dmg"))):
             for suffix in suffixes:
                 package = self.directory / f"ida-agent-0.3.0-{platform}{suffix}"
                 package.write_bytes(b"platform package")
@@ -137,7 +137,7 @@ class PublishReleaseTests(unittest.TestCase):
                 publisher.collect_assets(self.directory, version)
 
     def test_every_platform_is_required_before_publication(self):
-        self.assertEqual(len(self.assets), 9)
+        self.assertEqual(len(self.assets), 11)
         for package in self.assets:
             contents = package.read_bytes()
             package.unlink()
@@ -147,7 +147,7 @@ class PublishReleaseTests(unittest.TestCase):
 
     def test_linux_and_macos_checksums_are_verified(self):
         for package in self.assets:
-            if package.name.endswith((".tar.gz", "universal2.zip", ".dmg")):
+            if package.name.endswith((".tar.gz", ".deb", "universal2.zip", ".dmg")):
                 contents = package.read_bytes()
                 package.write_bytes(b"changed")
                 with self.subTest(asset=package.name), self.assertRaisesRegex(ValueError, "checksum"):
@@ -169,6 +169,7 @@ class PublishReleaseTests(unittest.TestCase):
         self.assertIn("Pipe", current)
         current = publisher.release_notes("0.4.3")
         self.assertIn("linux-x64.tar.gz", current)
+        self.assertIn("linux-x64.deb", current)
         self.assertIn("macos-universal2.dmg", current)
         self.assertIn("尚未经过全面测试", current)
         self.assertNotIn("Windows x64 only", current)

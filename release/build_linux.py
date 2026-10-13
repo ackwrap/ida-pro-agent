@@ -13,6 +13,7 @@ import tarfile
 import tempfile
 
 from build_parallel import positive_jobs, select_build_jobs
+from build_deb import build_deb
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -55,7 +56,7 @@ def main():
         parser.error(str(error))
     build = args.build_dir.resolve()
     build.mkdir(parents=True, exist_ok=True)
-    run(args.python.resolve(), ROOT / "release/tests/test_linux_launcher.py")
+    run(args.python.resolve(), "-m", "unittest", "discover", "-s", ROOT / "release/tests", "-p", "test_*.py")
     environment = dict(os.environ, CGO_ENABLED="0", GOOS="linux", GOARCH="amd64")
     for operation in ("vet", "test", "build"):
         run("go", "-C", ROOT / "ida-mcp", operation, "./...", env=environment)
@@ -92,6 +93,8 @@ def main():
         launcher.chmod(0o755)
         shutil.copytree(ROOT / "skills", stage / "skills")
         shutil.copy2(ROOT / "release/linux/INSTALL.md", stage / "README.md")
+        for filename in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+            shutil.copy2(ROOT / filename, stage / filename)
         licenses = stage / "licenses"
         licenses.mkdir()
         cache = (build / "CMakeCache.txt").read_text(encoding="utf-8")
@@ -102,6 +105,7 @@ def main():
         sums = [f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(stage).as_posix()}"
                 for path in sorted(stage.rglob("*")) if path.is_file()]
         (stage / "SHA256SUMS.txt").write_text("\n".join(sums) + "\n", encoding="ascii")
+        deb = build_deb(stage, version, dist)
         archive_path = Path(directory) / f"{name}.tar.gz"
         with tarfile.open(archive_path, "w:gz") as archive:
             archive.add(stage, arcname=name)
@@ -110,6 +114,7 @@ def main():
         (dist / f"{target.name}.sha256").write_text(
             f"{hashlib.sha256(target.read_bytes()).hexdigest()}  {target.name}\n", encoding="ascii")
     print(target)
+    print(deb)
 
 
 if __name__ == "__main__":

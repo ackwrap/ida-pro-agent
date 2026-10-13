@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
 
-本文对应 ida-agent 0.4.9。插件与 Gateway 请使用同一发布包中的版本。
+本文说明已发布功能与当前源码新增的 Linux 安装方式。插件与 Gateway 请使用同一发布包中的版本。
 
 ### 自动更新检测
 
@@ -19,15 +19,18 @@ Qt 插件和本地 Web 管理页默认在后台检测公开仓库 [`ackwrap/ida-
 | 平台 | 安装方式 | Gateway 位置 |
 | --- | --- | --- |
 | Windows x64 | 关闭 IDA，运行 `*-windows-x64-setup.exe`。使用 ZIP 时，将 `plugins/ida-agent-plugin.dll` 复制到 `%APPDATA%\Hex-Rays\IDA Pro\plugins`。 | 安装器默认位置：`%LOCALAPPDATA%\Programs\ida-agent\ida-mcp.exe` |
-| Linux x64，Ubuntu 24.04 基线 | 解压 tar.gz，执行 `sha256sum -c SHA256SUMS.txt`，关闭 IDA 后将 `plugins/ida-agent-plugin.so` 放入 `${IDAUSR:-$HOME/.idapro}/plugins/`。系统需安装 OpenSSL 3 和 CA 证书。 | 将解压后的 `ida-mcp` 和 `skills/` 保留在固定目录。 |
+| Linux amd64，Ubuntu 24.04+ / Debian 13+ | 使用 `sudo apt install ./ida-agent-VERSION-linux-x64.deb` 安装，再从应用菜单打开 **IDA Agent** 并点击 **安装插件**；保留 tar.gz 便携包。 | `.deb`：`/usr/bin/ida-mcp`；便携包保留 Gateway 与 `skills/`。 |
 | macOS 15+，Intel / Apple Silicon | 打开 DMG，运行 **IDA Agent Installer.app** 并点击 **Install**。默认插件目录为 `~/.idapro/plugins/`；自定义用户目录时选择对应的 `IDAUSR`。 | `~/Library/Application Support/ida-agent/bin/ida-mcp` |
+
+`.deb` 已加入当前源码，会随 v0.4.10 之后的下一次发布提供。将 `VERSION` 替换为下载的版本号。安装窗口包含项目图标、中英文标签、IDA 用户目录选择和 **打开管理页**；APT 自动安装系统依赖，用户插件安装使用普通用户，不加 sudo。详见 [Linux 安装、迁移与卸载说明](release/linux/INSTALL.md)。
 
 启动 IDA，打开二进制或 IDB，在 **Edit → Plugins → IDA Agent** 中使用插件。实时分析时保持数据库打开，Gateway 与 IDA 使用同一操作系统用户。
 
 Linux 无界面模式使用包内启动脚本，以便 IDAT 加载对应的 Qt 库：
 
 ```sh
-./idat-with-agent /absolute/path/to/ida-9.4/idat [原有 IDA 参数]
+# .deb 安装后直接运行；便携包使用 ./idat-with-agent：
+idat-with-agent /absolute/path/to/ida-9.4/idat [原有 IDA 参数]
 ```
 
 macOS 包使用临时签名，未做 Developer ID 公证。各平台安装细节也可参阅发布包内的说明。
@@ -81,7 +84,7 @@ Windows 可打开安装后的快捷方式，或运行：
 & "$env:LOCALAPPDATA\Programs\ida-agent\ida-mcp.exe" -web
 ```
 
-Windows 便携包在解压目录运行 `ida-mcp.exe -web`。Linux 运行 `./ida-mcp -web`，保持终端打开，并访问日志中的本地网址。macOS 双击 Gateway 所在目录的 **Open IDA Agent.command**，再打开终端中显示的本地网址。
+Windows 便携包在解压目录运行 `ida-mcp.exe -web`。Linux `.deb` 安装后可从 **IDA Agent → 打开管理页** 进入；便携包运行 `./ida-mcp -web`，保持终端打开，并访问日志中的本地网址。macOS 双击 Gateway 所在目录的 **Open IDA Agent.command**，再打开终端中显示的本地网址。
 
 管理页支持 Codex、OpenCode 2、Claude Code、Antigravity CLI、Grok Build 和 ZCode。在对应客户端卡片点击 **Install MCP** / **Update MCP** 安装或更新 `ida-mcp` 配置；提供技能链接的卡片还可安装：
 

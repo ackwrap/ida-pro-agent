@@ -13,7 +13,7 @@
 | Platform / 平台 | Package / 下载包 |
 | --- | --- |
 | Windows x64 | `*-windows-x64-setup.exe` or `*-windows-x64.zip` |
-| Linux x64, Ubuntu 24.04 baseline | `*-linux-x64.tar.gz`, including full AI Chat / 包含完整 AI Chat |
+| Linux x64, Ubuntu 24.04+ / Debian 13+ | `*-linux-x64.deb` desktop installer / 图形安装设置；`*-linux-x64.tar.gz` portable / 便携包 |
 | macOS 15+, Intel and Apple Silicon | `*-macos-universal2.dmg` or `*-macos-universal2.zip` |
 
 ## Linux preview / Linux 预览
@@ -41,12 +41,18 @@ This repository contains the ida-agent source, usage guides and binary releases.
 
 The installer has a separate `.sha256` file; the portable ZIP includes per-file `SHA256SUMS.txt`. IDA itself and Qt runtime DLLs are not bundled.
 
-For **Linux**, extract the tar.gz, verify `SHA256SUMS.txt`, and copy
-`plugins/ida-agent-plugin.so` into `${IDAUSR:-$HOME/.idapro}/plugins/` with IDA closed.
-Keep `ida-mcp` and `skills/` together. OpenSSL 3 and CA certificates are system
-dependencies; Qt comes from Linux IDA 9.4. See the archive's `README.md`.
-For headless use, run `./idat-with-agent /absolute/path/to/ida-9.4/idat` with your
-usual IDA arguments so IDAT can find its matching Qt libraries.
+For **Ubuntu 24.04+ / Debian 13+ amd64**, the current source adds a `.deb` installer
+for the next release after v0.4.10. Close IDA, install the downloaded file with
+`sudo apt install ./ida-agent-VERSION-linux-x64.deb`, then open **IDA Agent** from
+the application menu. The window has the shared product icon, supports English
+and Chinese, and installs the plugin for your IDA user directory. **Open manager**
+opens client configuration in your browser; the Gateway is `/usr/bin/ida-mcp`.
+后续 Linux 发布新增 `.deb` 安装包：安装后从应用菜单打开带图标的 **IDA Agent**，
+选择 IDA 用户目录并点击 **安装插件**，或点击 **打开管理页** 配置外部客户端。
+
+The tar.gz portable package remains available. For installation, migration,
+uninstallation and the `idat-with-agent` headless wrapper, see the
+[Linux installation guide / Linux 安装指南](release/linux/INSTALL.md).
 
 For **macOS**, open the DMG and run **IDA Agent Installer.app**. It installs the
 Universal 2 plugin and Gateway for the current user. The `.command` launcher opens

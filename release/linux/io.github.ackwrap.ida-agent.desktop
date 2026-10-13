@@ -1,0 +1,22 @@
+[Desktop Entry]
+Type=Application
+Name=IDA Agent
+Name[zh_CN]=IDA Agent 安装设置
+GenericName=IDA plugin and MCP manager
+GenericName[zh_CN]=IDA 插件与 MCP 管理器
+Comment=Install the IDA plugin and configure AI clients
+Comment[zh_CN]=安装 IDA 插件并配置 AI 客户端
+Exec=ida-agent-setup
+TryExec=ida-agent-setup
+Icon=ida-agent
+Terminal=false
+StartupNotify=false
+StartupWMClass=Idaagent
+Categories=Development;Debugger;
+Keywords=IDA;MCP;AI;reverse engineering;
+Actions=Manager;
+
+[Desktop Action Manager]
+Name=Open client manager
+Name[zh_CN]=打开客户端管理页
+Exec=ida-agent-setup --manager

@@ -5,7 +5,7 @@
 > **Linux 版本尚未经过全面测试。如遇问题，请[提交 Bug / Issue](https://github.com/ackwrap/ida-pro-agent/issues)，附上发行版、CPU 架构、IDA 版本和复现步骤。**
 
 This is a preview for **Ubuntu 24.04 x86_64 and Linux IDA Professional 9.4**.
-The published `*-linux-x64.tar.gz` includes the Gateway and full AI Chat plugin;
+The portable `*-linux-x64.tar.gz` includes the Gateway and full AI Chat plugin. Current source builds also produce a desktop `.deb` for Ubuntu 24.04+ / Debian 13+ amd64, with the shared icon and a graphical user-plugin setup window;
 see the [package installation guide](../release/linux/INSTALL.md).
 It provides the native `.so` plugin and Linux Gateway, using Unix domain sockets.
 Linux also supports the docked AI Chat, Provider Manager, settings, Agent tools,

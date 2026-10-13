@@ -4,14 +4,14 @@
 
 > **One release contains Windows x64, Linux x64 and macOS Universal 2 packages.** The public [`ackwrap/ida-pro-agent`](https://github.com/ackwrap/ida-pro-agent) repository and its `main` branch are the development mainline. Source, documentation, hosted tests, packaging and release publishing are maintained here directly. The private `ackwrap/ida-agent` repository is retained for archival storage and restricted Qt build inputs; it runs no Actions. Local build scripts and tests remain available. Project-owned source is MIT-licensed; private Qt link inputs and local development files are excluded from public release packages.
 
-The [Release packages workflow](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/windows-release.yml) builds all three platforms concurrently. Its publishing job requires all three package jobs to succeed, downloads their artifacts from the same run, verifies all nine named assets and their remote SHA-256 digests, then publishes one complete release. The historical workflow filename is retained for existing automation.
+The [Release packages workflow](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/windows-release.yml) builds all three platforms concurrently. Its publishing job requires all three package jobs to succeed, downloads their artifacts from the same run, verifies all eleven named assets and their remote SHA-256 digests, then publishes one complete release. The historical workflow filename is retained for existing automation.
 
 ## Linux scripted packaging
 
 `python3 release/build_linux.py --qt-runtime /path/to/ida-qt --qt-sdk /path/to/qt-6.8.2-linux`
 builds the full AI Chat plugin and Gateway, runs Go validation and portable C++
-tests, and creates `release/dist/ida-agent-<version>-linux-x64.tar.gz` and its
-SHA-256 file. The baseline is Ubuntu 24.04 x86_64, with system OpenSSL 3. Licensed
+tests, and creates `release/dist/ida-agent-<version>-linux-x64.tar.gz`, a desktop `.deb` installer and their
+SHA-256 files. The baseline is Ubuntu 24.04+ / Debian 13+ amd64, with system OpenSSL 3. Packaging requires `dpkg-deb`, `librsvg2-bin`, `desktop-file-utils` and `appstream`. The `.deb` installs a graphical setup window, application entry and the shared product icon in SVG and seven PNG sizes. Ubuntu/Debian container jobs verify APT installation, GUI startup, manager reuse and shutdown, reinstallation, upgrade and removal before publication. Licensed
 IDA and GUI integration tests stay opt-in. See the [package installation guide](linux/INSTALL.md).
 
 [Linux x64 package](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/linux-package.yml) runs on GitHub-hosted
@@ -105,7 +105,7 @@ separately and is not increased by the compiler setting.
 | [Windows build and tests](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/windows-build.yml) | Public branch push, pull request or manual run | Gateway and Python validation; full Qt plugin and C++ tests |
 | [Linux source tests](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/linux-build.yml) | Public branch push, pull request or manual run | Go/C++ MCP and independent AI backend tests without private Qt inputs |
 | [Agent client regression](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/agent-client-regression.yml) | Relevant public source push/PR or manual run | SDK compatibility on Windows, Linux and macOS |
-| [Linux x64 package](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/linux-package.yml) | Public release call or manual run | Full AI package and tested tar.gz; private Qt read credential required |
+| [Linux x64 package](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/linux-package.yml) | Public release call or manual run | Full AI package, tested `.deb` and tar.gz; private Qt read credential required |
 | [macOS Universal 2 package](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/macos-build.yml) | Public release call or manual run | Full AI ZIP/DMG and installer tests; private Qt read credential required |
 | [Release packages](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/windows-release.yml) | Public `v*` tag push | Validate all three platforms and publish one complete release |
 | Release packages | Manual public run | Build all platforms; publish only when **publish** is selected |
