@@ -1,78 +1,66 @@
-# MCP stdio/HTTP + Named Pipe 多实例测试用例
+# MCP stdio/HTTP + Named Pipe multi-instance test cases
 
-## 1. 无 IDA 初始化
+**English** | [简体中文](TEST_CASES.zh-CN.md)
 
-1. 由 Client 启动 `ida-mcp.exe` stdio 子进程。
-2. 调用 MCP `initialize` 和 `tools/list`。
-3. 调用 `ida.instances.list`。
+## 1. No-IDA initialization
 
-预期：前两步不扫描 registry、不等待 Pipe；第三步返回 `{"instances":[]}`，Gateway 不启动 HTTP。
+1. The client starts the `ida-mcp.exe` stdio subprocess.
+2. Call MCP `initialize` and `tools/list`.
+3. Call `ida.instances.list`.
 
-对显式 `-transport http -listen 127.0.0.1:<port>` 重复 initialize/tools.list/list；预期同样不依赖
-IDA，并验证非 loopback listener、远程 Origin 和超大 body 被拒绝。
+Expected: the first two steps do not scan the registry or wait for a Pipe; the third returns `{"instances":[]}` and the Gateway does not start HTTP.
 
-## 2. IDA 先启动
+Repeat initialize/tools.list/list for an explicit `-transport http -listen 127.0.0.1:<port>`; expected to likewise not depend on IDA, and to verify that a non-loopback listener, a remote Origin and an oversized body are rejected.
 
-1. 启动 IDA，确认独立 Pipe 和 `%LOCALAPPDATA%\ida-agent\instances` entry 存在。
-2. 数小时后启动 OpenCode/Codex。
-3. 调用 `ida.instances.list`、`ida.instances.select(instanceId)`、`database.info`。
+## 2. IDA started first
 
-预期：hello 和 `instance.info` 验证成功；业务 Tool 省略 `instanceId` 时路由到 active instance。
+1. Start IDA and confirm the standalone Pipe and the `%LOCALAPPDATA%\ida-agent\instances` entry exist.
+2. Start OpenCode/Codex hours later.
+3. Call `ida.instances.list`, `ida.instances.select(instanceId)`, `database.info`.
 
-## 3. Gateway 先启动
+Expected: hello and `instance.info` verify successfully; when a business Tool omits `instanceId` it routes to the active instance.
 
-1. 启动 Gateway 并确认 `ida.instances.list` 为空。
-2. 启动 IDA。
-3. 再次调用 `ida.instances.list`。
+## 3. Gateway started first
 
-预期：无需重启 Gateway 即可发现新实例，MCP initialize 始终不受 IDA 状态影响。
+1. Start the Gateway and confirm `ida.instances.list` is empty.
+2. Start IDA.
+3. Call `ida.instances.list` again.
 
-## 4. 显式多实例路由
+Expected: the new instance is discovered without restarting the Gateway, and MCP initialize is never affected by IDA's state.
 
-1. 同时启动两个 IDA，确认 UUID、PID/Pipe 和数据库不同。
-2. list 后 select A，省略 `instanceId` 调用 `function.search/get/decompile`。
-3. 在同一 Gateway 对 B 使用显式 `instanceId` 调用相同 Tool。
+## 4. Explicit multi-instance routing
 
-预期：active 路由属于 A，显式路由属于 B，结果不串线；cursor 不能跨实例复用。
+1. Start two IDAs at the same time and confirm different UUIDs, PIDs/Pipes and databases.
+2. After list, select A and call `function.search/get/decompile` with `instanceId` omitted.
+3. On the same Gateway, call the same Tools against B with an explicit `instanceId`.
 
-## 5. 多 Gateway
+Expected: active routing belongs to A and explicit routing to B with no cross-talk; a cursor cannot be reused across instances.
 
-分别由 OpenCode 和 Codex 启动自己的 Gateway stdio 子进程，同时访问同一 IDA。
+## 5. Multiple Gateways
 
-预期：Plugin 的多个 Pipe instance 可并发连接；每个 Gateway 的 active instance 状态互不共享；
-每个 Gateway 对单实例最多执行 2 个请求，其余请求按 FIFO 最多等待 8 个、5 秒，且响应调用取消/期限；队列满或等待到期返回 retryable `IDA_BUSY`。只读忙碌最多自动重试两次，有副作用操作不自动重试。
+OpenCode and Codex each start their own Gateway stdio subprocess and access the same IDA at the same time.
 
-## 6. 关闭与崩溃
+Expected: the Plugin's multiple Pipe instances accept concurrent connections; each Gateway's active-instance state is not shared; each Gateway executes at most 2 requests per instance, and the remaining requests wait in FIFO order for at most 8 requests and 5 seconds, and responses honor call cancellation and deadlines; a full queue or an expired wait returns a retryable `IDA_BUSY`. Read-only busy work is retried automatically at most twice; side-effect operations are not retried automatically.
 
-- 关闭 Client：Gateway 退出，IDA/Pipe/registry 继续存在。
-- 关闭 IDA：Pipe worker 被 cancel，registry handle 关闭且 entry 消失。
-- taskkill/crash IDA：OS 回收 Pipe 和 delete-on-close HANDLE；若残留 entry，Gateway 通过 PID + hello
-  判定 stale，不返回该实例。
-- 半开 Pipe client：不能阻塞其他 worker，Plugin stop 必须在 2 秒内完成。
+## 6. Shutdown and crashes
 
-## 7. 完整领域链路
+- Closing the client: the Gateway exits and IDA/Pipe/registry continue to exist.
+- Closing IDA: the Pipe worker is canceled, the registry handle is closed and the entry disappears.
+- taskkill/crash IDA: the OS reclaims the Pipe and the delete-on-close HANDLE; if an entry remains, the Gateway judges it stale through PID + hello and does not return that instance.
+- Half-open Pipe client: it must not block other workers, and Plugin stop must complete within 2 seconds.
 
-`tools/list` 固定返回 12 个直接工具及 11 个领域入口；经领域 `call` 依次实际调用全部 98 个 callable method，
-并验证 search/xref/inventory HMAC cursor、反编译 offset continuation、ChangeSet、直接 patch
-门面的 apply/rollback、Debugger 状态、
-普通副作用工具形式的脚本执行、`analysis.wait` complete/timeout/cancel、`analysis.plan` 排队、local xref 与
-local ChangeSet 精确标记恢复、timeout 和输出预算。该链路必须在
-官方 Go MCP Client 的 Streamable HTTP 与真实 `ida-mcp.exe` stdio 子进程上各运行一次。
-MCP 输出允许 PID 和业务实例信息，但禁止 token、Pipe locator、内部堆栈和未脱敏绝对敏感路径。
+## 7. Full domain paths
 
-当前自动化入口是显式启用的 CTest `ida_agent_gateway_ping`。它复用一个真实 IDA 9.4/Hex-Rays
-会话完成 direct RPC、HTTP 和 stdio 验收；默认快速 CTest 不注册该慢测试。
+`tools/list` returns a fixed 12 direct tools and 11 domain entries; through domain `call`, all 98 callable methods are actually invoked in turn, verifying search/xref/inventory HMAC cursors, decompilation offset continuation, ChangeSet, the apply/rollback of the direct patch facades, Debugger state, script execution in the ordinary side-effect-tool form, `analysis.wait` complete/timeout/cancel, `analysis.plan` queueing, precise local xref and local ChangeSet mark/restore, timeout and output budget. This path must run once each on the official Go MCP Client's Streamable HTTP and on a real `ida-mcp.exe` stdio subprocess. MCP output may include PIDs and business instance information but must not include tokens, Pipe locators, internal stacks or unredacted absolute sensitive paths.
 
-## 8. 无 IDA 兼容性黑盒
+The current automation entry point is the explicitly enabled CTest `ida_agent_gateway_ping`. It reuses one real IDA 9.4/Hex-Rays session to complete direct RPC, HTTP and stdio acceptance; the default fast CTest does not register this slow test.
 
-运行 `python mcp-test-project/verify_compatibility.py <gateway-executable> --http`。脚本使用隔离实例目录，在四个 MCP 协议版本上检查 stdio/HTTP、23 个工具的简单公开 schema、字段错误与会话恢复、JSON 文本/结构化结果一致性、脱敏诊断与 stdio EOF。另运行 `verify_stdio.py` 做基础生命周期验收。
+## 8. No-IDA compatibility black box
 
-直接工具测试应覆盖单实例自动路由、多实例显式选择、全部固定别名及分页；队列测试覆盖 FIFO、满队列、取消和授权槽竞争；重试测试覆盖相同总期限及写入/脚本/调试控制单次执行。协议/SDK 自动化不等同于实际 Agent/模型测试；真实 IDA 和客户端链路需独立记录。
+Run `python mcp-test-project/verify_compatibility.py <gateway-executable> --http`. The script uses an isolated instance directory and checks stdio/HTTP across four MCP protocol versions, the simple public schema of the 23 tools, field errors and session recovery, JSON text/structured-result consistency, redacted diagnostics and stdio EOF. Also run `verify_stdio.py` for basic lifecycle acceptance.
 
-## 9. 实际 Agent 客户端回归
+Direct-tool tests should cover single-instance automatic routing, multi-instance explicit selection, all fixed aliases and pagination; queue tests cover FIFO, a full queue, cancellation and authorization-slot contention; retry tests cover the same overall deadline and single execution of writes/scripts/debugger control. Protocol/SDK automation is not equivalent to an actual Agent/model test; real IDA and client paths must be recorded separately.
 
-参见 [CLIENT_REGRESSION.md](CLIENT_REGRESSION.md)。`run_agent_clients.py` 直接启动已安装的
-Codex、Claude Code 或 OpenCode，用透明 stdio tee 记录实际工具发现、调用及响应。
-判定来自 MCP wire evidence 和模拟 RPC trace，不采用模型自述、CLI 退出码或静态配置作为成功证据。
-`verify_client_sdk.py` 使用固定版本的官方 Python MCP SDK，属于跨进程 SDK 集成测试，不能记为
-真实 Agent 测试。所有模拟 IDA、真实 IDA、客户端未启动或未观察到并发的结果分开记录。
+## 9. Real Agent client regression
+
+See [CLIENT_REGRESSION.md](CLIENT_REGRESSION.md). `run_agent_clients.py` directly starts an installed Codex, Claude Code or OpenCode and uses a transparent stdio tee to record actual tool discovery, calls and responses. Verdicts come from MCP wire evidence and simulated RPC traces, not from model self-reports, CLI exit codes or static configuration. `verify_client_sdk.py` uses a pinned version of the official Python MCP SDK and is a cross-process SDK integration test; it cannot be recorded as a real Agent test. Results from simulated IDA, real IDA, a client not started, or no observed concurrency are recorded separately.

@@ -1,17 +1,16 @@
 # ida-mcp Gateway
 
-`ida-mcp.exe` 是独立 Go MCP Server。默认由 MCP Client 按需以 stdio 子进程启动；也可
-显式使用安全的 loopback Streamable HTTP。两种模式都不要求启动时已有 IDA。
+**English** | [简体中文](README.zh-CN.md)
 
-macOS Universal 2 构建参见 [macOS 说明](../ida-agent-plugin/README-MACOS.md)。网关通过同用户 Unix socket 连接 IDA，插件网络使用 macOS 原生 API；两者均无 OpenSSL/libcurl 运行依赖。
+`ida-mcp.exe` is a standalone Go MCP server. By default an MCP client starts it on demand as a stdio subprocess; it can also be launched explicitly over secure, loopback-only Streamable HTTP. Neither mode requires IDA to be running at startup.
 
-Linux 原生 Gateway 已支持通过 Unix socket 连接同一 Linux 用户下的 IDA；
-参见 [Linux/WSL2 基础版](../ida-agent-plugin/README-LINUX.md)。Linux `-web` 在前台驻留，
-从日志中的 loopback URL 打开配置页，Ctrl+C/SIGTERM 退出，不依赖系统托盘。
+For the macOS Universal 2 build, see the [macOS guide](../ida-agent-plugin/README-MACOS.md). The Gateway connects to IDA over a same-user Unix socket, and the plugin uses native macOS networking APIs; neither has an OpenSSL/libcurl runtime dependency.
+
+The native Linux Gateway already supports connecting to IDA under the same Linux user over a Unix socket; see the [Linux/WSL2 basic build](../ida-agent-plugin/README-LINUX.md). Linux `-web` stays in the foreground, opens the configuration page from the loopback URL in the log, and exits on Ctrl+C/SIGTERM without relying on a system tray.
 
 ```text
 OpenCode / Codex / Claude
-        | MCP stdio（默认）或 loopback HTTP（显式启用）
+        | MCP stdio (default) or loopback HTTP (explicitly enabled)
         v
 ida-mcp.exe
         | Windows Named Pipe
@@ -21,17 +20,16 @@ one or more IDA Plugin instances
 
 ## Lifecycle
 
-- stdio：Client 创建 Gateway 子进程；stdin 关闭、Client 退出或收到终止信号时 Gateway 退出。
-- HTTP：仅 `-transport http` 时监听数值 loopback，收到终止信号后 graceful shutdown。
-- Web manager：`-web` 在随机 loopback 端口启动本地配置页并驻留 Windows 系统托盘；它不直接
-  承载 MCP，会为每个 AI Client 配置默认 stdio Gateway 子进程。
-- MCP `initialize` 和 `tools/list` 不进行 instance discovery，也不连接 Pipe。
-- 没有 IDA 时通过 `ida_instances` 调用 `ida.instances.list` 立即返回 `{"instances":[]}`。
-- Gateway 每次启动都重新发现 IDA，不需要 IDA 主动注册，也不保存跨进程 active state。
+- stdio: the client creates the Gateway subprocess; the Gateway exits when stdin closes, when the client exits, or when it receives a termination signal.
+- HTTP: listens on a numeric loopback address only with `-transport http`, and performs a graceful shutdown after a termination signal.
+- Web manager: `-web` starts the local configuration page on a random loopback port and stays in the Windows system tray; it does not carry MCP directly, and configures a default stdio Gateway subprocess for each AI client.
+- MCP `initialize` and `tools/list` perform no instance discovery and do not connect to the Pipe.
+- Without IDA, calling `ida.instances.list` through `ida_instances` immediately returns `{"instances":[]}`.
+- The Gateway rediscovers IDA on every start; IDA does not need to register itself, and no cross-process active state is persisted.
 
 ## Domain Tools
 
-0.4.5 中，`tools/list` 固定返回 23 个工具：12 个直接入口及以下 11 个领域入口。旧版 v0.4.4 仅提供 11 个领域工具。
+As of 0.4.5, `tools/list` returns a fixed catalog of 23 tools: 12 direct entries plus the 11 domain entries below. Older v0.4.4 provides only the 11 domain tools.
 
 - `ida_instances`
 - `ida_database`
@@ -45,14 +43,7 @@ one or more IDA Plugin instances
 - `ida_debugger`
 - `ida_scripts`
 
-每个入口支持渐进式发现流程：模型先用 `list` 获取 method 索引，再用 `describe` 获取选定 method
-的精确参数合同和预算，最后才用 `call` 提交符合返回 schema 的参数。公共 tool schema 明确要求不要
-猜测 method 名或参数字段，使用简单对象 schema；三种 action 的必填/禁止字段由 Gateway 执行校验并返回工具错误。`call` 只执行状态为
-`callable` 且绑定 typed handler 的 method。静态
-目录共 98 条：6 个 Gateway 方法（3 个实例方法、`analysis.wait` 和两个 ChangeSet-backed patch
-门面）及 92 个 Plugin RPC；全部 98 个 method 均可调用。`patch.write_bytes` 和
-`patch.write_integer` 面向单次直接补丁，内部仍执行 ChangeSet preview/apply 并返回可回滚的
-`changeId`；批量或需单独审阅的修改继续使用 `ida_changes`。
+Each entry supports a progressive-discovery flow: the model first uses `list` to get the method index, then `describe` for the selected method's exact parameter contract and budget, and only then `call` with arguments that match the returned schema. The public tool schema explicitly requires not guessing method names or argument fields and uses a simple object schema; the required/forbidden fields for the three actions are validated by the Gateway, which returns tool errors. `call` only executes methods that are in state `callable` and bound to a typed handler. The static catalog has 98 entries in total: 6 Gateway methods (3 instance methods, `analysis.wait`, and two ChangeSet-backed patch facades) and 92 Plugin RPCs; all 98 methods are callable. `patch.write_bytes` and `patch.write_integer` target single direct patches, still run ChangeSet preview/apply internally, and return a rollback-able `changeId`; batch edits or edits that need separate review continue to use `ida_changes`.
 
 ```json
 {"action":"describe","method":"function.search"}
@@ -62,139 +53,62 @@ one or more IDA Plugin instances
 {"action":"call","method":"function.search","arguments":{"name":"main","limit":20}}
 ```
 
-业务 method 的 `arguments.instanceId` 可选。提供时直接显式路由；省略时使用当前 MCP 会话中通过
-`ida.instances.select` 选定的 active instance。底层 `BridgeBackend` 始终接收显式
-`instance_id`，active state 不进入 Internal RPC 或 Plugin。
-HTTP 客户端会话分别保存选择，断开后释放；临时发现失败不会清除已有选择或自动切换到其他数据库。
-已指定实例的业务请求定向校验注册文件与进程身份，再由 RPC 握手验证连接，避免重复探测全部实例。
+The `arguments.instanceId` of a business method is optional. When provided, it routes explicitly; when omitted, it uses the active instance selected in the current MCP session through `ida.instances.select`. The underlying `BridgeBackend` always receives an explicit `instance_id`; active state never enters Internal RPC or the Plugin. HTTP client sessions store their selection separately and release it on disconnect; a transient discovery failure does not clear an existing selection or switch to another database automatically. A business request with a specified instance validates the registry file and process identity for that target first, then verifies the connection through the RPC handshake, avoiding a repeated probe of every instance.
 
-三个 function analysis method 继续使用协议定义的整数 `offset` continuation，输入为
-`address`、可选 `offset`（默认 0）和 `limit`（默认 20），并复用相同的显式/active instance
-路由与输出预算。该扩展没有改变 MCP transport、Gateway 生命周期或 Named Pipe 架构。
+The three function analysis methods continue to use the protocol-defined integer `offset` continuation, with `address`, an optional `offset` (default 0) and `limit` (default 20) as input, and reuse the same explicit/active instance routing and output budget. This extension has not changed the MCP transport, the Gateway lifecycle, or the Named Pipe architecture.
 
-新增 callable catalog 合同包括 `system.ping/methods`、`instance.info`、`database.survey/save`
-以及 `function.callers/callgraph/profile/export/analyze/analyze_batch/stack_frame`。每项都经过静态
-typed Backend/Bridge 方法调用；领域入口不能提交任意 RPC method。`database.save` 只接受
-`compact`/`backup` 并保存当前 IDB，side effect 为 `filesystem_write`，绝不接受 `target`。
-`instance.info` 只返回 database/input 的安全 basename，不返回 Pipe locator。`function.profile`
-将 Plugin continuation 包装为绑定 instance、method 和全部筛选条件的进程随机 HMAC cursor。
+The new callable catalog contract includes `system.ping/methods`, `instance.info`, `database.survey/save`, and `function.callers/callgraph/profile/export/analyze/analyze_batch/stack_frame`. Each is invoked through a static typed Backend/Bridge method; a domain entry cannot submit an arbitrary RPC method. `database.save` accepts only `compact`/`backup` and saves the current IDB, with the `filesystem_write` side effect; it never accepts `target`. `instance.info` returns only the safe basename of the database/input and never a Pipe locator. `function.profile` wraps the Plugin continuation in a process-random HMAC cursor bound to the instance, method and all filters.
 
-其余 18 个 Plugin RPC 也使用显式 typed DTO 和分领域 Backend interface：`memory.search_bytes`、
-`instruction.search/query`、`listing.search/search_text`、`string.search_regex`、
-`signature.make/xrefs`、`xref.struct_field`、`global.value`、六个 `type.*` 以及两个
-`analysis.*`。`instruction.search/query`、`listing.search_text` 和 `string.search_regex`
-的 Internal cursor 会由 Gateway 进程随机 HMAC 包装，并绑定 instance、公开 method 与全部
-默认化筛选；篡改、重启、参数变化或 alias 跨 method 复用均返回 `INVALID_ARGUMENT`。
-`listing.search` 只公开现有单页合同（`items/truncated`），不伪造可提交的 cursor；
-`type.search/query` 分别调用静态 RPC，并直接公开 ordinal continuation；
-`analysis.trace_data_flow` 明确返回 `model=xref_bfs`。
+The remaining 18 Plugin RPCs also use explicit typed DTOs and per-domain Backend interfaces: `memory.search_bytes`, `instruction.search/query`, `listing.search/search_text`, `string.search_regex`, `signature.make/xrefs`, `xref.struct_field`, `global.value`, the six `type.*` methods and two `analysis.*` methods. The internal cursors of `instruction.search/query`, `listing.search_text` and `string.search_regex` are wrapped with a process-random HMAC by the Gateway and bound to the instance, the public method and all defaulted filters; tampering, a restart, a parameter change, or reusing an alias across methods all return `INVALID_ARGUMENT`. `listing.search` exposes only the existing single-page contract (`items/truncated`) and does not fake a submittable cursor; `type.search/query` call their static RPCs respectively and expose the ordinal continuation directly; `analysis.trace_data_flow` explicitly returns `model=xref_bfs`.
 
-`analysis.trace_argument` 和 `analysis.guard_evidence` 使用 Hex-Rays microcode，分别提供单函数内
-调用参数来源回溯、比较条件与必经分支证据。输入为真实 `callAddress` 和从 0 开始的
-`argumentIndex`，结果保留值转换、来源汇合和未知边界；不输出程序安全结论。详见
-[参数回溯与校验证据合同](../protocol/semantic-analysis.md)。
+`analysis.trace_argument` and `analysis.guard_evidence` use Hex-Rays microcode and provide, within a single function, call-argument origin tracing and comparison-condition/necessary-branch evidence respectively. Input is a real `callAddress` and a zero-based `argumentIndex`; results retain value conversions, origin joins and unknown boundaries, and do not output program safety conclusions. See the [argument tracing and guard evidence contract](../protocol/semantic-analysis.md).
 
-`analysis.trace_argument_callers` 进一步沿形参来源向上追踪已知直接调用者，默认 2 层，
-保留每个调用上下文，并校验原型及 ABI 参数位置。支持共享预算和明确的递归/未知边界。
-详见[跨函数参数来源合同](../protocol/argument-callers.md)。
+`analysis.trace_argument_callers` further traces upward from a formal parameter's origins to known direct callers, two levels by default, retaining each call context and validating prototypes and ABI argument positions. It supports a shared budget and explicit recursion/unknown boundaries. See the [cross-function argument origin contract](../protocol/argument-callers.md).
 
-P1 增加 11 个静态只读 RPC：`source.files/lines`、`name.demangle`、`comment.get`、
-`bookmark.list`、`type.xrefs`、`decompiler.locals/ctree/local_xrefs`、`debugger.threads/modules`。
-所有列表在 MCP 侧只暴露绑定 instance、method、规范化过滤条件和有效 limit 的 HMAC cursor；
-源码和模块文件名只返回 basename，源码文本、完整路径、raw continuation、microcode 和 SDK 内部布局均不返回。
+P1 adds 11 static read-only RPCs: `source.files/lines`, `name.demangle`, `comment.get`, `bookmark.list`, `type.xrefs`, `decompiler.locals/ctree/local_xrefs`, and `debugger.threads/modules`. On the MCP side, all lists expose only HMAC cursors bound to the instance, method, normalized filters and effective limit; source and module file names return only the basename, and source text, full paths, raw continuations, microcode and SDK-internal layouts are never returned.
 
-数据库元数据修改继续使用 ChangeSet：`segment.rename/permissions`、`function.flags`、
-`xref.code.add/delete` 和 `xref.data.add/delete` 都必须 preview 后 apply，并可通过 `changeId` rollback。
-xref 删除仅允许 user-defined 引用；不会删除无法精确恢复来源的自动分析引用。
-code xref 两端必须是现有 code item，call target 还必须已属于函数，避免 apply 隐式创建不可回滚的函数。
-`function.end` 只调整稳定函数入口对应的 entry chunk 末端；`function.chunk.add/delete` 使用
-`value`/`subject` 表示 tail 的十六进制起止地址，并拒绝 hidden tail；delete 只接受 shared tail 的非 owner 引用。
+Database metadata edits continue to use ChangeSets: `segment.rename/permissions`, `function.flags`, `xref.code.add/delete` and `xref.data.add/delete` must all be applied after preview and can be rolled back through `changeId`. xref deletion only permits user-defined references; it never deletes automatic-analysis references whose source cannot be precisely restored. Both ends of a code xref must be existing code items, and a call target must already belong to a function, so that apply cannot implicitly create a function that cannot be rolled back. `function.end` only adjusts the end of the entry chunk corresponding to a stable function entry; `function.chunk.add/delete` use `value`/`subject` for the hexadecimal start/end address of the tail and reject hidden tails; delete only accepts non-owner references to a shared tail.
 
-`ida_scripts` 提供 `script.execute`，接受 `python|idc`，以及二选一的最多 32 KiB UTF-8 内联 `code`
-或外部脚本 `path`。它是 `arbitrary_code_execution` 副作用工具，Gateway 不实现额外授权交互或独立授权
-状态，是否允许调用完全由 MCP 客户端的权限系统决定。路径会被规范化，只读取一次普通文件并转换为内联
-源码；路径不会进入 Internal RPC，调用参数没有 `confirmed/scope` 字段。脚本可以修改 IDB、访问本机
-或网络并阻塞 IDA；timeout 不会停止已开始的代码，也不保证已经开始的操作系统路径访问停止。
-Streamable HTTP 与 stdio 使用相同合同。
+`ida_scripts` provides `script.execute`, which accepts `python|idc` plus either at most 32 KiB of UTF-8 inline `code` or an external script `path`. It is an `arbitrary_code_execution` side-effect tool; the Gateway implements no extra authorization interaction or separate authorization state, and whether it may be called is decided entirely by the MCP client's permission system. Paths are normalized, an ordinary file is read once and converted to inline source; the path never enters Internal RPC, and the call arguments have no `confirmed/scope` field. A script can modify the IDB, access the local machine or network, and block IDA; a timeout does not stop code that has already started, nor does it guarantee that an already-started operating-system path access stops. Streamable HTTP and stdio use the same contract.
 
 ## Run And Client Configuration
 
-Windows x64 发布包同时提供 Inno Setup 安装器 `ida-agent-<version>-windows-x64-setup.exe`。安装器
-默认以当前用户权限将 Gateway 安装到 `%LOCALAPPDATA%\Programs\ida-agent`，并自动将 Plugin
-释放到 `%APPDATA%\Hex-Rays\IDA Pro\plugins`。开始菜单快捷方式和可选桌面快捷方式均使用
-统一 ida-agent 图标并执行 `ida-mcp.exe -web`；安装结束可直接启动管理器。安装前应关闭
-IDA，若 Plugin DLL 正被占用，安装器会安排重启后替换。
-若目标目录已有非安装器管理的同名 Plugin，Setup 会先备份，卸载时恢复；安装后的 Plugin 若被
-用户替换，卸载器会按 SHA256 识别并保留用户版本。Setup 对应用及 packaged skills 的 reparse
-path 直接拒绝安装/卸载，避免递归文件操作进入外部目录。
+The Windows x64 release package also provides the Inno Setup installer `ida-agent-<version>-windows-x64-setup.exe`. The installer installs the Gateway under `%LOCALAPPDATA%\Programs\ida-agent` with current-user permissions by default, and automatically deploys the Plugin to `%APPDATA%\Hex-Rays\IDA Pro\plugins`. The Start menu shortcut and the optional desktop shortcut both use the unified ida-agent icon and run `ida-mcp.exe -web`; the manager can be launched directly when installation finishes. Close IDA before installing; if the Plugin DLL is in use, the installer schedules a replacement after reboot. If the target directory already contains a same-named Plugin that the installer does not manage, Setup backs it up first and restores it on uninstall; if the installed Plugin was replaced by the user, the uninstaller identifies it by SHA256 and keeps the user's version. Setup rejects installation/uninstallation outright for reparse paths in the application and packaged skills, so that recursive file operations cannot enter external directories.
 
-构建：
+Build:
 
 ```shell
 go build -o ida-mcp.exe .
 python ../mcp-test-project/verify_stdio.py ./ida-mcp.exe
 ```
 
-可选 HTTP：
+Optional HTTP:
 
 ```shell
 ida-mcp.exe -transport http -listen 127.0.0.1:8743
 ```
 
-HTTP 提供 `/mcp` 和 `/healthz`，只允许 loopback Origin，并设置请求体、header、read/write/idle
-timeout。未实现远程认证前拒绝非 loopback listener。
+HTTP provides `/mcp` and `/healthz`, allows loopback Origins only, and sets request-body, header, and read/write/idle timeouts. Non-loopback listeners are rejected until remote authentication is implemented.
 
-Windows Web manager：
+Windows Web manager:
 
 ```shell
 ida-mcp.exe -web
 ```
 
-该模式自动打开带 ida-agent 图标的本地配置页，并提供系统托盘的 Open/Exit 菜单。页面支持 Codex、
-OpenCode 2、Antigravity CLI 与 Claude Code 的检测、安装/更新和移除：Codex 通过官方
-`codex mcp list/add/remove` CLI 维护 `~/.codex/config.toml`；OpenCode 2 只对最高优先级的全局
-`opencode.jsonc/json` 执行结构化 patch；两者都不存在时兼容已有的 `config.json`。
-将 IDA 条目写入 `mcp.servers.ida-mcp`，使用
-`disabled: false`、`codemode: false`、`protocol: "legacy"` 和分别设置的 catalog/execution 超时。
-旧 `mcp.ida-mcp` 仅在更新 IDA 配置时迁移；移除时清除两种格式的 IDA 条目，并保留其他字段和注释。Antigravity CLI 维护
-`~/.gemini/config/mcp_config.json`；Claude Code 维护 `~/.claude.json`，设置
-`CLAUDE_CONFIG_DIR` 时改用该目录下的 `.claude.json`。后两者只修改顶层 `mcpServers` 中固定的
-`ida-agent` entry，并保留其他字段（包括 Claude Code 的 `projects`）。所有 Web API 仅监听
-`127.0.0.1` 随机端口，写操作同时要求进程随机 token 与同源请求。直接写入的配置在写回前会检测
-外部修改并在冲突时拒绝覆盖；不遵守文件协作锁的外部进程仍可能在检查与原子替换之间产生极窄竞态。
-修改配置后需要重启对应 AI Client。
+This mode automatically opens the local configuration page with the ida-agent icon and provides an Open/Exit system-tray menu. The page supports detection, install/update and removal for Codex, OpenCode 2, Antigravity CLI and Claude Code: Codex maintains `~/.codex/config.toml` through the official `codex mcp list/add/remove` CLI; OpenCode 2 only applies a structured patch to the highest-priority global `opencode.jsonc/json`; when neither exists, it falls back to an existing `config.json`. The IDA entry is written to `mcp.servers.ida-mcp` with `disabled: false`, `codemode: false`, `protocol: "legacy"`, and separately configured catalog/execution timeouts. The old `mcp.ida-mcp` is migrated only when the IDA configuration is updated; removal clears the IDA entry in both formats and preserves other fields and comments. Antigravity CLI maintains `~/.gemini/config/mcp_config.json`; Claude Code maintains `~/.claude.json`, or `.claude.json` under the directory set by `CLAUDE_CONFIG_DIR`. The latter two only modify the fixed `ida-agent` entry in the top-level `mcpServers` and preserve other fields (including Claude Code's `projects`). All Web APIs listen only on a random `127.0.0.1` port, and write operations require both a process-random token and a same-origin request. A configuration written directly by the user is checked for external modification before being written back, and conflicting changes are refused; external processes that do not honor file-sharing locks can still produce a very narrow race between the check and the atomic replacement. Restart the corresponding AI client after changing its configuration.
 
-OpenCode 2 先通过 Scoop 的 `versions/opencode2` 或 npm 的 `@opencode/cli@2` 安装，启动命令
-仍为 `opencode`。管理页的 **Install MCP** 负责写入 MCP 配置。详见
-[OpenCode 2 安装说明](../USAGE.zh-CN.md#opencode-2-安装与配置)。
+OpenCode 2 is installed first through Scoop's `versions/opencode2` or npm's `@opencode/cli@2`, and is still launched with `opencode`. The manager page's **Install MCP** writes the MCP configuration. See the [OpenCode 2 setup guide](../USAGE.md#opencode-2-setup).
 
-Grok Build 同样支持 MCP 安装/更新、移除和 Skills 链接。需要先安装 CLI 并加入 PATH；
-管理器依次检测 `gork`、`agent`、`grok` 可执行文件。
-管理器通过 `grok mcp add/remove --scope user` 维护 `~/.grok/config.toml`，不修改项目配置。
-Skills 链接位于 `~/.grok/skills`，配置及 Skills 路径均支持 `GROK_HOME` 覆盖。状态来自
-`grok mcp list --json`；项目覆盖、禁用或组织策略阻止的条目不会显示为就绪。
+Grok Build also supports MCP install/update, removal, and Skills linking. Install the CLI and add it to PATH first; the manager detects the `gork`, `agent`, and `grok` executables in turn. The manager maintains `~/.grok/config.toml` through `grok mcp add/remove --scope user` and does not modify project configuration. Skills links live under `~/.grok/skills`, and both the configuration and the Skills path honor `GROK_HOME` overrides. Status comes from `grok mcp list --json`; entries blocked by project overrides, a disabled state, or organizational policy are not shown as ready.
 
-所有模式默认采用原 Grok 兼容行为：11 个对外域工具均使用 `ida_instances`、`ida_functions`
-等下划线名称，并关闭工具列表变更通知（`tools.listChanged`）。工具目录在 Gateway 启动时固定，
-无需变更通知。Grok 安装配置使用普通 stdio 启动，不再添加 `--grok`；旧配置中的 `--grok`
-仍被接受，但不改变行为。
-`action`、具体 `method` 和参数结构不变，例如仍传入 `method: "ida.instances.list"`。
-更新 Gateway 后需重连或新建 Grok 会话；仅刷新页面不能替换正在运行的旧 Gateway 进程。
+All modes use the original Grok-compatible behavior by default: the 11 external domain tools all use underscore names such as `ida_instances` and `ida_functions`, and tool-list change notifications (`tools.listChanged`) are disabled. The tool catalog is fixed when the Gateway starts, so no change notification is needed. Grok installation configurations use a normal stdio launch with no `--grok`; a `--grok` in an old configuration is still accepted but does not change behavior. The `action`, specific `method` and argument structure are unchanged, for example `method: "ida.instances.list"`. Reconnect or start a new Grok session after updating the Gateway; refreshing the page alone cannot replace a running old Gateway process.
 
-安装 Antigravity MCP 时，缺失或空白的配置文件会先初始化为 `{}`；非 JSON 或非对象的内容会先
-备份到同目录的 `mcp_config.json.invalid.bak`，再重新初始化并写入配置。已有备份不会被覆盖，
-备份失败时也不会覆盖原配置。读取状态和移除操作不会自动重建文件。
+When installing Antigravity MCP, a missing or blank configuration file is first initialized to `{}`; non-JSON or non-object content is first backed up to `mcp_config.json.invalid.bak` in the same directory, then re-initialized and written. An existing backup is not overwritten, and the original configuration is not overwritten if backing up fails. Reading status and removal operations do not automatically rebuild the file.
 
-每个 Client 卡片还可以安装 `ida-reverse-analysis` 与 `idapython` skill。Windows 上不会为各 Client
-复制文档，而是在 Codex 的 `%USERPROFILE%\.codex\skills`、OpenCode 的
-`%USERPROFILE%\.config\opencode\skills`、Antigravity CLI 的
-`%USERPROFILE%\.gemini\antigravity-cli\skills` 和 Claude Code 的 `%USERPROFILE%\.claude\skills`
-下创建目录联接，共享安装目录中的唯一 source；Claude Code 的 skills 也会跟随
-`CLAUDE_CONFIG_DIR`。安装、升级 Gateway 后 skill 内容会立即统一；Client 仍需重启后重新加载。
-管理器不会覆盖已有真实目录或其他链接，移除及卸载也只删除精确指向当前 ida-agent 安装目录的
-junction。
+Each client card can also install the `ida-reverse-analysis` and `idapython` skills. On Windows, rather than copying documents for each client, the manager creates directory junctions under Codex's `%USERPROFILE%\.codex\skills`, OpenCode's `%USERPROFILE%\.config\opencode\skills`, Antigravity CLI's `%USERPROFILE%\.gemini\antigravity-cli\skills`, and Claude Code's `%USERPROFILE%\.claude\skills`, sharing the single source in the installation directory; Claude Code's skills also follow `CLAUDE_CONFIG_DIR`. Skill content is unified immediately after installing or upgrading the Gateway; a client still needs a restart to reload it. The manager does not overwrite existing real directories or other links, and removal and uninstallation only delete junctions that point exactly at the current ida-agent installation directory.
 
-OpenCode 2 项目配置示例：
+OpenCode 2 project configuration example:
 
 ```json
 {
@@ -214,15 +128,11 @@ OpenCode 2 项目配置示例：
 }
 ```
 
-测试环境可使用 `-instance-dir <path>` 或 `IDA_AGENT_INSTANCE_DIR` 覆盖默认的
-`%LOCALAPPDATA%\ida-agent\instances`。生产配置通常不需要参数。
+The test environment can override the default `%LOCALAPPDATA%\ida-agent\instances` with `-instance-dir <path>` or `IDA_AGENT_INSTANCE_DIR`. Production configurations normally need no argument.
 
 ## Discovery And Routing
 
-`ida.instances.list` 扫描当前用户 registry，严格解析字段、校验 PID 生命周期，然后并发执行
-有界 Named Pipe connect、hello 和 `instance.info`。只有身份与协议均匹配的实例才会返回。
-目标调用连接失败时，下次 list/select 会重新 refresh；RPC 每次使用新 Pipe connection，断开后
-可安全重连。Registry 不向 MCP 输出 Pipe locator；不再存在 bearer token 或 TCP endpoint。
+`ida.instances.list` scans the current user's registry, strictly parses fields, validates PID lifecycle, and then concurrently performs a bounded Named Pipe connect, hello and `instance.info`. Only instances whose identity and protocol both match are returned. When a target call fails to connect, the next list/select refreshes again; each RPC uses a new Pipe connection and can safely reconnect after a disconnect. The registry never exposes a Pipe locator to MCP; there is no longer a bearer token or TCP endpoint.
 
 ## Verify
 
@@ -233,30 +143,25 @@ go test ./...
 go build ./...
 ```
 
-真实 IDA 诊断：
+Real-IDA diagnostics:
 
 ```shell
 go run ./cmd/ida-agent-rpc-ping -instance-dir <path> -database-info
 ```
 
-完整自动化验收由 Plugin CTest 显式启用。`ida_agent_gateway_ping` 在一个真实 IDA 会话内依次验证
-direct Go RPC、官方 Go MCP Client 的 Streamable HTTP，以及由 `CommandTransport` 启动的真实
-`ida-mcp.exe` stdio 子进程；HTTP 和 stdio 均通过领域入口调用全部 98 个 callable method，
-包括 92 个 Plugin RPC、6 个 Gateway 方法、ChangeSet 生命周期、cursor continuation、
-只读汇编、before/after diff、Debugger capability/no-process 分支和脚本执行。调试服务的真实成功路径另由
-`ida_debugger_integration` 在隔离 idat 中复用 C++ handlers 验证；无 GUI 的 MCP 调试调用仍应拒绝授权。
+Full automated acceptance is explicitly enabled through Plugin CTest. `ida_agent_gateway_ping` verifies, within one real IDA session, direct Go RPC, Streamable HTTP through the official Go MCP client, and a real `ida-mcp.exe` stdio subprocess started by `CommandTransport`; both HTTP and stdio call all 98 callable methods through domain entries, including 92 Plugin RPCs, 6 Gateway methods, the ChangeSet lifecycle, cursor continuation, read-only assembly, before/after diff, the Debugger capability/no-process branches, and script execution. The real debugger success path is verified separately by `ida_debugger_integration` in an isolated idat that reuses the C++ handlers; a GUI-less MCP debugger call must still be denied authorization.
 
-## 名称与调试权限
+## Naming And Debug Permissions
 
-本组件名称为 `ida-mcp`，程序为 `ida-mcp.exe`，客户端配置项为 `ida-mcp`；IDA 插件保留 `ida-agent`。0.4.0 不迁移旧 MCP 配置，不提供旧程序名别名，请成套全新安装。首次调试调用在 IDA 确认后，当前 Pipe 的所有 MCP 客户端共享临时授权；Pipe 重建或数据库关闭时清空。授权等待及调试调用上限为 120 秒。
+This component is named `ida-mcp`, its program is `ida-mcp.exe`, and its client configuration entry is `ida-mcp`; the IDA plugin keeps the name `ida-agent`. 0.4.0 does not migrate old MCP configurations and provides no alias for the old program name; install the complete package fresh. After IDA confirms the first debugger call, all MCP clients on the current Pipe share temporary authorization; it is cleared when the Pipe is rebuilt or the database closes. The authorization wait and debugger calls have a 120-second limit.
 
 ## Agent compatibility
 
-以下改动从 0.4.5 起提供。旧版 v0.4.4 安装包仅提供原有 11 个领域工具；使用直接工具前先检查实际 `tools/list`。替换 Gateway 后重连客户端，刷新缓存的工具目录和技能。
+The following changes are available from 0.4.5. The older v0.4.4 package provides only the original 11 domain tools; check the actual `tools/list` before using direct tools. Reconnect the client after replacing the Gateway to refresh the cached tool catalog and skills.
 
-固定目录现在有 23 个下划线工具：下表的 12 个直接工具，以及原有 11 个领域工具。直接工具的业务参数放在顶层，直接返回业务结果；领域调用继续采用 `method`/`result` 包装与 `list` → `describe` → `call`。MCP 工具名使用下划线，具体 method 标识保留点号。
+The fixed catalog now has 23 underscore tools: the 12 direct tools in the table below plus the original 11 domain tools. A direct tool's business parameters sit at the top level and it returns the business result directly; domain calls keep the `method`/`result` wrapper and `list` → `describe` → `call`. MCP tool names use underscores; specific method identifiers keep their dots.
 
-| Direct tool / 直接工具 | Method / 方法 |
+| Direct tool | Method |
 | --- | --- |
 | `ida_list_instances` | `ida.instances.list` |
 | `ida_select_instance` | `ida.instances.select` |
@@ -271,9 +176,9 @@ direct Go RPC、官方 Go MCP Client 的 Streamable HTTP，以及由 `CommandTra
 | `ida_search_strings` | `string.search` |
 | `ida_read_memory` | `memory.read` |
 
-常用读取优先使用直接工具提供的 schema。`ida_search_functions` 按 `name` 搜索，空字符串列出函数；按地址查询使用 `ida_get_function`。高级分析、修改、调试及脚本继续使用领域入口。内存 `bytes`/`string` 必须传 `length`，`integer` 必须传 `widthBits`，`pointer` 不接受这两个参数。字符串 `refresh=true` 不能同时传 `cursor`。
+Common reads prefer the schema provided by the direct tools. `ida_search_functions` searches by `name`, and an empty string lists functions; look up by address with `ida_get_function`. Advanced analysis, modification, debugging and scripts continue to use the domain entries. Memory `bytes`/`string` must pass `length`, `integer` must pass `widthBits`, and `pointer` accepts neither. A string `refresh=true` cannot be combined with `cursor`.
 
-下面是 MCP `tools/call` 的参数对象：
+The following are MCP `tools/call` argument objects:
 
 ```json
 {"name":"ida_list_instances","arguments":{}}
@@ -287,21 +192,18 @@ direct Go RPC、官方 Go MCP Client 的 Streamable HTTP，以及由 `CommandTra
 {"name":"ida_decompile_function","arguments":{"address":"0x401000","maxBytes":32768}}
 ```
 
-直接读取工具可以使用已选实例，或者唯一可用实例。多个数据库时，用 `ida_select_instance` 选择，或传入发现返回的 `instanceId`；HTTP 多会话优先显式路由，避免共享 active state。原有领域调用仍要求选择实例或显式传入。分页必须保持相同实例和过滤条件；直接工具与领域工具共用绑定到具体 method 的 cursor。
+Direct read tools can use the selected instance or the sole available instance. With several databases, select one with `ida_select_instance`, or pass the `instanceId` returned by discovery; HTTP multi-session setups should prefer explicit routing to avoid shared active state. Existing domain calls still require a selected instance or an explicit one. Pagination must keep the same instance and filters; direct and domain tools share a cursor bound to the specific method.
 
-参数或业务错误返回 `isError:true`，JSON 文本与 `structuredContent` 一致。错误包含 `code`、`message`、`retryable`、`hint`，可选 `method`，以及最多 8 条带有字段、规则和预期合同的 `issues`。例如 limit 类型错误会指出 `arguments.limit` 应为整数，不回显错误输入值。按提示修正字段，不要把 JSON 对象包装成字符串。未知工具和格式错误的 JSON-RPC 请求仍返回协议错误。
+Argument or business errors return `isError:true`, with JSON text consistent with `structuredContent`. Errors include `code`, `message`, `retryable`, `hint`, an optional `method`, and at most 8 `issues` with field, rule and expected contract. For example, a limit type error points out that `arguments.limit` should be an integer and does not echo the erroneous input value. Fix the fields as hinted and do not wrap the JSON object as a string. Unknown tools and malformed JSON-RPC requests still return protocol errors.
 
-每个 Gateway 对每个实例最多执行 2 个请求，FIFO 队列最多等待 8 个请求、最长 5 秒；不同 Gateway 的限额独立。只读、明确可重试的 `IDA_BUSY` 最多自动重试 2 次，所有尝试共用方法总期限。修改、脚本、调试控制及超时均不自动重试。有副作用操作超时会返回 `executionState:"unknown"`、`retryable:false`，再次提交前检查 IDA 状态或 ChangeSet audit。
+Each Gateway executes at most 2 requests per instance, and a FIFO queue waits for at most 8 requests, up to 5 seconds; different Gateways have independent limits. Read-only, explicitly retryable `IDA_BUSY` is retried automatically at most 2 times, and all attempts share the method's overall deadline. Writes, scripts, debugger control and timeouts are never retried automatically. A timed-out side-effect operation returns `executionState:"unknown"`, `retryable:false`; check the IDA state or a ChangeSet audit before submitting again.
 
-给 Gateway 增加 `-diagnostics` 可启用调用诊断：
+Add `-diagnostics` to the Gateway to enable call diagnostics:
 
 ```powershell
 .\ida-mcp.exe -diagnostics
 ```
 
-日志输出到 stderr，仅包含工具、方法、阶段、耗时、错误码和重试次数，不包含参数值或结果正文，stdout 保持 MCP JSON。
-`phaseMs` 按毫秒累计 `execute`、`admission`、`resolve`、`discovery`、`connect`、`handshake`、`rpc` 的耗时；
-仅记录实际经过的阶段，嵌套阶段和并发探测的时间不可直接相加作为总耗时。
-排错时保留 Gateway/客户端版本、工具名和脱敏后的错误对象。依次检查 `tools/list`、`ida_list_instances`，再显式传实例调用 `ida_database_info`，区分目录、路由和执行阶段的问题。
+Logs go to stderr and include only the tool, method, phase, elapsed time, error code and retry count, never argument values or result bodies, while stdout remains MCP JSON. `phaseMs` accumulates the elapsed time in milliseconds for `execute`, `admission`, `resolve`, `discovery`, `connect`, `handshake` and `rpc`; only phases actually passed are recorded, and nested phases and concurrent probes cannot simply be added together as the total time. When troubleshooting, keep the Gateway/client versions, the tool name and the redacted error object. Check `tools/list` and `ida_list_instances` in turn, then call `ida_database_info` with an explicit instance to distinguish catalog, routing and execution-phase problems.
 
-仓库中的 `python mcp-test-project/verify_compatibility.py <gateway-executable> --http` 在隔离的无 IDA 环境检查 4 个协议版本与两种传输，覆盖目录、可恢复错误、会话恢复、文本/结构化一致性、诊断和 stdio EOF。它验证协议与 SDK 行为，不代表具体 Agent 或模型的实际调用能力已验证。
+The repository's `python mcp-test-project/verify_compatibility.py <gateway-executable> --http` checks 4 protocol versions and both transports in an isolated, IDA-free environment, covering catalog, recoverable errors, session recovery, text/structured consistency, diagnostics and stdio EOF. It verifies protocol and SDK behavior; it does not mean that a specific Agent or model's actual calling ability has been verified.

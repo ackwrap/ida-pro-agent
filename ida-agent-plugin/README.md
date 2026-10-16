@@ -1,80 +1,53 @@
 # IDA Agent Plugin
 
-`ida-agent-plugin` 是 C++ IDA 插件，提供内置 AI 聊天、模型供应商配置、工具调用与审批，
-并通过 Internal RPC、Named Pipe Server、实例 registry 和 `IdaExecutor` 暴露 IDA/Hex-Rays
-分析服务。内置 AI 使用独立的 HTTP/SSE 客户端连接供应商；MCP 协议由外部 Gateway 承载，
-Plugin 不需要查找、连接或注册 Gateway。
+**English** | [简体中文](README.zh-CN.md)
 
-当前接口合同与字段定义见 [协议文档](../protocol/README.md)；可调用方法以
-Gateway 的 `list` / `describe` 返回结果为准。
+`ida-agent-plugin` is a C++ IDA plugin that provides built-in AI chat, model provider configuration, tool calls and approvals, and exposes IDA/Hex-Rays analysis services through Internal RPC, a Named Pipe server, an instance registry and `IdaExecutor`. The built-in AI uses a separate HTTP/SSE client to connect to providers; the MCP protocol is carried by the external Gateway, and the Plugin does not need to find, connect to, or register with a Gateway.
 
-Linux/WSL2 已支持基础 MCP 和可选的完整 AI 面板，见 [Linux 构建、安装与测试](README-LINUX.md)。
-Windows 默认继续包含 AI/Qt。以下 Named Pipe 与 Windows 集成测试说明适用于 Windows；
-Linux 使用 Unix socket、registry v2 和独立的真实 IDA smoke runner。
-Linux 独立 AI 后端已支持 HTTP、SSE、WS/WSS 和聊天会话逻辑；libcurl 与 SQLite
-以固定版本静态内嵌，OpenSSL 使用系统库。启用 `IDA_AGENT_ENABLE_AI=ON` 后，
-可使用 AI Chat、供应商设置、工具审批和历史记录；Qt 运行库由 Linux IDA 9.4 提供。
+The current interface contract and field definitions are in the [protocol documentation](../protocol/README.md); callable methods are defined by the Gateway's `list` / `describe` results.
 
-源码构建的 AI Chat 支持角色分层、Markdown、代码块与消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁提供 **Effort** 推理强度选择器，沿用当前模型的设置与请求格式。使用与兼容性说明见 [CHAT.md](CHAT.md)。
+Linux/WSL2 already supports basic MCP and an optional full AI panel; see [Linux build, installation and testing](README-LINUX.md). Windows continues to include AI/Qt by default. The Named Pipe and Windows integration-test notes below apply to Windows; Linux uses a Unix socket, registry v2 and a separate real-IDA smoke runner. The standalone Linux AI backend already supports HTTP, SSE, WS/WSS and chat-session logic; libcurl and SQLite are statically embedded at pinned versions, and OpenSSL uses the system library. With `IDA_AGENT_ENABLE_AI=ON`, AI Chat, provider settings, tool approvals and history are available; Qt runtime libraries are provided by Linux IDA 9.4.
 
-## 分析记忆与带证据的工作流
+AI Chat in source builds supports role layering, Markdown, code blocks and message/code copy, with performance budgets for streaming refresh and long conversations. An **Effort** reasoning-strength selector sits beside the input row and follows the current model's settings and request format. See [CHAT.md](CHAT.md) for usage and compatibility.
 
-当前源码构建增加 `/memory`，用于按二进制保存、检索和管理分析笔记；`/workflow protection`、`/workflow function`、`/workflow types` 分别用于保护强度评估、函数与数据流调查、类型恢复准备。所选模型须启用 **Tools**。结论保留证据地址和来源，过期证据须重新验证，报告根据实际成功的工具调用检查覆盖范围。Agent 的记忆写入和删除沿用会话审批，存储位于 IDB 外部。
+## Analysis memory and evidence-backed workflows
 
-详见[命令、存储、限制与 IDA 9.5 验收说明](ANALYSIS.md)。Windows 增加严格的 9.5 ABI 预检和显式实验构建配置；9.5 实机验收仍待完成，稳定支持的 UI ABI 保持 IDA 9.4 / Qt 6.8.2。这些记忆工具属于内置 Agent，外部 MCP 工具目录不变。
+Current source builds add `/memory` to save, search and manage analysis notes per binary; `/workflow protection`, `/workflow function` and `/workflow types` provide protection-strength assessment, function and data-flow investigation, and type-recovery preparation respectively. The selected model must have **Tools** enabled. Conclusions retain evidence addresses and provenance, stale evidence must be re-verified, and reports check coverage against actually successful tool calls. Agent memory writes and deletions follow the conversation approval policy, and storage is outside the IDB.
+
+See the [command, storage, limits and IDA 9.5 acceptance reference](ANALYSIS.md). Windows adds a strict 9.5 ABI preflight and an explicit experimental build configuration; live 9.5 acceptance is still pending, and the stably supported UI ABI remains IDA 9.4 / Qt 6.8.2. These memory tools belong to the built-in agent, and the external MCP tool catalog is unchanged.
 
 ## Lifecycle
 
-数据库初始化后，Plugin 在 IDA 主线程读取一次固定元数据、创建 ready Pipe 并启动 registry
-publisher，然后立即返回：
+After database initialization, the Plugin reads fixed metadata once on IDA's main thread, creates a ready Pipe and starts the registry publisher, then returns immediately:
 
 ```text
 IDA main: generate UUID -> create ready overlapped Pipe/workers -> start publisher -> return
 publisher: write/flush/rename registry -> acquire delete-on-close lease
 ```
 
-`ConnectNamedPipe`、`ReadFile`、`WriteFile`、registry 文件 I/O 和客户端等待全部发生在 worker
-thread，绝不阻塞 Plugin init 或 IDA UI。Gateway 不存在时，Pipe worker 正常等待；Gateway 退出
-时 IDA、Pipe 和 registry 继续存在。Registry 发布失败会 quiesce Executor 并停止 Pipe worker，
-不会留下无 registry 的半运行 Bridge。
+`ConnectNamedPipe`, `ReadFile`, `WriteFile`, registry file I/O and client waits all happen on worker threads and never block Plugin init or the IDA UI. When no Gateway exists, the Pipe worker waits normally; when the Gateway exits, IDA, the Pipe and the registry continue to exist. A registry publish failure quiesces the Executor and stops the Pipe worker, and never leaves a half-running Bridge without a registry.
 
-每个实例的 Pipe 名为 `\\.\pipe\ida-agent-{pid}-{uuid-short}`，支持多个 Pipe instance。Pipe
-DACL 只允许当前用户并拒绝远程客户端。每个连接先完成 hello，再处理一个 `ida-rpc/1` 请求。
-Pipe worker 不调用 IDA SDK；Dispatcher 后的所有 IDA/Hex-Rays 操作统一通过
-`IdaExecutor::ReadFor` 和 `execute_sync`。
+Each instance's Pipe name is `\\.\pipe\ida-agent-{pid}-{uuid-short}` and supports multiple Pipe instances. The Pipe DACL allows only the current user and rejects remote clients. Each connection completes hello first, then handles one `ida-rpc/1` request. Pipe workers do not call the IDA SDK; after the Dispatcher, all IDA/Hex-Rays operations go uniformly through `IdaExecutor::ReadFor` and `execute_sync`.
 
-`script.execute` 通过 IDA extlang 执行 IDAPython 或 IDC 的 UTF-8 内联源码；Internal RPC 不接受路径。
-MCP `path` 输入由 Gateway 读取一次，并转换为相同内联合同。Plugin 重复校验语言、NUL、32 KiB
-源码上限和输出预算，并通过 `IdaExecutor` write context 执行。Gateway 不实现额外授权或弹窗；调用
-权限由 MCP 客户端控制，Internal RPC 仍属于当前用户 Pipe 信任边界。Python stdout/stderr 和 IDC
-result 有界返回，timeout 不会中断已开始的脚本。
+`script.execute` runs UTF-8 inline IDAPython or IDC source through IDA extlang; Internal RPC does not accept a path. An MCP `path` input is read once by the Gateway and converted to the same inline contract. The Plugin re-validates the language, NUL, the 32 KiB source limit and the output budget, and executes through an `IdaExecutor` write context. The Gateway implements no extra authorization or dialog; call permission is controlled by the MCP client, and Internal RPC remains within the current user's Pipe trust boundary. Python stdout/stderr and the IDC result are returned bounded, and a timeout does not interrupt a script that has already started.
 
-只读 function analysis RPC 包含 `function.disassemble`、`function.basic_blocks` 和
-`function.callees`。它们的参数解析、handler 与错误映射位于独立的
-`bridge/function_analysis_handlers.cpp`，`FunctionService` 行为和 Plugin/Gateway 进程边界未变。
-连续反汇编分页复用下一条指令位置；基本块与 callee 分页复用有界快照，并在 IDB 或引用修改时失效。
+The read-only function analysis RPCs include `function.disassemble`, `function.basic_blocks` and `function.callees`. Their argument parsing, handlers and error mapping live in a separate `bridge/function_analysis_handlers.cpp`; `FunctionService` behavior and the Plugin/Gateway process boundary are unchanged. Consecutive disassembly pagination reuses the next instruction position; basic-block and callee pagination reuse a bounded snapshot and are invalidated when the IDB or references change.
 
-AI 流式事件按每次最多 64 条、8 ms 的预算消费，工具参数片段也会继续推进队列。
-聊天记录的编码和 SQLite 写入在专用后台线程执行，100 ms 窗口内合并同一会话的最新快照；
-切换、清空会话及正常关闭前会等待待写入记录完成，写入失败在面板提示。
+AI streaming events are consumed with a budget of at most 64 events per 8 ms; tool-argument fragments also keep the queue moving. Chat-history encoding and SQLite writes run on a dedicated background thread that merges the latest snapshot of the same session within a 100 ms window; switching, clearing and normal shutdown wait for pending records to finish, and write failures are shown in the panel.
 
-正常卸载时先 signal/cancel/close Pipe workers，再关闭持有的 registry handle。Registry 使用
-临时文件完整写入、flush、同目录原子 rename，再立即持有 `FILE_FLAG_DELETE_ON_CLOSE` lease；
-正常退出或绝大多数进程崩溃由 Windows 删除文件。rename/lease 之间的极短 crash 窗口由 Gateway
-的 PID 与 hello stale 校验兜底，不能仅信任文件。
+On normal unload, the Pipe workers are signaled/canceled/closed first, then the held registry handle is closed. The registry writes the complete temporary file, flushes it, performs a same-directory atomic rename, and immediately holds a `FILE_FLAG_DELETE_ON_CLOSE` lease; normal exit or the vast majority of process crashes let Windows delete the file. The very short crash window between rename and lease is covered by the Gateway's PID and hello stale validation; the file alone cannot be trusted.
 
-默认 registry：
+Default registry:
 
 ```text
 %LOCALAPPDATA%\ida-agent\instances\{pid}-{uuid-short}.json
 ```
 
-路径通过 `SHGetKnownFolderPath(FOLDERID_LocalAppData)` 获取。测试可设置
-`IDA_AGENT_INSTANCE_DIR`，生产代码不硬编码用户目录。
+The path is obtained through `SHGetKnownFolderPath(FOLDERID_LocalAppData)`. Tests can set `IDA_AGENT_INSTANCE_DIR`; production code does not hard-code the user directory.
 
 ## Build And Test
 
-在可找到 MSVC 2022 和 IDA SDK 的 Windows 环境中：
+In a Windows environment where MSVC 2022 and the IDA SDK can be found:
 
 ```shell
 cmake -S ida-agent-plugin -B build/ida-agent-plugin -G Ninja
@@ -82,38 +55,21 @@ cmake --build build/ida-agent-plugin
 ctest --test-dir build/ida-agent-plugin --output-on-failure
 ```
 
-默认 DLL 位于 `build/ida-agent-plugin/ida-runtime/plugins`。默认 CTest 不注册五个耗时的真实 IDA
-集成测试。需要运行时，重新配置并显式传入
-`-DIDA_AGENT_ENABLE_INTEGRATION_TESTS=ON -DIDA_INSTALL_DIR=<ida-install-dir>`；CTest 随后运行真实
-`idat.exe` 生命周期、Named Pipe discovery/hello、92 个 Plugin RPC 入口、ChangeSet
-apply/rollback、数据库保存、无进程 Debugger 错误路径，以及 Gateway 的既有只读 RPC。Gateway
-联调在同一个真实 IDA 会话中分别通过进程内 Streamable HTTP 和真实 Gateway stdio 子进程，经
-11 个领域入口调用全部 98 个 callable method。另有 `/Od` 和 `/O2` 固定样本验证调用参数回溯和
-校验证据，以及跨函数的两层参数来源、多调用者和递归边界；测试中的类型声明仅写入隔离 IDB。缺少 IDA/Hex-Rays 许可时仍应运行全部纯单元测试
-并明确报告真实集成缺口。
-Gateway 联调还覆盖逐条/随机分页、重命名与引用增删后的缓存失效、函数边界调整和共享尾块续页。
+The default DLL is at `build/ida-agent-plugin/ida-runtime/plugins`. The default CTest does not register the five time-consuming real-IDA integration tests. When they are needed, reconfigure with an explicit `-DIDA_AGENT_ENABLE_INTEGRATION_TESTS=ON -DIDA_INSTALL_DIR=<ida-install-dir>`; CTest then runs the real `idat.exe` lifecycle, Named Pipe discovery/hello, the 92 Plugin RPC entries, ChangeSet apply/rollback, database save, the no-process Debugger error path, and the Gateway's existing read-only RPCs. Gateway integration runs in the same real IDA session through in-process Streamable HTTP and a real Gateway stdio subprocess, calling all 98 callable methods through the 11 domain entries. `/Od` and `/O2` fixed samples additionally verify call-argument tracing and guard evidence, as well as cross-function two-level argument origins, multiple callers and recursion boundaries; type declarations in tests are written only to an isolated IDB. Without an IDA/Hex-Rays license, all pure unit tests should still run and the real integration gap should be reported explicitly. Gateway integration also covers per-item/random pagination, cache invalidation after rename and reference add/delete, function-boundary adjustment and shared-tail continuation.
 
-### 真实调试功能验收
+### Real debugger acceptance
 
-启用 `IDA_AGENT_ENABLE_INTEGRATION_TESTS` 后，`ida_debugger_integration` 会启动隔离的
-`idat.exe`，使用独立 `IDAUSR`、临时 IDB，以及本次编译的有限寿命样本进程，检查本地 Windows
-调试器选择、配置读写、启动、断点、运行到地址、单步、寄存器/内存读取、继续、暂停、退出、
-附加、分离及状态冲突。分离后还会确认目标进程仍然存活，再由测试清理它。
+With `IDA_AGENT_ENABLE_INTEGRATION_TESTS` enabled, `ida_debugger_integration` starts an isolated `idat.exe` and uses a separate `IDAUSR`, a temporary IDB, and a limited-lifetime sample process built in this compilation to check local Windows debugger selection, configuration read/write, launch, breakpoints, run-to-address, single-step, register/memory reads, continue, suspend, exit, attach, detach and state conflicts. After detaching it also confirms the target process is still alive before the test cleans it up.
 
 ```shell
 cmake --build build/ida-agent-plugin --target ida_debugger_integration_driver ida_debugger_integration_sample
 ctest --test-dir build/ida-agent-plugin -R "^ida_debugger_integration$" --output-on-failure
 ```
 
-该测试驱动只在启用集成测试时构建，直接复用正式的 C++ 调试 handlers、IdaExecutor 和 services，
-由隔离 IDA 的主线程调用；它不创建 Pipe/网络接口、不随发布包分发，也不改变正式插件的授权规则。
-`ida_agent_plugin_lifecycle` 与 `ida_agent_gateway_ping` 另行验证正式 DLL 的真实 Pipe、HTTP/stdio
-链路和无 GUI 时返回 `PERMISSION_DENIED`。因此，调试服务成功路径、传输链路与权限门禁分别验收；
-真实 GUI 授权弹窗、后台请求排队时序及远程调试连接仍需要单独验证。
+This test driver is built only when integration tests are enabled; it directly reuses the production C++ debugger handlers, IdaExecutor and services and is called from the isolated IDA main thread. It creates no Pipe/network interface, is not shipped with the release package, and does not change the production plugin's authorization rules. `ida_agent_plugin_lifecycle` and `ida_agent_gateway_ping` separately verify the production DLL's real Pipe and HTTP/stdio paths and its `PERMISSION_DENIED` response without a GUI. Debugger service success paths, transport paths and permission gating are therefore accepted separately; real GUI authorization dialogs, background request-queuing timing and remote debugger connections still need separate verification.
 
-结果保留在 `%TEMP%/ida-debugger-integration-*/debugger-results.json`，包含调用结果、断言和
-失败原因。测试不会附加到用户的现有进程，也不会覆盖已安装插件。
+Results are kept in `%TEMP%/ida-debugger-integration-*/debugger-results.json` and include call results, assertions and failure reasons. Tests do not attach to the user's existing processes and do not overwrite an installed plugin.
 
-## 版本升级
+## Version upgrade
 
-配置与聊天记录统一使用 `%LOCALAPPDATA%\ida-agent\ai`，不回退读取旧名称目录，详见 [安装说明](../docs/UPGRADING.md)。
+Configuration and chat history uniformly use `%LOCALAPPDATA%\ida-agent\ai`, with no fallback to reading an old-named directory; see the [installation notes](../docs/UPGRADING.md).

@@ -1,21 +1,20 @@
 # IDA RPC Windows Named Pipe Transport
 
-Windows 使用每个 IDA 实例独立的 duplex Named Pipe。Transport 与 MCP stdio/HTTP 及
-`ida-rpc/1` JSON envelope 相互独立。
+**English** | [简体中文](transport.zh-CN.md)
+
+Windows uses a separate duplex Named Pipe per IDA instance. The transport is independent of MCP stdio/HTTP and of the `ida-rpc/1` JSON envelope.
 
 ## Pipe Locator
 
 ```text
-\\.\pipe\ida-agent-{pid}-{instance_id 前 8 个十六进制字符}
+\\.\pipe\ida-agent-{pid}-{first 8 hex characters of instance_id}
 ```
 
-完整 `instance_id` 是随机 UUID v4，只保存在 registry、hello 和 RPC identity 中。Pipe 名不编码
-数据库路径、输入文件、处理器或其他业务信息。Pipe DACL 受保护且仅允许当前用户访问，并使用
-`PIPE_REJECT_REMOTE_CLIENTS` 拒绝远程客户端。
+The full `instance_id` is a random UUID v4 stored only in the registry, hello and RPC identity. The Pipe name encodes no database path, input file, processor, or other business information. The Pipe DACL is protected, allows access only to the current user, and uses `PIPE_REJECT_REMOTE_CLIENTS` to reject remote clients.
 
 ## Frame
 
-每个 JSON payload 使用长度前缀 frame：
+Each JSON payload uses a length-prefixed frame:
 
 ```text
 Request:
@@ -33,12 +32,11 @@ offset  size  value
 9       N     UTF-8 JSON
 ```
 
-请求 payload 最大 1 MiB；序列化 RPC 响应总预算为 256 KiB，超出后返回 `OUTPUT_LIMIT`。
-无效 magic、framing version、长度、不完整输入或超时直接断开。
+The request payload is at most 1 MiB; the total serialized RPC response budget is 256 KiB, beyond which `OUTPUT_LIMIT` is returned. An invalid magic, framing version or length, incomplete input, or a timeout disconnects immediately.
 
 ## Hello
 
-每个新 Pipe connection 的第一组 request/response 必须是 hello，不允许直接发送 RPC：
+The first request/response of each new Pipe connection must be hello; an RPC cannot be sent directly:
 
 ```json
 {"method":"hello","params":{"protocol":1,"client":"ida-mcp"}}
@@ -48,30 +46,25 @@ offset  size  value
 {"product":"ida-agent-plugin","protocol":1,"instance_id":"...","pid":18452}
 ```
 
-Gateway 必须验证 product、protocol、PID，以及 hello `instance_id` 与 registry 完全一致。通过
-后，同一 connection 承载一个 `ida-rpc/1` request/response，然后关闭。Gateway 每次调用都可
-重新连接，因此断线、Gateway 重启或 Plugin 重载不依赖连接池恢复。
+The Gateway must validate product, protocol and PID, and that the hello `instance_id` exactly matches the registry. After that, the same connection carries one `ida-rpc/1` request/response and then closes. The Gateway can reconnect for every call, so disconnections, Gateway restarts or Plugin reloads do not depend on connection-pool recovery.
 
 ## Timeouts And Shutdown
 
-- Gateway discovery connect/hello/`instance.info` probe 默认每实例 250 ms，并受 caller context 约束。
-- Plugin 给完整 hello + request 输入 5 秒；解析后使用 `timeoutMs` 作为执行预算，并预留 2 秒发送响应。
-- Pipe Server 使用 overlapped `ConnectNamedPipe`、`ReadFile` 和 `WriteFile`。stop event 与
-  `CancelIoEx` 保证卸载时不会卡在 accept/read/write。
-- Worker 只处理 framing、hello 和 dispatch；所有 IDA SDK/Hex-Rays 调用继续经过
-  `IdaExecutor`/`execute_sync`。
-- Server 支持多个 Pipe instance、4 个 I/O worker 和有界 pending queue。Gateway 另按
-  `instance_id` 限制最多 2 个并发业务请求，超出立即返回 retryable `IDA_BUSY`。
+- The Gateway discovery connect/hello/`instance.info` probe defaults to 250 ms per instance and is bounded by the caller's context.
+- The Plugin gives a complete hello + request input 5 seconds; after parsing it uses `timeoutMs` as the execution budget and reserves 2 seconds to send the response.
+- The Pipe Server uses overlapped `ConnectNamedPipe`, `ReadFile` and `WriteFile`. A stop event and `CancelIoEx` ensure unload cannot hang in accept/read/write.
+- Workers handle only framing, hello and dispatch; all IDA SDK/Hex-Rays calls still go through `IdaExecutor`/`execute_sync`.
+- The server supports multiple Pipe instances, 4 I/O workers and a bounded pending queue. The Gateway additionally limits each `instance_id` to at most 2 concurrent business requests and immediately returns a retryable `IDA_BUSY` beyond that.
 
 ## Registry Ordering
 
-Registry 只负责发现，Pipe 才负责身份和通信。发布顺序必须为：
+The registry is only responsible for discovery; the Pipe is responsible for identity and communication. The publish order must be:
 
 ```text
 UUID -> CreateNamedPipe ready -> atomic registry publish
 ```
 
-停止顺序必须为：
+The stop order must be:
 
 ```text
 stop/cancel Pipe workers -> close Pipe -> close delete-on-close registry handle
