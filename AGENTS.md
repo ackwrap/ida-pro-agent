@@ -9,9 +9,17 @@
 
 ## Source Control
 
-- The canonical development repository is the public `ackwrap/ida-pro-agent`, on `main`. Push source and documentation directly to its `origin/main`; hosted tests and releases run there.
+- The canonical development repository is the public `ackwrap/ida-pro-agent`. `devel` is the development branch and `main` is the stable branch that only receives promoted changes. Do not commit or push to `main` directly.
 - Private `ackwrap/ida-agent` is archival storage and holds restricted Linux/macOS Qt build inputs. It does not run Actions or synchronize source into public `main`. Preserve the public Git history when updating source; do not merge private history or restore scheduled snapshot imports.
 - Release tags belong to the public history and must match `ida-mcp/VERSION`. Push only the intended branch or release tag; private archival tags must not be published.
+
+## Branch Workflow
+
+- Do all development on `devel`: create commits there and push them with `git push origin devel`.
+- Never commit or push to `main` directly. `main` only receives changes promoted from `devel`.
+- Promote validated changes by fast-forward: `git push origin devel:main`. Keep `main` an ancestor of `devel` so promotion stays linear and needs no merge commit.
+- Before promoting, fetch and rebase `devel` onto `origin/main` if the public `main` has moved, then re-validate and push.
+- Validate the affected build and test scope on `devel` before promoting; hosted tests and releases continue to run on `main`.
 
 ## Documentation Boundaries
 
