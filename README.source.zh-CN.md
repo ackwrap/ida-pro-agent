@@ -238,9 +238,9 @@ python release/build_release.py --clean
 
 ## GitHub Actions
 
-公开 [ida-pro-agent 仓库](https://github.com/ackwrap/ida-pro-agent) 的 `main` 是开发主线。Windows/Linux 构建、客户端回归和 Windows/Linux/macOS 完整发布均在其 [Actions](https://github.com/ackwrap/ida-pro-agent/actions) 执行。私有 `ida-agent` 保留为历史存储和受限 Qt 构建输入的存放位置，不再运行 Actions；本地构建脚本和单元测试继续保留。公开 CI 验证 Go/C++、Windows Qt 插件链接及安装包兼容性，需要许可的真实 IDA UI/集成测试在本地运行。工具链依赖见 [Linux 环境要求](ida-agent-plugin/README-LINUX.md#linux-environment-requirements)。
+Windows/Linux 构建、客户端回归和 Windows/Linux/macOS 完整发布均在公开仓库的 [Actions](https://github.com/ackwrap/ida-pro-agent/actions) 执行。私有 `ida-agent` 保留为历史存储和受限 Qt 构建输入的存放位置，不再运行 Actions；本地构建脚本和单元测试继续保留。公开 CI 验证 Go/C++、Windows Qt 插件链接及安装包兼容性，需要许可的真实 IDA UI/集成测试在本地运行。工具链依赖见 [Linux 环境要求](ida-agent-plugin/README-LINUX.md#linux-environment-requirements)。
 
-源码和文档直接提交到公开 `main`，推送 `origin main` 后运行构建检查。更新 `ida-mcp/VERSION` 并推送匹配版本号的公开 `v*` 标签，即可构建发布；发布使用本仓库自身的 `GITHUB_TOKEN`。私有源码定时同步已停止。现有 `IDA_AGENT_SOURCE_READ_TOKEN` 仅用于下载 Linux/macOS 的 Qt 构建输入，只需私有 `ida-agent` 的 **Contents: read**；这些私有输入不会进入公开安装包。配置步骤见 [Actions 与发布说明](release/README.md#中文配置说明)，依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+更新 `ida-mcp/VERSION` 并推送匹配版本号的公开 `v*` 标签，即可构建发布；发布使用本仓库自身的 `GITHUB_TOKEN`。私有源码定时同步已停止。现有 `IDA_AGENT_SOURCE_READ_TOKEN` 仅用于下载 Linux/macOS 的 Qt 构建输入，只需私有 `ida-agent` 的 **Contents: read**；这些私有输入不会进入公开安装包。配置步骤见 [Actions 与发布说明](release/README.md#中文配置说明)，依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 仓库与文档
 

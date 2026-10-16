@@ -2,7 +2,7 @@
 
 [English setup](#configure-public-publishing) | [中文配置说明](#中文配置说明)
 
-> **One release contains Windows x64, Linux x64 and macOS Universal 2 packages.** The public [`ackwrap/ida-pro-agent`](https://github.com/ackwrap/ida-pro-agent) repository and its `main` branch are the development mainline. Source, documentation, hosted tests, packaging and release publishing are maintained here directly. The private `ackwrap/ida-agent` repository is retained for archival storage and restricted Qt build inputs; it runs no Actions. Local build scripts and tests remain available. Project-owned source is MIT-licensed; private Qt link inputs and local development files are excluded from public release packages.
+> **One release contains Windows x64, Linux x64 and macOS Universal 2 packages.** The private `ackwrap/ida-agent` repository is retained for archival storage and restricted Qt build inputs; it runs no Actions. Local build scripts and tests remain available. Project-owned source is MIT-licensed; private Qt link inputs and local development files are excluded from public release packages.
 
 The [Release packages workflow](https://github.com/ackwrap/ida-pro-agent/blob/main/.github/workflows/windows-release.yml) builds all three platforms concurrently. Its publishing job requires all three package jobs to succeed, downloads their artifacts from the same run, verifies all eleven named assets and their remote SHA-256 digests, then publishes one complete release. The historical workflow filename is retained for existing automation.
 
@@ -119,8 +119,8 @@ The publisher checks that the destination is public and active, then relies on G
 1. Use **ackwrap/ida-pro-agent `main`** for source development. Clone the public repository or point the checkout's `origin` at `https://github.com/ackwrap/ida-pro-agent.git`, then track `origin/main`. Keep any private checkout/history separately; use the already published source as the base for public commits.
 2. For full Linux/macOS packages, add **`IDA_AGENT_SOURCE_READ_TOKEN`** in **ida-pro-agent → Settings → Secrets and variables → Actions**. The retained secret name now refers only to private Qt build-input reads. Use a fine-grained PAT scoped only to **ackwrap/ida-agent → Contents: read**. A suitably scoped GitHub App token also works. Source checkout, ordinary Windows/Linux/client checks and Windows packaging need no cross-repository credential.
 3. Keep the pinned `linux-build-inputs-ida94-qt682-v1` and `macos-build-inputs-ida94-qt682-v1` releases **published inside the private repository**. Their assets remain private; read-only clients cannot download drafts. New input versions require new assets and reviewed SHA-256 pins. Never include the input archives in public artifacts.
-4. Commit and push source/documentation changes directly to public `main`. Scheduled private-to-public synchronization is retired. The private repository runs no Actions; its old `IDA_AGENT_RELEASE_TOKEN` and `IDA_AGENT_SOURCE_SYNC_KEY` are unused. Public publishing uses its own `GITHUB_TOKEN` and needs no cross-repository write token.
-5. To release, update `ida-mcp/VERSION`, run the affected validation, commit and push `main`, then create and push a matching `v<version>` tag on that public commit. Tag pushes start the release workflow automatically. Development branch pushes run checks without publishing. Existing public release tags never move.
+4. Scheduled private-to-public synchronization is retired. The private repository runs no Actions; its old `IDA_AGENT_RELEASE_TOKEN` and `IDA_AGENT_SOURCE_SYNC_KEY` are unused. Public publishing uses its own `GITHUB_TOKEN` and needs no cross-repository write token.
+5. To release, update `ida-mcp/VERSION`, run the affected validation, then create and push a matching `v<version>` tag on that public commit. Tag pushes start the release workflow automatically. Development branch pushes run checks without publishing. Existing public release tags never move.
 6. A manual release run on public `main` or a matching release tag publishes only with **publish** selected. Tags must match `ida-mcp/VERSION`; releases target the tested public commit. All three platform jobs and asset verification must pass before publication.
 
 The published assets are exactly:
@@ -139,11 +139,11 @@ Each portable package contains the Gateway, full plugin, runtime instructions, a
 
 ## Maintain public usage documentation
 
-Edit [root README.md](../README.md), [USAGE.md](../USAGE.md) and [USAGE.zh-CN.md](../USAGE.zh-CN.md) directly. Source build references are [README.source.md](../README.source.md) and [README.source.zh-CN.md](../README.source.zh-CN.md). Commit documentation together with the feature on public `main`; no exporter or scheduled job is needed to publish it.
+Edit [root README.md](../README.md), [USAGE.md](../USAGE.md) and [USAGE.zh-CN.md](../USAGE.zh-CN.md) directly. Source build references are [README.source.md](../README.source.md) and [README.source.zh-CN.md](../README.source.zh-CN.md).
 
 The old `release/public/` templates and `sync_public_source.py` / `sync_public_automation.py` utilities are retained for migration compatibility and regression tests. They are outside the current publication flow; do not use them to update public `main`. The source synchronization workflow and its active `.source-sync.json` manifest have been removed. Project code uses MIT; dependencies retain the licenses in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
 
-公开使用文档直接维护仓库根目录的 `README.md`、`USAGE.md` 和 `USAGE.zh-CN.md`，源码编译说明维护 `README.source.md` 与 `README.source.zh-CN.md`。与功能改动一起提交、推送公开 `main`，GitHub 页面立即展示。`release/public/` 和旧快照工具仅保留作迁移兼容与回归测试，不再用于更新公开主线。
+公开使用文档直接维护仓库根目录的 `README.md`、`USAGE.md` 和 `USAGE.zh-CN.md`，源码编译说明维护 `README.source.md` 与 `README.source.zh-CN.md`。`release/public/` 和旧快照工具仅保留作迁移兼容与回归测试，不再用于更新公开主线。
 
 ## Direct development and release
 
@@ -155,12 +155,11 @@ cd ida-pro-agent
 git switch main
 ```
 
-For an existing checkout already tracking the public repository, pull with `git pull --ff-only origin main`. Commit reviewed source and documentation changes, then use `git push origin main` to trigger build checks. Follow the scoped validation in [AGENTS.md](../AGENTS.md).
+For an existing checkout already tracking the public repository, pull with `git pull --ff-only origin main`. Follow the scoped validation in [AGENTS.md](../AGENTS.md).
 
 For example, after updating `ida-mcp/VERSION` to **0.5.0**, validating and committing the change:
 
 ```sh
-git push origin main
 git tag -a v0.5.0 -m "ida-agent 0.5.0"
 git push origin refs/tags/v0.5.0
 ```
@@ -190,13 +189,13 @@ Actual plugin use requires **IDA Professional 9.4 for the selected platform with
 
 ## 中文配置说明
 
-> **统一发布 Windows x64、Linux x64 和 macOS Universal 2。** 公开 [`ackwrap/ida-pro-agent`](https://github.com/ackwrap/ida-pro-agent) 的 `main` 是唯一开发主线，源码、文档、测试、打包和发布直接在这里维护。私有 `ackwrap/ida-agent` 保留历史存储与受限 Qt 构建输入，不运行 Actions。本地编译、打包脚本与测试源码保留。
+> **统一发布 Windows x64、Linux x64 和 macOS Universal 2。** 私有 `ackwrap/ida-agent` 保留历史存储与受限 Qt 构建输入，不运行 Actions。本地编译、打包脚本与测试源码保留。
 
 1. 当前工作目录的 `origin` 应指向 `https://github.com/ackwrap/ida-pro-agent.git`，本地 `main` 跟踪 `origin/main`。已有公开源码作为开发基线，私有历史单独保留。
 2. 完整 Linux/macOS 打包仍需在**公开仓库**的 **Settings → Secrets and variables → Actions** 添加 **`IDA_AGENT_SOURCE_READ_TOKEN`**。保留原 Secret 名称以兼容现有工作流，但现在只用于下载私有 Qt 构建输入。fine-grained PAT 仅选择私有 `ackwrap/ida-agent`，权限为 **Contents → Read-only**；源码检出、普通构建检查和 Windows 打包不需要它。
 3. 固定 Qt 输入的 Release 在**私有仓库内部正式发布**，其附件仍为私有资源；只读凭据无法读取草稿。下载后按固定 SHA-256 校验，输入包不得上传至公开附件。
-4. 源码、文档直接提交并推送 `origin main`，自动运行公开构建检查。定时源码同步已经移除，也不再需要同步凭据。旧私有发布令牌与同步密钥不再使用；公开仓库自己的 `GITHUB_TOKEN` 负责发布。
-5. 发布时更新 `ida-mcp/VERSION`，按改动范围完成验证、提交并推送公开 `main`，再在同一公开提交上创建并推送匹配版本号的 `v*` 标签。标签推送自动触发三平台打包发布；普通开发提交只触发检查。已有发布标签不移动。
+4. 定时源码同步已经移除，也不再需要同步凭据。旧私有发布令牌与同步密钥不再使用；公开仓库自己的 `GITHUB_TOKEN` 负责发布。
+5. 发布时更新 `ida-mcp/VERSION`，按改动范围完成验证，再在同一公开提交上创建并推送匹配版本号的 `v*` 标签。标签推送自动触发三平台打包发布；普通开发提交只触发检查。已有发布标签不移动。
 6. 手动运行 **Release packages (Windows, Linux, macOS)** 时，勾选 **publish** 才会发布。发布引用实际测试的公开提交，所有平台构建与附件校验成功后才正式发布。
 
 只有三个平台全部构建成功，且九个发布附件的远程 SHA-256 全部匹配，草稿才会正式发布。已发布附件不会被覆盖。仅发布失败时，用 **Re-run failed jobs** 复用已经验证的产物。构建附件保留 30 天，测试日志保留 14 天。
