@@ -116,7 +116,7 @@ The publisher checks that the destination is public and active, then relies on G
 
 ## Configure public publishing
 
-1. Use **ackwrap/ida-pro-agent `main`** for source development. Clone the public repository or point the checkout's `origin` at `https://github.com/ackwrap/ida-pro-agent.git`, then track `origin/main`. Keep any private checkout/history separately; use the already published source as the base for public commits.
+1. Use **ackwrap/ida-pro-agent `devel`** for source development. Clone the public repository or point the checkout's `origin` at `https://github.com/ackwrap/ida-pro-agent.git`, then track `origin/devel`. Keep any private checkout/history separately; use the already published source as the base for public commits.
 2. For full Linux/macOS packages, add **`IDA_AGENT_SOURCE_READ_TOKEN`** in **ida-pro-agent → Settings → Secrets and variables → Actions**. The retained secret name now refers only to private Qt build-input reads. Use a fine-grained PAT scoped only to **ackwrap/ida-agent → Contents: read**. A suitably scoped GitHub App token also works. Source checkout, ordinary Windows/Linux/client checks and Windows packaging need no cross-repository credential.
 3. Keep the pinned `linux-build-inputs-ida94-qt682-v1` and `macos-build-inputs-ida94-qt682-v1` releases **published inside the private repository**. Their assets remain private; read-only clients cannot download drafts. New input versions require new assets and reviewed SHA-256 pins. Never include the input archives in public artifacts.
 4. Scheduled private-to-public synchronization is retired. The private repository runs no Actions; its old `IDA_AGENT_RELEASE_TOKEN` and `IDA_AGENT_SOURCE_SYNC_KEY` are unused. Public publishing uses its own `GITHUB_TOKEN` and needs no cross-repository write token.
@@ -152,7 +152,7 @@ Start from the public development branch:
 ```sh
 git clone --recurse-submodules https://github.com/ackwrap/ida-pro-agent.git
 cd ida-pro-agent
-git switch main
+git switch devel
 ```
 
 For an existing checkout already tracking the public repository, pull with `git pull --ff-only origin main`. Follow the scoped validation in [AGENTS.md](../AGENTS.md).
@@ -164,7 +164,7 @@ git tag -a v0.5.0 -m "ida-agent 0.5.0"
 git push origin refs/tags/v0.5.0
 ```
 
-Use a new version for each release. Push the intended public tag explicitly so private archival tags are not included. Older public tags created before source publication retain their original documentation snapshots; current source is on `main`.
+Use a new version for each release. Push the intended public tag explicitly so private archival tags are not included. Older public tags created before source publication retain their original documentation snapshots; current source is on `devel`.
 
 ## Retry and local validation
 
@@ -191,7 +191,7 @@ Actual plugin use requires **IDA Professional 9.4 for the selected platform with
 
 > **统一发布 Windows x64、Linux x64 和 macOS Universal 2。** 私有 `ackwrap/ida-agent` 保留历史存储与受限 Qt 构建输入，不运行 Actions。本地编译、打包脚本与测试源码保留。
 
-1. 当前工作目录的 `origin` 应指向 `https://github.com/ackwrap/ida-pro-agent.git`，本地 `main` 跟踪 `origin/main`。已有公开源码作为开发基线，私有历史单独保留。
+1. 当前工作目录的 `origin` 应指向 `https://github.com/ackwrap/ida-pro-agent.git`，开发使用 `devel`，本地 `devel` 跟踪 `origin/devel`；`main` 跟踪 `origin/main`。已有公开源码作为开发基线，私有历史单独保留。
 2. 完整 Linux/macOS 打包仍需在**公开仓库**的 **Settings → Secrets and variables → Actions** 添加 **`IDA_AGENT_SOURCE_READ_TOKEN`**。保留原 Secret 名称以兼容现有工作流，但现在只用于下载私有 Qt 构建输入。fine-grained PAT 仅选择私有 `ackwrap/ida-agent`，权限为 **Contents → Read-only**；源码检出、普通构建检查和 Windows 打包不需要它。
 3. 固定 Qt 输入的 Release 在**私有仓库内部正式发布**，其附件仍为私有资源；只读凭据无法读取草稿。下载后按固定 SHA-256 校验，输入包不得上传至公开附件。
 4. 定时源码同步已经移除，也不再需要同步凭据。旧私有发布令牌与同步密钥不再使用；公开仓库自己的 `GITHUB_TOKEN` 负责发布。
