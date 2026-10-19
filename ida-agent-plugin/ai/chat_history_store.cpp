@@ -59,14 +59,9 @@ public:
 #ifndef _WIN32
     try
     {
-      ida_agent::bridge::PreparePrivateFile(path);
+      ida_agent::bridge::PreparePrivateDatabaseFile(path, true);
       for (const char *suffix : {"-wal", "-shm", "-journal"})
-      {
-        const std::filesystem::path sidecar(path.string() + suffix);
-        const auto status = std::filesystem::symlink_status(sidecar);
-        if (std::filesystem::exists(status))
-          ida_agent::bridge::ApplyCurrentUserOnlyFileAcl(sidecar);
-      }
+        ida_agent::bridge::PreparePrivateDatabaseFile(path.string() + suffix, false);
     }
     catch (const std::exception &) { return false; }
 #endif
@@ -338,7 +333,9 @@ bool ChatHistoryStore::Open(std::string database_key)
     Database database;
     if ( !database.Open(database_path_) || !Configure(database.Get()) )
       return false;
+#ifdef _WIN32
     ida_agent::bridge::ApplyCurrentUserOnlyFileAcl(database_path_);
+#endif
     if ( !RetainNewestSessions(database.Get(), database_key, MaxStoredSessions) )
       return false;
 

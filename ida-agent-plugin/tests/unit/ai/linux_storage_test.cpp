@@ -8,10 +8,12 @@
 #include "instance/private_file_linux.hpp"
 #include <sqlite3.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <atomic>
 #include <fstream>
 #include <stdexcept>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -41,8 +43,16 @@ struct TemporaryDirectory
 };
 }
 
-int main()
+int main(int argc, char **argv)
 {
+  // A fresh process: a forked child would inherit SQLite's in-process lock
+  // bookkeeping and report SQLITE_BUSY even after the kernel locks are gone.
+  if (argc == 3 && std::string_view(argv[1]) == "--sqlite-write-probe")
+  {
+    sqlite3 *probe = nullptr;
+    if (sqlite3_open_v2(argv[2], &probe, SQLITE_OPEN_READWRITE, nullptr) != SQLITE_OK) return 3;
+    return sqlite3_exec(probe, "BEGIN IMMEDIATE", nullptr, nullptr, nullptr) == SQLITE_BUSY ? 0 : 1;
+  }
   using namespace ida_agent::ai;
   using namespace ida_agent::bridge;
   TemporaryDirectory temporary;
@@ -88,6 +98,23 @@ int main()
   Require(history.Save({{ChatSpeaker::User, "persisted again"}}), "WAL save failed");
   Mode(state.string() + "-wal", 0600);
   Mode(state.string() + "-shm", 0600);
+  // POSIX locks belong to the process: re-validating the database files must
+  // not close a descriptor and silently drop locks held by another connection.
+  Require(sqlite3_exec(database, "BEGIN IMMEDIATE", nullptr, nullptr, nullptr) == SQLITE_OK,
+      "lock holder failed to take the write lock");
+  Require(history.Load().status == ChatHistoryLoadStatus::Loaded, "history reload failed");
+  const pid_t child = fork();
+  Require(child >= 0, "lock probe fork failed");
+  if (child == 0)
+  {
+    execl(argv[0], argv[0], "--sqlite-write-probe", state.c_str(), static_cast<char *>(nullptr));
+    _exit(4);
+  }
+  int child_status = 0;
+  Require(waitpid(child, &child_status, 0) == child && WIFEXITED(child_status),
+      "lock probe did not exit");
+  Require(WEXITSTATUS(child_status) == 0, "store re-open released another connection's SQLite lock");
+  sqlite3_exec(database, "ROLLBACK", nullptr, nullptr, nullptr);
   sqlite3_close(database);
 
 #ifdef __APPLE__

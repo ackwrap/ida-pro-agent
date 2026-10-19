@@ -101,6 +101,31 @@ void PreparePrivateFile(const std::filesystem::path &path)
   Validate(info);
 }
 
+void PreparePrivateDatabaseFile(const std::filesystem::path &path, bool create)
+{
+  Fd directory = Directory(path.parent_path(), create);
+  if (directory.Get() < 0) Fail();
+  const auto name = path.filename();
+  if (name.empty() || name == "." || name == "..") Fail();
+  struct stat info{};
+  if (fstatat(directory.Get(), name.c_str(), &info, AT_SYMLINK_NOFOLLOW) != 0)
+  {
+    if (errno != ENOENT) Fail();
+    if (!create) return;
+#ifdef __APPLE__
+    // macOS only lets the superuser mknod regular files. A file created here
+    // is a new inode, so no connection can hold a lock on it yet.
+    Fd file(openat(directory.Get(), name.c_str(),
+        O_RDWR | O_CREAT | O_EXCL | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC, 0600));
+    if (file.Get() < 0 && errno != EEXIST) Fail();
+#else
+    if (mknodat(directory.Get(), name.c_str(), S_IFREG | 0600, 0) != 0 && errno != EEXIST) Fail();
+#endif
+    if (fstatat(directory.Get(), name.c_str(), &info, AT_SYMLINK_NOFOLLOW) != 0) Fail();
+  }
+  Validate(info);
+}
+
 PrivateReadResult ReadPrivateFile(const std::filesystem::path &path, std::size_t limit)
 {
   try

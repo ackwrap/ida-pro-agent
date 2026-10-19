@@ -142,13 +142,9 @@ bool Store::Open(BinaryContext context) noexcept
       bridge::EnsureCurrentUserOnlyDirectory(path_.parent_path());
       if (std::filesystem::is_symlink(std::filesystem::symlink_status(path_))) return false;
 #ifndef _WIN32
-      bridge::PreparePrivateFile(path_);
+      bridge::PreparePrivateDatabaseFile(path_, true);
       for (const char *suffix : {"-wal", "-shm", "-journal"})
-      {
-        const auto sidecar = std::filesystem::path(path_.string() + suffix);
-        if (std::filesystem::exists(std::filesystem::symlink_status(sidecar)))
-          bridge::ApplyCurrentUserOnlyFileAcl(sidecar);
-      }
+        bridge::PreparePrivateDatabaseFile(path_.string() + suffix, false);
 #endif
       auto connection = std::make_unique<Impl>();
       Check(sqlite3_open_v2(path_.u8string().c_str(), &connection->db,
@@ -157,7 +153,9 @@ bool Store::Open(BinaryContext context) noexcept
           | SQLITE_OPEN_NOFOLLOW
 #endif
           , nullptr));
+#ifdef _WIN32
       bridge::ApplyCurrentUserOnlyFileAcl(path_);
+#endif
       Check(sqlite3_busy_timeout(connection->db, 50));
       sqlite3_limit(connection->db, SQLITE_LIMIT_LENGTH, 128 * 1024);
       {
