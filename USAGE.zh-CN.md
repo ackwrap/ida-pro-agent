@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
 
-本文说明 0.5.0 版本的使用方式，包括 Linux 图形安装器。插件与 Gateway 请使用同一发布包中的版本。
+本文说明 0.5.2 版本的使用方式，包括 Linux 图形安装器。插件与 Gateway 请使用同一发布包中的版本。
 
 ### 自动更新检测
 

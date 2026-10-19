@@ -169,6 +169,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
+### Version 0.5.2 / 0.5.2 版本
+
+Version 0.5.2 fixes AI Chat: Claude tool calls without arguments, long OpenAI Responses turns, cancellation after a tool-call reply, chat history overwriting and pruning, and truncation of large selections sent to the chat input. See the [release notes](release/notes/0.5.2.md).
+
+0.5.2 修复 AI Chat 的多个问题：无参数的 Claude 工具调用、较长的 OpenAI Responses 对话、工具调用回复后的取消、聊天历史的覆盖与清理，以及发送到输入框的大段选区被截断。详见[发布说明](release/notes/0.5.2.md)。
+
 ### Version 0.5.0 / 0.5.0 版本
 
 Version 0.5.0 adds a Linux `.deb` installer for Ubuntu 24.04+ and Debian 13+ amd64, with application-menu and window icons, English/Chinese setup, and per-user plugin installation. AI Chat opens with **Ctrl+Shift+A**. Portable Linux packages remain available. See the [release notes](release/notes/0.5.0.md) and [Linux installation guide](release/linux/INSTALL.md).
