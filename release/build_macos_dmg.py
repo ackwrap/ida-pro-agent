@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 from build_macos import ROOT, run, validate_binary
@@ -43,6 +44,27 @@ def unpack_release(archive, destination):
             path.write_bytes(data)
             path.chmod(0o755 if name in ("ida-mcp", "plugins/ida-agent-plugin.dylib") else 0o644)
     return match.group(1)
+
+
+def create_image(stage, image, version):
+    """Retry only the transient disk-image busy error on this owned output file."""
+    command = ["hdiutil", "create", "-volname", f"IDA Agent {version}", "-srcfolder", str(stage),
+               "-fs", "HFS+", "-format", "UDZO", str(image)]
+    delays = (2, 4, 8)
+    for attempt in range(len(delays) + 1):
+        result = subprocess.run(command, text=True, capture_output=True)
+        if result.stdout:
+            print(result.stdout, end="", flush=True)
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr, flush=True)
+        if result.returncode == 0:
+            return
+        if "resource busy" not in (result.stdout + result.stderr).lower() or attempt == len(delays):
+            raise subprocess.CalledProcessError(result.returncode, command, result.stdout, result.stderr)
+        # image is an unpublished file inside this invocation's TemporaryDirectory.
+        image.unlink(missing_ok=True)
+        print(f"Disk image is busy; retrying in {delays[attempt]} seconds", flush=True)
+        time.sleep(delays[attempt])
 
 
 def main():
@@ -88,8 +110,7 @@ def main():
         shutil.copy2(release / "README-MACOS.md", stage / "README-MACOS.md")
         name = f"ida-agent-{version}-macos-universal2.dmg"
         image = work / name
-        run("hdiutil", "create", "-volname", f"IDA Agent {version}", "-srcfolder", stage,
-            "-fs", "HFS+", "-format", "UDZO", image)
+        create_image(stage, image, version)
         run("hdiutil", "verify", image)
         target = output / name
         os.replace(image, target)
