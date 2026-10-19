@@ -169,6 +169,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
+### Version 0.5.3 / 0.5.3 版本
+
+Version 0.5.3 fixes a Linux and macOS issue where AI chat history and analysis memory could release SQLite locks held by other connections, which could lose history or corrupt the database when several IDA instances share it. See the [release notes](release/notes/0.5.3.md).
+
+0.5.3 修复 Linux 与 macOS 上 AI 聊天历史和分析记忆可能释放其他连接持有的 SQLite 锁的问题；多个 IDA 实例共享数据库时，这可能导致历史丢失或数据库损坏。详见[发布说明](release/notes/0.5.3.md)。
+
 ### Version 0.5.2 / 0.5.2 版本
 
 Version 0.5.2 fixes AI Chat: Claude tool calls without arguments, long OpenAI Responses turns, cancellation after a tool-call reply, chat history overwriting and pruning, and truncation of large selections sent to the chat input. See the [release notes](release/notes/0.5.2.md).

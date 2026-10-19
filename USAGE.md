@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [Download releases](https://github.com/ackwrap/ida-pro-agent/releases)
 
-This guide covers version 0.5.2, including the Linux desktop installer. Use the plugin and Gateway from the same release package.
+This guide covers version 0.5.3, including the Linux desktop installer. Use the plugin and Gateway from the same release package.
 
 ### Automatic update checks
 

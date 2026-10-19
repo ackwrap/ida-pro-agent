@@ -157,11 +157,11 @@ git switch devel
 
 For an existing checkout already tracking the public repository, pull with `git pull --ff-only origin main`. Follow the scoped validation in [AGENTS.md](../AGENTS.md).
 
-For example, after updating `ida-mcp/VERSION` to **0.5.2**, validating and committing the change:
+For example, after updating `ida-mcp/VERSION` to **0.5.3**, validating and committing the change:
 
 ```sh
-git tag -a v0.5.2 -m "ida-agent 0.5.2"
-git push origin refs/tags/v0.5.2
+git tag -a v0.5.3 -m "ida-agent 0.5.3"
+git push origin refs/tags/v0.5.3
 ```
 
 Use a new version for each release. Push the intended public tag explicitly so private archival tags are not included. Older public tags created before source publication retain their original documentation snapshots; current source is on `devel`.
