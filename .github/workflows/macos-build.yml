@@ -3,9 +3,6 @@ name: macOS Universal 2 package
 on:
   workflow_dispatch:
   workflow_call:
-    secrets:
-      IDA_AGENT_SOURCE_READ_TOKEN:
-        required: true
 
 permissions:
   contents: read
@@ -21,7 +18,7 @@ defaults:
 jobs:
   package:
     name: Full macOS Universal 2 ZIP and DMG
-    if: github.repository == 'ackwrap/ida-pro-agent' && !github.event.repository.private && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.repository == 'ackwrap/ida-pro-agent' && !github.event.repository.private && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devel' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: macos-15
     timeout-minutes: 90
     steps:
@@ -36,31 +33,21 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.11'
-      - name: Download private Qt build inputs
-        env:
-          GH_TOKEN: ${{ secrets.IDA_AGENT_SOURCE_READ_TOKEN }}
-        run: |
-          test -n "$GH_TOKEN" || { echo "Configure IDA_AGENT_SOURCE_READ_TOKEN in the public repository." >&2; exit 1; }
-          mkdir -p build/macos-inputs
-          gh release download macos-build-inputs-ida94-qt682-v1 \
-            --repo ackwrap/ida-agent \
-            --pattern ida94-qt682-macos-universal2-v1.tar.gz \
-            --dir build/macos-inputs
-          cd build/macos-inputs
-          printf '%s  %s\n' \
-            e3df8a4cdc15a860b3f5f8f24a27c228cd60b4c85fcf0b7e6fcb1cb0524da9aa \
-            ida94-qt682-macos-universal2-v1.tar.gz | shasum -a 256 -c -
-          tar -xzf ida94-qt682-macos-universal2-v1.tar.gz
       - name: Check build prerequisites
         run: |
           for tool in cmake ninja; do command -v "$tool" || brew install "$tool"; done
-          test -d build/macos-inputs/ida-qt.app/Contents/Frameworks
-          test -d build/macos-inputs/qt-6.8.2-macos/include
           for tool in cmake ninja go python3 openssl; do command -v "$tool"; done
           xcrun --find clang
           xcrun --find swiftc
           go version
           sw_vers -productVersion
+      - name: Cache public Qt link inputs
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: build/qt-public
+          key: qt-public-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('release/build_qt.py', 'ida-agent-plugin/cmake/qt_link_inputs.py', 'ida-agent-plugin/cmake/validate_ida_qt_*.py') }}
+      - name: Build or validate public Qt link inputs
+        run: python3 release/build_qt.py --prefix build/qt-public
       - name: Prepare Python test dependencies
         run: |
           python3 -m venv build/macos-venv
@@ -70,8 +57,7 @@ jobs:
           IDASDK: ${{ github.workspace }}/ida-sdk/src
         run: |
           build/macos-venv/bin/python release/build_macos.py \
-            --qt-runtime build/macos-inputs/ida-qt.app \
-            --qt-sdk build/macos-inputs/qt-6.8.2-macos \
+            --qt-prefix build/qt-public \
             --python build/macos-venv/bin/python
       - name: Verify release Gateway compatibility
         run: |

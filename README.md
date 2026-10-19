@@ -30,7 +30,7 @@ Real Linux UI captured at **100% scaling (1920 × 1080)**, showing pseudocode, A
 
 ida-agent combines an IDA plugin, an MCP Gateway for external AI clients, and a built-in AI Console. It supports function and cross-reference inspection, pseudocode, bounded argument tracing across direct callers, guard evidence extraction, and supported IDB edits through ChangeSets.
 
-This repository contains the ida-agent source, usage guides and binary releases. Project-owned code is licensed under [MIT](LICENSE); dependencies retain their own terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pushes run the public build checks; matching `v*` tags trigger release packaging and publication. The private repository is retained for archival storage and restricted Qt build inputs. Source synchronization and its credential are no longer required. Maintainer setup is documented in [release/README.md](release/README.md#configure-public-publishing). See the [source build guide](README.source.md#build-from-source). Older release tags created before source publication keep their original documentation snapshots; clone `main` for current source or use the named release assets to install ida-agent.
+This repository contains the ida-agent source, usage guides and binary releases. Project-owned code is licensed under [MIT](LICENSE); dependencies retain their own terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pushes run the public build checks; matching `v*` tags trigger release packaging and publication. All platform builds use public upstream dependencies; Linux/macOS Qt link inputs are built from checksum-pinned official Qt sources. No private repository or additional Actions secret is required. Maintainer setup is documented in [release/README.md](release/README.md#configure-public-publishing). See the [source build guide](README.source.md#build-from-source). Older release tags created before source publication keep their original documentation snapshots; clone `main` for current source or use the named release assets to install ida-agent.
 
 ### Install
 
@@ -108,7 +108,7 @@ On Windows, the manager also discovers Codex in common npm/Scoop installations a
 
 ida-agent 包含 IDA 插件、供外部 AI 客户端使用的 MCP Gateway，以及内置 AI Console。支持函数与交叉引用检查、伪代码、沿直接调用者进行有限层级的参数回溯、校验证据提取，以及通过 ChangeSet 执行支持的 IDB 修改。
 
-本仓库包含 ida-agent 源码、使用说明和二进制版本。项目自有源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。提交推送会触发公开构建检查，匹配版本号的 `v*` 标签会触发打包发布。私有仓库保留为历史存储和受限 Qt 构建输入的存放位置，不再需要定时源码同步或同步凭据。维护者配置见 [发布配置说明](release/README.md#中文配置说明)。编译步骤见[中文源码说明](README.source.zh-CN.md#源码编译)。公开源码之前创建的发布标签保留原文档快照；获取当前源码请克隆 `main`，安装软件请使用带有 `ida-agent` 名称的发布附件。
+本仓库包含 ida-agent 源码、使用说明和二进制版本。项目自有源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。提交推送会触发公开构建检查，匹配版本号的 `v*` 标签会触发打包发布。三平台构建仅使用公开上游依赖；Linux/macOS 从固定校验值的 Qt 官方源码构建链接输入，不再需要私有仓库或额外 Actions Secret。维护者配置见 [发布配置说明](release/README.md#中文配置说明)。编译步骤见[中文源码说明](README.source.zh-CN.md#源码编译)。公开源码之前创建的发布标签保留原文档快照；获取当前源码请克隆 `main`，安装软件请使用带有 `ida-agent` 名称的发布附件。
 
 ### 安装
 
@@ -244,14 +244,14 @@ go -C ida-mcp build ./...
 ```
 
 The public SDK stays pinned as a submodule. Full Windows plugin builds use the
-tracked Qt headers and public SDK imports; Linux basic MCP/backend tests require
-no private Qt bundle. Full Linux/macOS AI panel builds require the Qt inputs from
-your IDA 9.4 installation. Detailed toolchains, build commands and testing are in
+tracked Qt headers and public SDK imports. Full Linux/macOS AI builds prepare
+their Qt link inputs from official sources with `release/build_qt.py`; no IDA
+installation or private credential is needed to compile. Build details are in
 [English source documentation](README.source.md#build-from-source),
 [中文源码文档](README.source.zh-CN.md#源码编译),
 [Linux instructions](ida-agent-plugin/README-LINUX.md), and
 [macOS instructions](ida-agent-plugin/README-MACOS.md).
 
 公开 SDK 以固定版本子模块提供。Windows 完整插件使用仓库内 Qt 头文件和公开 SDK
-导入库；Linux 基础 MCP/AI 后端测试不需要私有 Qt 包。Linux/macOS 完整 AI 面板编译
-需要从自己的 IDA 9.4 安装准备 Qt 输入，详细步骤见上述源码文档。
+导入库；Linux/macOS 用 `release/build_qt.py` 从官方源码准备 Qt 链接输入。编译无需
+IDA 安装或私有仓库凭据，详细步骤见上述源码文档。

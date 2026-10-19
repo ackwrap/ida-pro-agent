@@ -2,6 +2,15 @@ set(IDA_AGENT_QT_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../../qt-sdk/qt-6.8.2-macos"
     CACHE PATH "Qt 6.8.2 macOS headers and configuration")
 set(IDA_AGENT_IDA_QT_RUNTIME_DIR "${IDA_INSTALL_DIR}" CACHE PATH
     "IDA 9.4 macOS application bundle supplying QT-namespaced Qt 6.8.2")
+set(IDA_AGENT_QT_BUILD_PREFIX "" CACHE PATH "Public source-built QT-namespaced Qt 6.8.2 prefix")
+if(IDA_AGENT_QT_BUILD_PREFIX)
+    set(IDA_AGENT_QT_SDK_DIR "${IDA_AGENT_QT_BUILD_PREFIX}")
+    set(_qt_framework_dir "${IDA_AGENT_QT_BUILD_PREFIX}/lib")
+    set(_qt_validation_args --prefix "${IDA_AGENT_QT_BUILD_PREFIX}")
+else()
+    set(_qt_framework_dir "${IDA_AGENT_IDA_QT_RUNTIME_DIR}/Contents/Frameworks")
+    set(_qt_validation_args "${IDA_AGENT_IDA_QT_RUNTIME_DIR}")
+endif()
 option(IDA_AGENT_ENABLE_QT_AI_CONSOLE "Build the docked AI console" ON)
 if(NOT IDA_AGENT_ENABLE_QT_AI_CONSOLE)
     message(FATAL_ERROR "macOS AI requires the Qt console; use IDA_AGENT_ENABLE_AI=OFF for a backend-only build")
@@ -23,7 +32,7 @@ if(NOT _qt_architectures)
 endif()
 execute_process(COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_LIST_DIR}/validate_ida_qt_macos.py"
-    "${IDA_AGENT_IDA_QT_RUNTIME_DIR}" ${_qt_architectures}
+    ${_qt_validation_args} ${_qt_architectures}
     RESULT_VARIABLE _qt_result OUTPUT_VARIABLE _qt_output ERROR_VARIABLE _qt_error)
 if(NOT _qt_result EQUAL 0)
     message(FATAL_ERROR "IDA macOS Qt validation failed: ${_qt_output}${_qt_error}")
@@ -32,7 +41,7 @@ set(IDA_AGENT_QT_IMPORT_LIBRARIES "")
 foreach(_module Core Gui Widgets)
     add_library(ida_qt_${_module} SHARED IMPORTED)
     set_target_properties(ida_qt_${_module} PROPERTIES FRAMEWORK TRUE
-        IMPORTED_LOCATION "${IDA_AGENT_IDA_QT_RUNTIME_DIR}/Contents/Frameworks/Qt${_module}.framework/Qt${_module}")
+        IMPORTED_LOCATION "${_qt_framework_dir}/Qt${_module}.framework/Qt${_module}")
     list(APPEND IDA_AGENT_QT_IMPORT_LIBRARIES ida_qt_${_module})
 endforeach()
 message(STATUS "${_qt_output}")

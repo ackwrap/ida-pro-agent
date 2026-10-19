@@ -26,15 +26,11 @@ jobs:
     if: github.repository == 'ackwrap/ida-pro-agent' && !github.event.repository.private && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     name: Linux x64 package
     uses: ./.github/workflows/linux-package.yml
-    secrets:
-      IDA_AGENT_SOURCE_READ_TOKEN: ${{ secrets.IDA_AGENT_SOURCE_READ_TOKEN }}
 
   macos:
     if: github.repository == 'ackwrap/ida-pro-agent' && !github.event.repository.private && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     name: macOS Universal 2 package
     uses: ./.github/workflows/macos-build.yml
-    secrets:
-      IDA_AGENT_SOURCE_READ_TOKEN: ${{ secrets.IDA_AGENT_SOURCE_READ_TOKEN }}
 
   package:
     if: github.repository == 'ackwrap/ida-pro-agent' && !github.event.repository.private && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))

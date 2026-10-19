@@ -42,12 +42,20 @@ def validate_plugin(plugin):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--qt-runtime", type=Path, required=True)
-    parser.add_argument("--qt-sdk", type=Path, default=ROOT / "qt-sdk/qt-6.8.2-linux")
+    qt = parser.add_mutually_exclusive_group(required=True)
+    qt.add_argument("--qt-prefix", type=Path, help="Public Qt prefix produced by release/build_qt.py")
+    qt.add_argument("--qt-runtime", type=Path, help="Optional local IDA 9.4 Qt runtime for linking")
+    parser.add_argument("--qt-sdk", type=Path, help="Headers for --qt-runtime; not used with --qt-prefix")
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/release/linux")
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument("--jobs", type=positive_jobs, help="default: all available CPUs")
     args = parser.parse_args()
+    if args.qt_prefix and args.qt_sdk:
+        parser.error("--qt-sdk is only supported with --qt-runtime")
+    qt_options = ([f"-DIDA_AGENT_QT_BUILD_PREFIX={args.qt_prefix.resolve()}"] if args.qt_prefix else [
+        "-DIDA_AGENT_QT_BUILD_PREFIX=",
+        f"-DIDA_AGENT_IDA_QT_RUNTIME_DIR={args.qt_runtime.resolve()}",
+        f"-DIDA_AGENT_QT_SDK_DIR={(args.qt_sdk or ROOT / 'qt-sdk/qt-6.8.2-linux').resolve()}"])
     if sys.platform != "linux" or platform.machine() != "x86_64":
         parser.error("Run on Linux x86_64")
     try:
@@ -65,8 +73,7 @@ def main():
         "-DIDA_AGENT_ENABLE_AI=ON", "-DIDA_AGENT_ENABLE_QT_AI_CONSOLE=ON",
         "-DIDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN=OFF", "-DIDA_AGENT_ENABLE_INTEGRATION_TESTS=OFF",
         "-DIDA_AGENT_ENABLE_GUI_TESTS=OFF", f"-DPython3_EXECUTABLE={args.python.resolve()}",
-        f"-DIDA_AGENT_IDA_QT_RUNTIME_DIR={args.qt_runtime.resolve()}",
-        f"-DIDA_AGENT_QT_SDK_DIR={args.qt_sdk.resolve()}")
+        *qt_options)
     run("cmake", "--build", build, "--parallel", jobs)
     run("ctest", "--test-dir", build, "--output-on-failure", "-LE", "integration")
     gateway = build / "ida-mcp"

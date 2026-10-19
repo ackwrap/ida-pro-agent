@@ -29,7 +29,7 @@ about the minimum requirements of IDA or every Linux distribution.
 | SDK | Pinned `ida-sdk` submodule initialized | SDK commit recorded by the repository; do not substitute an unrelated SDK |
 | Optional AI backend | System OpenSSL 3 development files and CA certificates; pinned libcurl and SQLite sources are fetched and built statically | Embedded libcurl 8.22.0 and SQLite 3.53.4; system OpenSSL 3.0.13 |
 | AI networking tests | OpenSSL CLI, Python `websockets` with its legacy server API, and `readelf` | Ubuntu `openssl`, `python3-websockets` 10.4, `binutils` |
-| AI panel development | Official Linux Qt 6.8.2 headers/mkspecs, `libgl-dev`, and IDA 9.4's `QT`-namespaced Qt runtime | Qt 6.8.2 from the official Qt archive; IDA's `libQt6{Core,Gui,Widgets}.so.6` |
+| AI panel development | Public source-built Qt 6.8.2 headers/link libraries in namespace `QT`, plus `libgl-dev` | Qt 6.8.2 from the official Qt archive; IDA's `libQt6{Core,Gui,Widgets}.so.6` |
 | Filesystem | Native Linux filesystem supporting Unix sockets, permissions, file locking and atomic rename | Build, temporary IDBs, configuration and state under Linux `/home` or `/tmp` |
 
 Install basic build dependencies in Ubuntu:
@@ -109,33 +109,34 @@ valid licenses. Configure IDAPython with the installation's `idapyswitch` if nee
 
 ## Build the AI panel
 
-Install the AI backend dependencies above, plus `libgl-dev` for the Qt headers
-and `7zip` to extract the official development archive. Download **only the matching
-6.8.2 Linux development files**; Ubuntu's stock Qt version is not a substitute.
-Run from the repository root:
+Install the AI backend dependencies above, plus `libgl-dev` for OpenGL headers.
+Build Qt 6.8.2 from the checksum-pinned official source archive with the `QT`
+namespace. No IDA installation, private repository or GitHub token is needed:
 
 ```sh
-sudo apt-get install -y libgl-dev 7zip curl
-mkdir -p build qt-sdk/qt-6.8.2-linux
-curl --fail --location --proto '=https' --proto-redir '=https' \
-  -o build/qtbase-6.8.2-linux.7z \
-  'https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_682/qt6_682/qt.qt6.682.linux_gcc_64/6.8.2-0-202501260838qtbase-Linux-RHEL_8_10-GCC-Linux-RHEL_8_10-X86_64.7z'
-printf '%s\n' '3283e68b777f42bc1f9eb05dfd7d5a6543714472a25c79ae559cd9f12d50b8d7  build/qtbase-6.8.2-linux.7z' | sha256sum -c -
-7zz x build/qtbase-6.8.2-linux.7z -oqt-sdk/qt-6.8.2-linux 'include/*' 'mkspecs/*'
+sudo apt-get install -y libgl-dev
+python3 release/build_qt.py --prefix build/qt-public
 cmake -S ida-agent-plugin -B build/linux-panel -G Ninja \
   -DCMAKE_BUILD_TYPE=Release -DIDA_AGENT_ENABLE_AI=ON \
-  -DIDA_AGENT_IDA_QT_RUNTIME_DIR=/absolute/path/to/ida-pro-9.4 \
+  -DIDA_AGENT_QT_BUILD_PREFIX="$PWD/build/qt-public" \
   -DBUILD_TESTING=ON -DIDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN=OFF
 cmake --build build/linux-panel --parallel "$(nproc)"
 ctest --test-dir build/linux-panel --output-on-failure
 ```
 
-`IDA_AGENT_QT_SDK_DIR` overrides the header directory. These development files stay
-local and ignored by Git. CMake checks the exact Qt version and `QT` namespace and
-links the **installed IDA runtime**; never copy stock Qt libraries into IDA or bundle
-IDA's Qt libraries with the plugin. The AI backend is enabled automatically for this
-build, retaining static libcurl/SQLite and system OpenSSL. This development build is
-linked to the selected IDA installation; reconfigure if that installation moves.
+`release/build_qt.py` verifies the source SHA-256 before compilation, builds shared
+Release libraries and installs matching headers/mkspecs. Its default concurrency
+is capped at eight; use `--jobs N` or relocate intermediates with `--work-dir`.
+For a complete tested `.deb`/tar.gz release, run
+`python3 release/build_linux.py --qt-prefix build/qt-public` after installing the
+packaging dependencies listed in [release automation](../release/README.md).
+
+`IDA_AGENT_QT_BUILD_PREFIX` selects these public build inputs. CMake checks their
+recipe, exact Qt version and `QT` namespace. The plugin still uses the installed
+IDA's bundled Qt at runtime; never install the build-input Qt libraries into IDA
+or include them in a product package. Optional local linking can instead select
+`IDA_AGENT_IDA_QT_RUNTIME_DIR` and matching `IDA_AGENT_QT_SDK_DIR`, with the public
+prefix unset. Static libcurl/SQLite and system OpenSSL behavior is unchanged.
 
 Install `build/linux-panel/ida-runtime/plugins/ida-agent-plugin.so` in the same user
 plugin directory shown above after closing IDA, and compare hashes. Open a database,
@@ -155,7 +156,8 @@ an approved operation runs. Failures after a partial effect report uncertain sta
 For the real GUI regression, use a working WSLg/X11/Wayland session and licensed IDA:
 
 ```sh
-cmake -S ida-agent-plugin -B build/linux-panel -DIDA_AGENT_ENABLE_GUI_TESTS=ON
+cmake -S ida-agent-plugin -B build/linux-panel -DIDA_AGENT_ENABLE_GUI_TESTS=ON \
+  -DIDA_INSTALL_DIR="$HOME/ida-pro-9.4"
 ctest --test-dir build/linux-panel -R '^ida_linux_panel_integration$' --output-on-failure
 ```
 

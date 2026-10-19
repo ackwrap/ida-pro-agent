@@ -22,8 +22,11 @@ Most headers offer LGPL-3.0-only or the GPL alternatives listed in each file;
 some files use GPL with the Qt exception, Unicode, AFL or Boost licenses.
 Consult each file's expression rather than applying the project's MIT license.
 The original file notices also cover bundled third-party code such as Catch.
-No Qt runtime libraries, private IDA Qt link bundles, IDA executables or licenses
-are published by source synchronization. Plugin binaries use IDA's bundled Qt.
+Product packages do not bundle Qt runtime libraries, IDA executables or licenses.
+Plugin binaries use IDA's bundled Qt. Linux/macOS build inputs are compiled locally
+from checksum-pinned official Qt Base 6.8.2 sources in namespace `QT`; their
+original notices and license texts remain in the downloaded source/install trees.
+These optional public build inputs are not installed with the product.
 
 ## IDAPython skill
 

@@ -238,9 +238,9 @@ Use `--no-installer` to build only the portable directory and ZIP without Inno S
 
 ## GitHub Actions
 
-Windows/Linux builds, client regressions and complete Windows/Linux/macOS releases run in the public repository's [Actions](https://github.com/ackwrap/ida-pro-agent/actions). The private `ida-agent` repository is retained for archival storage and restricted Qt build inputs; it has no Actions workflows. Local build scripts and unit tests remain available. Hosted checks validate Go/C++, Qt-enabled Windows linking and package compatibility; licensed IDA UI/integration tests remain local. See [Linux environment requirements](ida-agent-plugin/README-LINUX.md#linux-environment-requirements).
+Windows/Linux builds, client regression checks and full Windows/Linux/macOS releases run in public [Actions](https://github.com/ackwrap/ida-pro-agent/actions). Windows uses public SDK imports; Linux/macOS build `QT`-namespaced Qt 6.8.2 link inputs from checksum-pinned official sources with `release/build_qt.py`. No private repository or extra secret is required. Local scripts/tests remain available; licensed IDA UI/integration checks run separately. See the [Linux requirements](ida-agent-plugin/README-LINUX.md#linux-environment-requirements).
 
-Update `ida-mcp/VERSION` and push a matching public `v*` tag to build and publish a release using the public repository's own `GITHUB_TOKEN`. Scheduled private-to-public synchronization is retired. The existing `IDA_AGENT_SOURCE_READ_TOKEN` is needed only to download Linux/macOS Qt build inputs, with **Contents: read on private ida-agent only**. Those private inputs are excluded from release packages. See the [Actions and publishing setup](release/README.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+Update `ida-mcp/VERSION`, validate on `devel`, promote by fast-forward to `main`, then push a matching new public `v*` tag to build and publish with this repository's own `GITHUB_TOKEN`. See [Actions and publishing setup](release/README.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## Repository and documentation
 

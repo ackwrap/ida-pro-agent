@@ -100,28 +100,22 @@ Network tests use the `openssl` **command-line tool only to generate temporary
 test certificates**. It is not linked into the product. Test fixtures run on
 loopback and never contact a real provider.
 
-For AI Chat, obtain the installed/extracted **application contents** of both
-Intel and arm64 IDA 9.4. An installer wrapper is not the application contents.
-The ARM application need not be runnable on the build host. Only its
-`Contents/Info.plist` and QtCore/QtGui/QtWidgets framework binaries are needed.
+For AI Chat, build public Qt 6.8.2 link inputs from the pinned official source
+archive. The builder uses namespace `QT`, shared Release frameworks, both
+`x86_64` and `arm64`, and a macOS 15 deployment target. It requires no IDA
+installation, private repository or GitHub token:
 
 ```sh
-python3 release/prepare_macos_qt.py \
-  --x86-ida '/Applications/IDA Professional 9.4.app' \
-  --arm-ida '/path/to/extracted-arm64/IDA Professional 9.4.app'
+python3 release/build_qt.py --prefix build/qt-public
+build/macos-venv/bin/python release/build_macos.py \
+  --qt-prefix build/qt-public --python build/macos-venv/bin/python
 ```
 
-This fetches checksum-pinned official Qt 6.8.2 headers into the ignored
-`qt-sdk/qt-6.8.2-macos` directory and combines IDA's framework slices in
-`build/macos-qt/ida-qt.app`. This bundle is a **link input only**, never a runtime
-package. No IDA executable or license is copied. CMake validates both Qt slices,
-version 6.8.2 and namespace `QT` without executing target code.
-
-```sh
-python3 release/build_macos.py \
-  --qt-runtime build/macos-qt/ida-qt.app \
-  --python build/macos-venv/bin/python
-```
+The Qt prefix contains public source-built headers and frameworks for linking
+only. Its recipe, version, namespace and architectures are checked before reuse.
+Qt frameworks are never included in the ZIP/DMG; IDA supplies them at runtime.
+An explicitly selected local IDA 9.4 app and matching headers can still be used
+with `--qt-runtime` and `--qt-sdk` instead of `--qt-prefix`.
 
 The script runs Go vet/tests/build and CTest, builds both architectures, merges
 the Go slices with `lipo`, signs both binaries, checks dynamic dependencies and
@@ -164,7 +158,7 @@ storage and Agent tests without Qt.
 Configure an AI build with `IDA_AGENT_ENABLE_INTEGRATION_TESTS=ON`,
 `IDA_AGENT_ENABLE_GUI_TESTS=ON`, and
 `IDA_INSTALL_DIR='/Applications/IDA Professional 9.4.app/Contents/MacOS'`.
-The separate `IDA_AGENT_IDA_QT_RUNTIME_DIR` still points to the link bundle.
+Keep `IDA_AGENT_QT_BUILD_PREFIX` pointing to the public link prefix. A local IDA installation is needed only for these opt-in runtime tests.
 GUI tests require a logged-in desktop session; integration tests require an
 already licensed IDA. If Python discovery needs an explicit framework, set
 `IDA_AGENT_TEST_PYTHON_LIBRARY` to its absolute `Python` library path.

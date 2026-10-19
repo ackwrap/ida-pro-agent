@@ -10,8 +10,8 @@
 ## Source Control
 
 - The canonical development repository is the public `ackwrap/ida-pro-agent`. `devel` is the development branch and `main` is the stable branch that only receives promoted changes. Do not commit or push to `main` directly.
-- Private `ackwrap/ida-agent` is archival storage and holds restricted Linux/macOS Qt build inputs. It does not run Actions or synchronize source into public `main`. Preserve the public Git history when updating source; do not merge private history or restore scheduled snapshot imports.
-- Release tags belong to the public history and must match `ida-mcp/VERSION`. Push only the intended branch or release tag; private archival tags must not be published.
+- All source, hosted builds, tests and releases are self-contained in the public repository and its public upstream dependencies. Do not add private repository downloads, cross-repository credentials or source snapshot imports. Linux/macOS Qt link inputs are built from checksum-pinned official Qt sources with `release/build_qt.py`. Preserve the public Git history.
+- Release tags belong to the public history and must match `ida-mcp/VERSION`. Push only the intended public branch or release tag; do not publish unrelated local tags.
 
 ## Branch Workflow
 
@@ -25,7 +25,7 @@
 
 - Maintain architecture designs, development and implementation plans, and internal capability plans locally; do not commit them to Git. Place new documents of these types in `docs/local/`. The root `docs/` directory is ignored by default; `.gitignore` currently allows only `docs/UPGRADING.md`. Explicitly allow any new required public documents and their assets before linking to or committing them.
 - Continue tracking READMEs, upgrade notes, interface contracts in `protocol/`, testing instructions, and reference documentation in `skills/`.
-- Maintain public usage documentation directly in root `README.md`, `USAGE.md`, and `USAGE.zh-CN.md`; build guides are `README.source.md` and `README.source.zh-CN.md`. The retained `release/public/` templates and snapshot utilities are legacy migration assets, not the publication path.
+- Maintain public usage documentation directly in root `README.md`, `USAGE.md`, and `USAGE.zh-CN.md`; build guides are `README.source.md` and `README.source.zh-CN.md`. Retired snapshot/synchronization tools and duplicate templates have been removed; root documentation is the publication path.
 
 ## C/C++ Source Organization
 
@@ -75,7 +75,7 @@ ctest --test-dir build/ida-agent-plugin --output-on-failure
 
 ## IDA Qt UI
 
-- Linux build/test instructions are in `ida-agent-plugin/README-LINUX.md`. Linux uses registry v2 and private Unix sockets in `/tmp/ida-agent-<uid>/instances`; Windows retains registry v1. Both implementations must continue accepting the shared protocol fixtures. Linux real-IDAT integration is opt-in and uses an isolated `IDAUSR` and test IDB. The Linux panel links IDA 9.4's Qt 6.8.2 in namespace `QT` and uses official Linux headers under the ignored `qt-sdk/qt-6.8.2-linux` (or `IDA_AGENT_QT_SDK_DIR`); never bundle Qt `.so` files. Real panel tests use `IDA_AGENT_ENABLE_GUI_TESTS=ON` and a working GUI session. Linux libcurl/SQLite stay static and private, while OpenSSL 3 stays a system dependency.
+- Linux build/test instructions are in `ida-agent-plugin/README-LINUX.md`. Linux uses registry v2 and private Unix sockets in `/tmp/ida-agent-<uid>/instances`; Windows retains registry v1. Both implementations must continue accepting the shared protocol fixtures. Linux real-IDAT integration is opt-in and uses an isolated `IDAUSR` and test IDB. The Linux panel targets IDA 9.4's Qt 6.8.2 in namespace `QT`. Linux/macOS builds use public source-built Qt headers and shared link libraries selected by `IDA_AGENT_QT_BUILD_PREFIX`; prepare them with `python3 release/build_qt.py --prefix build/qt-public`. An explicitly selected local IDA runtime plus `IDA_AGENT_QT_SDK_DIR` remains available for development. Never bundle Qt runtime libraries in product packages. Real panel tests use `IDA_AGENT_ENABLE_GUI_TESTS=ON` and a working GUI session. Linux libcurl/SQLite stay static and private, while OpenSSL 3 stays a system dependency.
 
 - The AI UI supports only Qt 6.8.2 bundled with IDA Professional 9.4 and uses IDA's `QT` namespace. `qt-sdk/qt-6.8.2-win` provides only headers and configuration. Default builds link the official Qt import libraries in the pinned `ida-sdk/src/lib/x64_win_qt` submodule; no IDA installation is required to compile or package. An explicit `IDA_AGENT_IDA_QT_RUNTIME_DIR` overrides those imports by generating them from the installed IDA DLLs and validating IDA 9.4, Qt 6.8.2, and the `QT` namespace. Builds and releases must not copy or bundle `Qt6*.dll`.
 - IDA's bundled Qt uses the Release DLL CRT. When the Qt AI Console is enabled, Debug builds of the plugin and its static dependencies must also use `/MD` (`MultiThreadedDLL`), never `/MDd`. Otherwise, objects passed across module boundaries and owned and freed by Qt containers, such as `QTreeWidgetItem` and `QTableWidgetItem`, can trigger `_CrtIsValidHeapPointer`.
