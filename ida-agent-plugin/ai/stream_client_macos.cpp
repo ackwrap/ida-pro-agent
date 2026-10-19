@@ -35,7 +35,7 @@ bool Elapsed(Clock::time_point since, std::uint32_t milliseconds)
 void StreamClient::Impl::RunSse(State &state, const std::optional<Clock::time_point> &deadline)
 {
   MacUrlSession session(NativeRequest(state.request), false);
-  SseParser parser({64 * 1024, state.request.max_event_bytes,
+  SseParser parser({std::min(SseHardMaxLineBytes, state.request.max_event_bytes), state.request.max_event_bytes,
       std::min(SseHardMaxScratchBytes, state.request.max_event_bytes + SseHardMaxLineBytes)});
   BeginAiNetworkExchangeLog(StreamKind::Sse, state.request, state.id);
   ExchangeLog log{state.id};

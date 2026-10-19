@@ -190,6 +190,9 @@ int main(int argc, char **argv)
     request.overall_timeout_ms = 150;
     events = Drain(client, client.OpenSse(request), StreamEventKind::Error);
     Require(events.back().message.find("overall") != std::string::npos, "SSE overall deadline not enforced");
+    events = Drain(client, client.OpenSse(Request(http + "/long-line")), StreamEventKind::Closed);
+    Require(events.size() == 3 && events[1].sse.data.size() == 200 * 1024,
+            "SSE line within the event limit was rejected");
     request = Request(http + "/large");
     request.max_event_bytes = 64;
     Drain(client, client.OpenSse(request), StreamEventKind::Error);

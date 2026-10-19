@@ -81,7 +81,7 @@ private:
 
   void MaybeAutoOpenChat();
   void InitializeHistory();
-  bool OpenHistoryStore();
+  bool OpenHistoryStore(bool adopt_active_session = false);
   bool PersistTranscript();
   void PollHistoryWrite();
   void StartNewConversation();

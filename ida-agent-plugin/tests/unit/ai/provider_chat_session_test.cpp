@@ -742,6 +742,8 @@ void TestClaudeEmptyInputToolCall()
             "\"content_block\":{\"type\":\"tool_use\",\"id\":\"tool-1\","
             "\"name\":\"ida_symbol_exports\",\"input\":{}}}\n\n");
     SendAll(socket,
+            "data: {\"type\":\"content_block_delta\",\"index\":0,"
+            "\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\"}}\n\n"
             "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n"
             "data: {\"type\":\"message_stop\"}\n\n");
     char byte = 0;

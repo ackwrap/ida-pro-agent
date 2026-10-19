@@ -245,6 +245,15 @@ void AiMenuController::PollChatRequest()
       continue;
     }
 
+    // The provider can finish a tool-call turn before the transport closes, so
+    // a cancel, conversation action or preview error may already be pending.
+    if ( event.kind == ProviderChatSessionEventKind::ToolCalls
+        && (request_cancelling_
+            || pending_conversation_action_ != PendingConversationAction::None
+            || !local_request_error_.empty()) )
+    {
+      event.kind = ProviderChatSessionEventKind::Cancelled;
+    }
     if ( event.kind == ProviderChatSessionEventKind::ToolCalls )
     {
       chat_session_.reset();

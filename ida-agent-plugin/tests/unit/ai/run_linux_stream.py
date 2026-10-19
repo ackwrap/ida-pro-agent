@@ -77,6 +77,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     time.sleep(min(0.05, max(0, deadline - time.monotonic())))
             elif self.path == "/large":
                 self.write_chunk(b"data: " + b"x" * 4096 + b"\n\n")
+            elif self.path == "/long-line":
+                self.write_chunk(b"data: " + b"x" * (200 * 1024) + b"\n\n")
             elif self.path == "/flood":
                 self.write_chunk(b"data: x\n\n" * 1500)
             elif self.path == "/byte-flood":

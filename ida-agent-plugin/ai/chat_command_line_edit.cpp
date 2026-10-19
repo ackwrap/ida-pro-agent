@@ -82,6 +82,9 @@ QT::QLineEdit *CreateChatCommandLineEdit(
   auto *input = new ChatCommandLineEdit(parent);
   input->setPlaceholderText(QT::QString::fromUtf8("Ask IDA Agent AI..."));
   input->setClearButtonEnabled(true);
+  // QLineEdit silently truncates at 32767 characters by default; selections
+  // sent from disassembly or pseudocode can be up to 512 KiB.
+  input->setMaxLength(512 * 1024);
 
   auto *command_model = new QT::QStandardItemModel(input);
   for ( const CliCommandDefinition &definition : AvailableCliCommands() )

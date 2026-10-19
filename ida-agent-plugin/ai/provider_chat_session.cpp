@@ -557,7 +557,9 @@ struct ProviderChatSession::Impl
         return UpdateStatus::ProtocolError;
       found->empty_object_start = true;
     }
-    if ( update.arguments_delta.has_value()
+    // Claude sends an empty input_json_delta before stopping a tool_use
+    // block with no arguments; only real argument text replaces "{}".
+    if ( ( update.arguments_delta.has_value() && !update.arguments_delta->empty() )
         || update.arguments_snapshot.has_value() )
     {
       found->empty_object_start = false;

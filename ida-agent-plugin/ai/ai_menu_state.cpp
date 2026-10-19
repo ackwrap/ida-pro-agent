@@ -68,10 +68,14 @@ std::optional<std::string> ResolveSessionSelector(
 
 } // namespace
 
-bool AiMenuController::OpenHistoryStore()
+bool AiMenuController::OpenHistoryStore(bool adopt_active_session)
 {
   history_writer_.Drain();
   history_store_opened_ = history_store_.Open(CurrentDatabaseKey());
+  // The panel only holds the stored active session when it was restored from
+  // it; otherwise the next save must create a session instead of replacing it.
+  if ( history_store_opened_ && !adopt_active_session )
+    history_store_.ResetActiveSession();
   return history_store_opened_;
 }
 
@@ -159,7 +163,7 @@ void AiMenuController::InitializeHistory()
     return;
   if ( CurrentDatabaseKey().empty() )
     return;
-  if ( !OpenHistoryStore() )
+  if ( !OpenHistoryStore(settings.load_chat_history) )
   {
     history_write_blocked_ = settings.save_chat_history;
     chat_panel_.AppendSystem(

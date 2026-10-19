@@ -14,7 +14,7 @@ namespace
 struct SseTransfer
 {
   explicit SseTransfer(const StreamRequest &request)
-      : parser({64 * 1024, request.max_event_bytes,
+      : parser({std::min(SseHardMaxLineBytes, request.max_event_bytes), request.max_event_bytes,
           std::min(SseHardMaxScratchBytes, request.max_event_bytes + SseHardMaxLineBytes)}) {}
   SseParser parser;
   std::function<bool(StreamEvent)> emit;

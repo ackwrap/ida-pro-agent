@@ -282,7 +282,7 @@ bool RetainNewestSessions(
       database,
       "DELETE FROM chat_sessions WHERE database_key=?1 AND session_id NOT IN ("
       "SELECT session_id FROM chat_sessions WHERE database_key=?1 "
-      "ORDER BY created_at DESC,session_id DESC LIMIT ?2)");
+      "ORDER BY updated_at DESC,created_at DESC,session_id DESC LIMIT ?2)");
   if ( !prune
       || !BindText(prune.Get(), 1, database_key)
       || sqlite3_bind_int64(

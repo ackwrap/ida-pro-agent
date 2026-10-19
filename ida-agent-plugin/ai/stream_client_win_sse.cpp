@@ -531,7 +531,7 @@ void StreamClient::Impl::RunSse(
       SseHardMaxScratchBytes,
       state.request.max_event_bytes + SseHardMaxLineBytes);
   SseParser parser(SseParserLimits{
-      (std::min)(SseHardMaxLineBytes, std::size_t{64 * 1024}),
+      (std::min)(SseHardMaxLineBytes, state.request.max_event_bytes),
       state.request.max_event_bytes,
       scratch_limit,
   });

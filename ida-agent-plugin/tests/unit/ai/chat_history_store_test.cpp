@@ -239,6 +239,14 @@ int main()
           "new session exceeded the per-database limit");
   Require(limited.SelectSession(SessionId(1)).status == ChatHistoryLoadStatus::Missing,
           "new session did not delete the next oldest session");
+  Require(limited.SelectSession(SessionId(2)).status == ChatHistoryLoadStatus::Loaded
+              && limited.Save({{ChatSpeaker::User, "resumed"}}),
+          "oldest created session was not resumed");
+  Require(limited.StartNew(), "limited store did not create another session");
+  Require(limited.SelectSession(SessionId(2)).status == ChatHistoryLoadStatus::Loaded,
+          "pruning deleted the most recently updated session");
+  Require(limited.SelectSession(SessionId(3)).status == ChatHistoryLoadStatus::Missing,
+          "pruning did not delete the least recently updated session");
   Require(second.ListSessions().sessions.size() == 1,
           "session pruning crossed database keys");
 
