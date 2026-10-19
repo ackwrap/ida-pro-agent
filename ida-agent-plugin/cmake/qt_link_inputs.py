@@ -8,15 +8,19 @@ SOURCE_NAME = f"qtbase-everywhere-src-{VERSION}.tar.xz"
 SOURCE_URL = f"https://download.qt.io/archive/qt/6.8/{VERSION}/submodules/{SOURCE_NAME}"
 SOURCE_SHA256 = "012043ce6d411e6e8a91fdc4e05e6bedcfa10fcb1347d3c33908f7fdd10dfe05"
 RECIPE = 1
+MACOS_QT_DEPLOYMENT_TARGET = "14.0"
 MANIFEST = "ida-agent-qt-build.json"
 
 
 def build_manifest(system):
     if system not in ("linux", "darwin"):
         raise ValueError("Public Qt link inputs support Linux and macOS only")
-    return {"recipe": RECIPE, "version": VERSION, "namespace": "QT", "system": system,
+    manifest = {"recipe": RECIPE, "version": VERSION, "namespace": "QT", "system": system,
             "architectures": ["x86_64"] if system == "linux" else ["x86_64", "arm64"],
             "source_url": SOURCE_URL, "source_sha256": SOURCE_SHA256}
+    if system == "darwin":
+        manifest["deployment_target"] = MACOS_QT_DEPLOYMENT_TARGET
+    return manifest
 
 
 def validate_prefix(prefix: Path, system: str, architectures=None) -> Path:

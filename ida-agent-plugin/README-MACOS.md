@@ -102,7 +102,9 @@ loopback and never contact a real provider.
 
 For AI Chat, build public Qt 6.8.2 link inputs from the pinned official source
 archive. The builder uses namespace `QT`, shared Release frameworks, both
-`x86_64` and `arm64`, and a macOS 15 deployment target. It requires no IDA
+`x86_64` and `arm64`, and bundled third-party libraries. Qt link inputs target
+macOS 14 because Qt 6.8.2 Cocoa requires it; the plugin and installer still
+target macOS 15. It requires no IDA
 installation, private repository or GitHub token:
 
 ```sh

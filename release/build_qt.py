@@ -16,7 +16,7 @@ from build_parallel import positive_jobs, select_build_jobs
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "ida-agent-plugin/cmake"))
-from qt_link_inputs import (MANIFEST, SOURCE_NAME, SOURCE_SHA256, SOURCE_URL, VERSION,
+from qt_link_inputs import (MACOS_QT_DEPLOYMENT_TARGET, MANIFEST, SOURCE_NAME, SOURCE_SHA256, SOURCE_URL, VERSION,
                             build_manifest, validate_prefix)
 
 
@@ -79,7 +79,16 @@ def configure_command(source, build, prefix, system):
                "-DQT_BUILD_EXAMPLES=OFF", "-DQT_BUILD_TESTS=OFF"]
     if system == "darwin":
         command += ["-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64",
-                    "-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0", "-DFEATURE_framework=ON"]
+                    f"-DCMAKE_OSX_DEPLOYMENT_TARGET={MACOS_QT_DEPLOYMENT_TARGET}",
+                    "-DFEATURE_framework=ON"]
+        # Qt 6.8.2 Cocoa still uses APIs unavailable when the minimum target is
+        # 15.0. This link-only Qt build targets 14; our product still targets 15.
+        # Homebrew libraries are usually arm64-only on this runner. Build the
+        # bundled third-party sources for both slices, using Apple TLS instead.
+        bundled = ("zlib", "doubleconversion", "libb2", "pcre2", "freetype", "harfbuzz",
+                   "jpeg", "png", "sqlite", "textmarkdownreader")
+        command += [f"-DFEATURE_system_{name}=OFF" for name in bundled]
+        command += [f"-DFEATURE_{name}=OFF" for name in ("icu", "zstd", "openssl", "dbus", "glib", "brotli")]
     return command
 
 

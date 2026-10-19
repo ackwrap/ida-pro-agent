@@ -10,7 +10,7 @@ The [Release packages workflow](https://github.com/ackwrap/ida-pro-agent/blob/ma
 
 Windows links the official `QT`-namespaced Qt import libraries in the pinned public [IDA SDK](https://github.com/HexRaysSA/ida-sdk) submodule. The matching Windows headers are tracked in `qt-sdk/qt-6.8.2-win`.
 
-Linux and macOS use `release/build_qt.py` to download **Qt Base 6.8.2** from the [official source archive](https://download.qt.io/archive/qt/6.8/6.8.2/submodules/qtbase-everywhere-src-6.8.2.tar.xz). The script verifies SHA-256 `012043ce6d411e6e8a91fdc4e05e6bedcfa10fcb1347d3c33908f7fdd10dfe05` before extracting or compiling, builds shared Release libraries in namespace **`QT`**, and installs headers/mkspecs/libraries into a local prefix. macOS builds Universal 2 frameworks for `x86_64;arm64`, targeting macOS 15.
+Linux and macOS use `release/build_qt.py` to download **Qt Base 6.8.2** from the [official source archive](https://download.qt.io/archive/qt/6.8/6.8.2/submodules/qtbase-everywhere-src-6.8.2.tar.xz). The script verifies SHA-256 `012043ce6d411e6e8a91fdc4e05e6bedcfa10fcb1347d3c33908f7fdd10dfe05` before extracting or compiling, builds shared Release libraries in namespace **`QT`**, and installs headers/mkspecs/libraries into a local prefix. macOS builds Universal 2 frameworks for `x86_64;arm64` with Qt's bundled third-party libraries. These link-only Qt inputs target macOS 14 because Qt 6.8.2 Cocoa cannot be built with a minimum target of 15; the plugin and installer still require macOS 15.
 
 ```sh
 python3 release/build_qt.py --prefix build/qt-public
