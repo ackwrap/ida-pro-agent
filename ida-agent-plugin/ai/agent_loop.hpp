@@ -4,6 +4,7 @@
 #include "ai/provider_chat.hpp"
 
 #include <chrono>
+#include <functional>
 #include <optional>
 #include <map>
 #include <string>
@@ -14,7 +15,7 @@ namespace ida_agent::ai
 {
 
 inline constexpr std::string_view AgentLoopLimitMessage =
-    "IDA analysis tool loop exceeded a time or resource boundary.";
+    "IDA analysis tool loop exceeded its 24-hour deadline.";
 inline constexpr std::string_view AgentLoopBuildMessage =
     "Unable to continue the IDA analysis tool loop.";
 
@@ -39,6 +40,10 @@ struct AgentLoopStep
 class AgentLoop final
 {
 public:
+  using Clock = std::chrono::steady_clock;
+  using NowFunction = std::function<Clock::time_point()>;
+
+  explicit AgentLoop(NowFunction now = Clock::now);
   AgentLoopStep Begin(
       ProviderProfileDraft profile,
       std::vector<ProviderChatMessage> messages,
@@ -61,11 +66,11 @@ public:
 private:
   AgentLoopStep BuildNext();
 
+  NowFunction now_;
   ProviderProfileDraft profile_;
   std::vector<ProviderChatMessage> messages_;
   ProviderChatAgentOptions options_;
   std::chrono::steady_clock::time_point deadline_{};
-  std::size_t result_bytes_ = 0;
   ProviderAgentExchange pending_exchange_;
   AgentToolCatalogSession tool_catalog_;
   std::map<std::string, AgentToolResult> unavailable_results_;

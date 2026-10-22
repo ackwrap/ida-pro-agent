@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -315,41 +316,98 @@ void TestMixedBatchResultOrdering()
           "out-of-order mixed results were accepted");
 }
 
-void TestFailureOutputAndMessageShareResultBudget()
+void TestTwentyFourHourDeadline()
 {
-  AgentLoop loop;
+  auto now = AgentLoop::Clock::time_point(std::chrono::hours(1));
+  AgentLoop loop([&now]() { return now; });
   Require(!loop.Begin(
       MakeProfile(), {{ProviderChatRole::User, "Inspect."}},
       std::string(AgentSystemPrompt()), AgentToolDefinitions()).error,
-      "dual-field budget setup failed");
+      "deadline setup failed");
+  now += std::chrono::hours(23) + std::chrono::minutes(59);
+  Require(!loop.DeadlineExpired(), "analysis stopped before its 24-hour deadline");
   const std::vector<AgentToolCall> calls{
-      {"call-dual", "ida_database_info", "{}"},
+      {"call-deadline", "ida_database_info", "{}"},
   };
   Require(!loop.BeginToolRound(calls, "Inspecting.").error,
-          "dual-field tool round did not start");
-  const AgentToolResult dual_field_failure{
-      "call-dual",
-      "ida_database_info",
-      false,
-      std::string(MaxAgentToolResultBytes, 'o'),
-      std::string(MaxAgentToolResultBytes, 'm'),
-  };
-  const std::optional<std::size_t> dual_field_bytes =
-      AgentToolResultContentBytes(dual_field_failure);
-  Require(dual_field_bytes.has_value()
-              && *dual_field_bytes == MaxProviderAgentResultBytes,
-          "failure output and message were not both counted");
-  Require(!loop.CompleteToolRound({dual_field_failure}).error,
-          "exact dual-field result budget was rejected");
+          "tool round could not start after the old deadline");
+  loop.PauseDeadline();
+  now += std::chrono::hours(2);
+  Require(!loop.DeadlineExpired(), "approval wait consumed the analysis deadline");
+  loop.ResumeDeadline();
+  Require(!loop.CompleteToolRound({
+      {"call-deadline", "ida_database_info", true, "{}", {}}}).error,
+      "analysis could not continue after an approval wait");
+  now += std::chrono::minutes(1);
+  Require(loop.DeadlineExpired(), "24-hour analysis deadline was not enforced");
+  const auto expired = loop.BeginToolRound(calls, "Too late.");
+  Require(expired.error && expired.safe_message == AgentLoopLimitMessage && !loop.Active(),
+          "expired analysis did not report the 24-hour deadline");
 
-  const std::vector<AgentToolCall> next_calls{
-      {"call-over", "ida_database_info", "{}"},
+  Require(!loop.Begin(MakeProfile(), {{ProviderChatRole::User, "Restart."}},
+      std::string(AgentSystemPrompt()), AgentToolDefinitions()).error,
+      "analysis did not restart with a fresh deadline");
+  Require(!loop.BeginToolRound(calls, "Inspecting.").error, "restart tool round failed");
+  now += std::chrono::hours(24);
+  const auto late_results = loop.CompleteToolRound({
+      {"call-deadline", "ida_database_info", true, "{}", {}}});
+  Require(late_results.error && late_results.safe_message == AgentLoopLimitMessage,
+          "tool results completed beyond the analysis deadline");
+}
+
+void TestToolRoundsWithoutAggregateResultLimit()
+{
+  auto profile = MakeProfile();
+  profile.models.front().context_length = 2'000'000;
+  AgentLoop loop;
+  Require(!loop.Begin(profile, {{ProviderChatRole::User, "Inspect a large binary."}},
+      std::string(AgentSystemPrompt()), AgentToolDefinitions()).error,
+      "large-results loop setup failed");
+  AgentLoopStep next;
+  for (int round = 0; round < 8; ++round)
+  {
+    const auto id = "large-call-" + std::to_string(round);
+    Require(!loop.BeginToolRound({{id, "ida_database_info", "{}"}}, "Inspecting.").error,
+            "large-results tool round did not start");
+    const std::string content = "payload-" + std::to_string(round)
+        + std::string(192 * 1024, 'x');
+    next = loop.CompleteToolRound({
+        {id, "ida_database_info", round % 2 == 0, content, content}});
+    Require(!next.error, "cumulative tool results still have a byte limit");
+  }
+  Require(next.build.request.body.size() > 1024 * 1024
+      && next.build.request.body.find("payload-0") != std::string::npos
+      && next.build.request.body.find("payload-7") != std::string::npos,
+      "large tool history was discarded or limited to the fixed catalog budget");
+}
+
+void TestToolBatchWithoutAggregateResultLimit()
+{
+  AgentToolInvokers invokers;
+  invokers.database_info = []()
+  {
+    return Json{{"value", std::string(192 * 1024, 'x')}};
   };
-  Require(!loop.BeginToolRound(next_calls, "Inspecting again.").error,
-          "post-budget tool round did not start");
-  Require(loop.CompleteToolRound({
-      {"call-over", "ida_database_info", true, "x", {}}}).error,
-      "result after an exact dual-field budget was accepted");
+  auto registry = AgentToolRegistry::ForTesting(std::move(invokers));
+  registry.SetAvailable(true);
+  const auto job = registry.Submit({
+      {"large-1", "ida_database_info", "{}"},
+      {"large-2", "ida_database_info", "{}"},
+      {"large-3", "ida_database_info", "{}"},
+  });
+  Require(job != 0, "large-results batch could not start");
+  std::optional<std::vector<AgentToolResult>> results;
+  const auto deadline = AgentLoop::Clock::now() + std::chrono::seconds(5);
+  while (!results && AgentLoop::Clock::now() < deadline)
+  {
+    results = registry.TryTake(job);
+    if (!results)
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  Require(results && results->size() == 3, "tool batch was truncated at the old byte limit");
+  for (const auto &result : *results)
+    Require(result.success && result.output.size() > 192 * 1024,
+            "large batch result was lost or replaced with an error");
 }
 
 } // namespace
@@ -363,7 +421,9 @@ int main()
     TestSuccessfulRound();
     TestUnknownAndLimits();
     TestMixedBatchResultOrdering();
-    TestFailureOutputAndMessageShareResultBudget();
+    TestTwentyFourHourDeadline();
+    TestToolRoundsWithoutAggregateResultLimit();
+    TestToolBatchWithoutAggregateResultLimit();
     return 0;
   }
   catch ( const std::exception &error )

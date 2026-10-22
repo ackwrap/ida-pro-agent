@@ -446,6 +446,40 @@ void TestAgentRequestLimits()
           "required agent context was cropped");
 }
 
+void TestLargeAgentResultsForAllCodecs()
+{
+  std::vector<ProviderProfileDraft> profiles{
+      MakeProfile(ProviderProtocol::OpenAI, OpenAIApiMode::Responses),
+      MakeProfile(ProviderProtocol::OpenAI, OpenAIApiMode::ChatCompletions),
+      MakeProfile(ProviderProtocol::Claude),
+  };
+  auto options = AgentOptions();
+  options.exchanges.clear();
+  for (int index = 0; index < 8; ++index)
+  {
+    const std::string id = "large-" + std::to_string(index);
+    const std::string text = "result-" + id + std::string(192 * 1024, 'x');
+    options.exchanges.push_back({"Continuing.", {{id, "lookup", "{}"}},
+        {{id, "lookup", index % 2 == 0, text, text}}});
+  }
+  for (auto &profile : profiles)
+  {
+    profile.models.front().context_length = 2'000'000;
+    const auto result = BuildProviderAgentRequest(
+        profile, {{ProviderChatRole::User, "Inspect."}}, options);
+    Require(!result.error && result.request.body.size() > 1024 * 1024,
+            "large aggregate results were rejected by a provider codec");
+    Require(result.request.body.find("result-large-0") != std::string::npos
+        && result.request.body.find("result-large-7") != std::string::npos,
+        "provider codec dropped large aggregate tool results");
+    auto oversized = options;
+    oversized.exchanges.front().results.front().output.assign(MaxAgentToolResultBytes + 1, 'x');
+    Require(BuildProviderAgentRequest(profile,
+        {{ProviderChatRole::User, "Inspect."}}, oversized).error,
+        "removing the aggregate limit also removed the individual result limit");
+  }
+}
+
 void TestRequestBodyLimitsAndLargeHistory()
 {
   Require(MaxProviderRequestBodyBytes < StreamHardMaxPayloadBytes,
@@ -714,6 +748,7 @@ int main()
   TestAgentRequestWires();
   TestEmptyAgentOptionsPreserveChatWire();
   TestAgentRequestLimits();
+  TestLargeAgentResultsForAllCodecs();
   TestRequestBodyLimitsAndLargeHistory();
   TestByteCropForAllCodecs();
   TestAgentFixedPayloadAndByteCrop();

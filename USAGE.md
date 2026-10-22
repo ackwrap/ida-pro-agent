@@ -70,6 +70,8 @@ The selected provider receives conversation content and relevant analysis contex
 
 AI Chat 0.4.9 includes a full-height right sidebar with Agent-style roles and emojis, balanced message spacing, Markdown, syntax-highlighted code blocks, per-message/code copy and bounded incremental streaming, plus an **Effort** selector beside the input. It saves reasoning strength for the selected model and is disabled during active requests. See the [AI Chat rendering and effort reference](ida-agent-plugin/CHAT.md).
 
+Development builds allow a single tool-enabled analysis to run for up to 24 hours of active time; waiting for approval pauses this deadline. Accumulated tool results have no separate byte quota. Individual tool limits, the configured model context and the provider request-body limit still apply. Use `/cancel` to stop an analysis.
+
 ### Analysis memory and workflows
 
 Enable **Tools** for the selected model. Use `/memory add <note>`, `/memory add-local <note>`, `/memory search <text>`, and `/memory forget <id>` to manage this binary's external analysis memory. `/new` and `/clear` keep saved notes. Use `/workflow protection [question]`, `/workflow function [question]`, or `/workflow types [question]` for reports with actual tool evidence and explicit coverage gaps. Agent memory writes follow the conversation approval policy. See the [full command and IDA 9.5 acceptance reference](ida-agent-plugin/ANALYSIS.md).

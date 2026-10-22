@@ -1,6 +1,5 @@
 #include "ai/agent_loop.hpp"
 
-#include <algorithm>
 #include <utility>
 #include <unordered_set>
 
@@ -17,12 +16,11 @@ AgentLoopStep Failure(std::string_view message)
   return step;
 }
 
-std::optional<std::size_t> ResultBytes(const AgentToolResult &result) noexcept
-{
-  return AgentToolResultContentBytes(result);
-}
-
 } // namespace
+
+AgentLoop::AgentLoop(NowFunction now) : now_(std::move(now))
+{
+}
 
 AgentLoopStep AgentLoop::Begin(
     ProviderProfileDraft profile,
@@ -36,7 +34,7 @@ AgentLoopStep AgentLoop::Begin(
   options_.system_prompt = std::move(system_prompt);
   tool_catalog_.Begin(std::move(tools));
   options_.tools = tool_catalog_.ActiveDefinitions();
-  deadline_ = std::chrono::steady_clock::now() + std::chrono::minutes(10);
+  deadline_ = now_() + std::chrono::hours(24);
   return BuildNext();
 }
 
@@ -44,9 +42,12 @@ AgentLoopStep AgentLoop::BeginToolRound(
     std::vector<AgentToolCall> calls,
     std::string assistant_text)
 {
-  if ( state_ != AgentLoopState::Streaming
-      || calls.empty()
-      || std::chrono::steady_clock::now() >= deadline_ )
+  if ( state_ != AgentLoopState::Streaming || calls.empty() )
+  {
+    Reset();
+    return Failure(AgentLoopBuildMessage);
+  }
+  if ( now_() >= deadline_ )
   {
     Reset();
     return Failure(AgentLoopLimitMessage);
@@ -102,13 +103,16 @@ AgentLoopStep AgentLoop::CompleteToolRound(
     std::vector<AgentToolResult> results)
 {
   if ( state_ != AgentLoopState::ExecutingTools
-      || results.size() != pending_exchange_.calls.size()
-      || std::chrono::steady_clock::now() >= deadline_ )
+      || results.size() != pending_exchange_.calls.size() )
+  {
+    Reset();
+    return Failure(AgentLoopBuildMessage);
+  }
+  if ( now_() >= deadline_ )
   {
     Reset();
     return Failure(AgentLoopLimitMessage);
   }
-  std::size_t added_bytes = 0;
   for ( std::size_t index = 0; index < results.size(); ++index )
   {
     AgentToolResult &result = results[index];
@@ -129,23 +133,7 @@ AgentLoopStep AgentLoop::CompleteToolRound(
       Reset();
       return Failure(AgentLoopBuildMessage);
     }
-    const std::optional<std::size_t> current = ResultBytes(result);
-    if ( !current.has_value()
-        || result_bytes_ > MaxProviderAgentResultBytes
-        || added_bytes > MaxProviderAgentResultBytes - result_bytes_ )
-    {
-      Reset();
-      return Failure(AgentLoopLimitMessage);
-    }
-    const std::size_t consumed = result_bytes_ + added_bytes;
-    if ( *current > MaxProviderAgentResultBytes - consumed )
-    {
-      Reset();
-      return Failure(AgentLoopLimitMessage);
-    }
-    added_bytes += *current;
   }
-  result_bytes_ += added_bytes;
   pending_exchange_.results = std::move(results);
   options_.exchanges.push_back(std::move(pending_exchange_));
   options_.tools = tool_catalog_.ActiveDefinitions();
@@ -165,7 +153,6 @@ void AgentLoop::Reset() noexcept
   messages_.clear();
   options_ = {};
   deadline_ = {};
-  result_bytes_ = 0;
   pending_exchange_ = {};
   tool_catalog_.Reset();
   unavailable_results_.clear();
@@ -179,7 +166,7 @@ void AgentLoop::PauseDeadline() noexcept
   if ( state_ != AgentLoopState::Idle
       && deadline_paused_at_ == std::chrono::steady_clock::time_point{} )
   {
-    deadline_paused_at_ = std::chrono::steady_clock::now();
+    deadline_paused_at_ = now_();
   }
 }
 
@@ -187,7 +174,7 @@ void AgentLoop::ResumeDeadline() noexcept
 {
   if ( deadline_paused_at_ == std::chrono::steady_clock::time_point{} )
     return;
-  deadline_ += std::chrono::steady_clock::now() - deadline_paused_at_;
+  deadline_ += now_() - deadline_paused_at_;
   deadline_paused_at_ = {};
 }
 
@@ -206,13 +193,13 @@ bool AgentLoop::DeadlineExpired() const noexcept
   return state_ != AgentLoopState::Idle
       && deadline_paused_at_ == std::chrono::steady_clock::time_point{}
       && deadline_ != std::chrono::steady_clock::time_point{}
-      && std::chrono::steady_clock::now() >= deadline_;
+      && now_() >= deadline_;
 }
 
 AgentLoopStep AgentLoop::BuildNext()
 {
   ResumeDeadline();
-  if ( std::chrono::steady_clock::now() >= deadline_ )
+  if ( now_() >= deadline_ )
   {
     Reset();
     return Failure(AgentLoopLimitMessage);

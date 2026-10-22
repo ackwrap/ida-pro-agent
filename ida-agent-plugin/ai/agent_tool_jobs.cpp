@@ -1,5 +1,4 @@
 #include "ai/agent_tool_registry.hpp"
-#include "ai/provider_agent_protocol.hpp"
 
 #include <mutex>
 #include <thread>
@@ -8,16 +7,6 @@
 
 namespace ida_agent::ai
 {
-namespace
-{
-
-std::optional<std::size_t> ResultBytes(const AgentToolResult &result) noexcept
-{
-  return AgentToolResultContentBytes(result);
-}
-
-} // namespace
-
 struct AgentToolRegistry::Jobs
 {
   struct Job
@@ -134,7 +123,6 @@ AgentToolRegistry::JobId AgentToolRegistry::Submit(
     job->worker = std::thread([this, job, calls = std::move(calls)]()
     {
       std::vector<AgentToolResult> results;
-      std::size_t result_bytes = 0;
       for ( const AgentToolCall &call : calls )
       {
         if ( job->cancelled.load(std::memory_order_acquire) )
@@ -142,14 +130,6 @@ AgentToolRegistry::JobId AgentToolRegistry::Submit(
         AgentToolResult result = Invoke(call);
         if ( job->cancelled.load(std::memory_order_acquire) )
           break;
-        const std::optional<std::size_t> current = ResultBytes(result);
-        if ( !current.has_value()
-            || result_bytes > MaxProviderAgentResultBytes
-            || *current > MaxProviderAgentResultBytes - result_bytes )
-        {
-          break;
-        }
-        result_bytes += *current;
         results.push_back(std::move(result));
       }
       std::lock_guard<std::mutex> lock(job->mutex);

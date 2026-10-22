@@ -10,7 +10,6 @@
 namespace ida_agent::ai
 {
 
-inline constexpr std::size_t MaxProviderAgentResultBytes = 512 * 1024;
 inline constexpr std::size_t MaxProviderSystemPromptBytes = 8 * 1024;
 inline constexpr std::size_t MaxProviderToolSchemaBytes = 512 * 1024;
 

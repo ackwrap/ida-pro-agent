@@ -70,6 +70,8 @@ API Key 和保存的代理密码以明文存放在当前用户私有文件中。
 
 0.4.9 的 AI Chat 默认停靠在全高右侧栏，支持 Agent 样式的角色分层与 Emoji、适中的消息间距、Markdown、带语法高亮的代码块及消息/代码复制，并对流式刷新和长对话显示设置性能预算。输入行旁的 **Effort** 选择器可设置当前模型的推理强度；请求运行时暂不可修改。详见[AI Chat 渲染与推理强度说明](ida-agent-plugin/CHAT.md)。
 
+开发版本中，单次启用工具的分析最多运行 24 小时，等待审批期间暂停计时；累计工具结果不再设置独立的字节总额上限。单个工具的限制、配置的模型上下文和供应商请求体限制仍然有效。可用 `/cancel` 停止分析。
+
 ### 分析记忆与工作流
 
 在所选模型中启用 **Tools**。用 `/memory add <笔记>`、`/memory add-local <笔记>`、`/memory search <关键词>` 和 `/memory forget <编号>` 管理当前二进制的外部分析记忆。`/new`、`/clear` 保留已存笔记。`/workflow protection [问题]`、`/workflow function [问题]`、`/workflow types [问题]` 分别提供保护强度评估、函数与数据流调查、类型恢复准备；报告使用实际工具证据并明确未完成的范围。Agent 的记忆写入沿用会话审批。详见[完整命令与 IDA 9.5 验收说明](ida-agent-plugin/ANALYSIS.md)。

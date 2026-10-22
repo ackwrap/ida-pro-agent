@@ -18,7 +18,6 @@ namespace
 using Json = nlohmann::json;
 using provider_chat_detail::EstimateTextTokens;
 static_assert(MaxAgentFileToolArgumentsBytes < MaxProviderAgentFixedPayloadBytes);
-static_assert(MaxAgentFileToolResultBytes < MaxProviderAgentResultBytes);
 
 ProviderChatBuildResult ConfigurationError()
 {
@@ -317,18 +316,14 @@ bool ValidateAgentOptions(
     return false;
   }
 
-  std::size_t result_bytes = 0;
+  // The fixed-payload cap applies to the prompt and tool catalog only.
+  // Exchanges retain per-call, model-context and request-body validation,
+  // without a separate quota for accumulated tool results.
   std::unordered_set<std::string> call_ids;
   for ( const ProviderAgentExchange &exchange : options.exchanges )
   {
     if ( exchange.calls.empty()
         || exchange.calls.size() != exchange.results.size() )
-    {
-      return false;
-    }
-    if ( !AddAgentFixedPayloadBytes(payload_bytes, 128)
-        || !AddAgentFixedPayloadBytes(
-            payload_bytes, JsonStringBytes(exchange.assistant_text)) )
     {
       return false;
     }
@@ -364,30 +359,6 @@ bool ValidateAgentOptions(
           || result->safe_message.size() > result_limit
           || (!result->success
               && result->safe_message.empty()) )
-      {
-        return false;
-      }
-      const std::optional<std::size_t> current_result_bytes =
-          AgentToolResultContentBytes(*result);
-      if ( !current_result_bytes.has_value()
-          || result_bytes > MaxProviderAgentResultBytes
-          || *current_result_bytes > MaxProviderAgentResultBytes - result_bytes )
-      {
-        return false;
-      }
-      result_bytes += *current_result_bytes;
-      if ( !AddAgentFixedPayloadBytes(payload_bytes, 256)
-          || !AddAgentFixedPayloadBytes(
-              payload_bytes, JsonStringBytes(call.id))
-          || !AddAgentFixedPayloadBytes(
-              payload_bytes, JsonStringBytes(call.name))
-          || !AddAgentFixedPayloadBytes(
-              payload_bytes, JsonStringBytes(call.arguments_json))
-          || !AddAgentFixedPayloadBytes(
-              payload_bytes,
-              JsonStringBytes(result->success
-                  ? std::string_view(result->output)
-                  : std::string_view(result->safe_message))) )
       {
         return false;
       }
