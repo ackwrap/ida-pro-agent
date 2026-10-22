@@ -343,6 +343,8 @@ if(WIN32 AND IDA_AGENT_DEPLOY_DEBUG_USER_PLUGIN AND CMAKE_BUILD_TYPE STREQUAL "D
     )
 endif()
 
+include(cmake/ChatRendererTests.cmake)
+
 if(BUILD_TESTING)
     if(IDA_AGENT_ENABLE_AI)
         add_executable(ida_ai_chat_code_tokens_test

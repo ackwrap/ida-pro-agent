@@ -5,11 +5,25 @@
 
 namespace ida_agent::ai
 {
+namespace
+{
+QT::QTextCursor CompleteSelectionLayout(QT::QTextCursor cursor)
+{
+  // Qt 6.8.2's blockBoundingRect only advances incremental layout to the
+  // queried block. A table selection can then read uninitialized cell offsets
+  // during focus loss or after a message edit. Finish layout before handing
+  // that selection to QTextEdit's geometry code; keep its anchor and text.
+  if ( cursor.hasSelection() || cursor.currentTable() != nullptr )
+    cursor.document()->documentLayout()->documentSize();
+  return cursor;
+}
+} // namespace
+
 class ChatMessageView::ViewState
 {
 public:
   explicit ViewState(ChatMessageView &view, bool force_bottom = false)
-      : view_(view), selection_(view.textCursor()),
+      : view_(view), selection_(CompleteSelectionLayout(view.textCursor())),
         top_(view.cursorForPosition(QT::QPoint(0, 0))),
         top_y_(view.cursorRect(top_).y()),
         bottom_(force_bottom || view.follow_bottom_ || view.verticalScrollBar()->value()
@@ -40,6 +54,7 @@ public:
     }
     if ( bottom_ && !selection_.hasSelection() )
       selection_.movePosition(QT::QTextCursor::End);
+    CompleteSelectionLayout(selection_);
     const auto current = view_.textCursor();
     if ( current.position() != selection_.position() || current.anchor() != selection_.anchor() )
       view_.setTextCursor(selection_);
@@ -101,6 +116,12 @@ QT::QVariant ChatMessageView::loadResource(int, const QT::QUrl &)
   // Markdown may contain images. Do not access provider-supplied paths or URLs.
   ++blocked_resources_;
   return {};
+}
+
+void ChatMessageView::focusOutEvent(QT::QFocusEvent *event)
+{
+  CompleteSelectionLayout(textCursor());
+  QT::QTextEdit::focusOutEvent(event);
 }
 
 void ChatMessageView::ResetMessages(const std::vector<ChatEntry> &entries)

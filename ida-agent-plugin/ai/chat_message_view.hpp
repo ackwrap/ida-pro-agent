@@ -22,6 +22,7 @@ public:
 
 protected:
   QT::QVariant loadResource(int type, const QT::QUrl &name) override;
+  void focusOutEvent(QT::QFocusEvent *event) override;
   void changeEvent(QT::QEvent *event) override;
 
 private:

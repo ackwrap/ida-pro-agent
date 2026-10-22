@@ -208,6 +208,16 @@ CMake checks the Qt 6.8.2 headers and links the official `QT`-namespaced import 
 
 For an explicit local rebuild of the import libraries, pass `-DIDA_AGENT_IDA_QT_RUNTIME_DIR=<ida-dir>` to CMake, or set the environment variable of the same name for the release script. This optional path validates the installed IDA 9.4 / Qt 6.8.2 versions and `QT` namespace. Clear the CMake cache setting with `-DIDA_AGENT_IDA_QT_RUNTIME_DIR=` to return to SDK imports.
 
+The optional Windows chat-renderer regression test uses the installed IDA Qt DLLs in a separate process. It checks deferred table layout before focus loss, single-cell and multi-cell selections, streaming completion, history pruning, resizing and reparenting. It requires a desktop session and does not launch IDA or deploy the plugin:
+
+```powershell
+cmake -S ida-agent-plugin -B build/ida-agent-plugin `
+  -DIDA_AGENT_ENABLE_QT_RENDER_TESTS=ON `
+  '-DIDA_AGENT_IDA_QT_RUNTIME_DIR=C:/Program Files/IDA Professional 9.4'
+cmake --build build/ida-agent-plugin --target ida_ai_chat_message_view_test
+ctest --test-dir build/ida-agent-plugin -R '^ida_ai_chat_message_view$' --output-on-failure
+```
+
 ### Optional integration tests
 
 To include real IDA tests, reconfigure the same build directory and run CTest:

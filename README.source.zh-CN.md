@@ -208,6 +208,16 @@ CMake 检查 Qt 6.8.2 头文件，并链接固定版本 IDA SDK 中使用 `QT` �
 
 如需在本地重新生成导入库，可向 CMake 显式传入 `-DIDA_AGENT_IDA_QT_RUNTIME_DIR=<ida-dir>`，或在运行发布脚本时设置同名环境变量。这条可选路径会校验已安装的 IDA 9.4 / Qt 6.8.2 版本和 `QT` 命名空间。向 CMake 传入 `-DIDA_AGENT_IDA_QT_RUNTIME_DIR=` 可清空旧缓存设置，恢复使用 SDK 导入库。
 
+Windows 可选的聊天渲染回归测试在独立进程中使用已安装 IDA 的 Qt DLL，检查失焦前的表格布局、单元格和跨单元格选区、流式回复完成、历史裁剪、缩放和父窗口切换。测试需要桌面会话，不会启动 IDA 或部署插件：
+
+```powershell
+cmake -S ida-agent-plugin -B build/ida-agent-plugin `
+  -DIDA_AGENT_ENABLE_QT_RENDER_TESTS=ON `
+  '-DIDA_AGENT_IDA_QT_RUNTIME_DIR=C:/Program Files/IDA Professional 9.4'
+cmake --build build/ida-agent-plugin --target ida_ai_chat_message_view_test
+ctest --test-dir build/ida-agent-plugin -R '^ida_ai_chat_message_view$' --output-on-failure
+```
+
 ### 可选的集成测试
 
 需要真实 IDA 测试时，重新配置同一构建目录并运行 CTest：
