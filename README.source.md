@@ -208,14 +208,14 @@ CMake checks the Qt 6.8.2 headers and links the official `QT`-namespaced import 
 
 For an explicit local rebuild of the import libraries, pass `-DIDA_AGENT_IDA_QT_RUNTIME_DIR=<ida-dir>` to CMake, or set the environment variable of the same name for the release script. This optional path validates the installed IDA 9.4 / Qt 6.8.2 versions and `QT` namespace. Clear the CMake cache setting with `-DIDA_AGENT_IDA_QT_RUNTIME_DIR=` to return to SDK imports.
 
-The optional Windows chat-renderer regression test uses the installed IDA Qt DLLs in a separate process. It checks deferred table layout before focus loss, single-cell and multi-cell selections, streaming completion, history pruning, resizing and reparenting. It requires a desktop session and does not launch IDA or deploy the plugin:
+The optional Windows Qt UI regression tests use the installed IDA Qt DLLs in separate processes. They check deferred table layout before focus loss, table selections across message updates and window changes, plus foreground update prompts, manual reminders and release-page navigation. They require a desktop session and do not launch IDA, deploy the plugin or open a browser:
 
 ```powershell
 cmake -S ida-agent-plugin -B build/ida-agent-plugin `
   -DIDA_AGENT_ENABLE_QT_RENDER_TESTS=ON `
   '-DIDA_AGENT_IDA_QT_RUNTIME_DIR=C:/Program Files/IDA Professional 9.4'
-cmake --build build/ida-agent-plugin --target ida_ai_chat_message_view_test
-ctest --test-dir build/ida-agent-plugin -R '^ida_ai_chat_message_view$' --output-on-failure
+cmake --build build/ida-agent-plugin --target ida_ai_chat_message_view_test ida_ai_update_notice_test
+ctest --test-dir build/ida-agent-plugin -R '^ida_ai_(chat_message_view|update_notice)$' --output-on-failure
 ```
 
 ### Optional integration tests

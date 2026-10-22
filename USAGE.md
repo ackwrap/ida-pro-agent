@@ -10,7 +10,9 @@ The Qt plugin and local Web manager check the public [`ackwrap/ida-pro-agent` st
 
 The two interfaces share `update-settings.json` and `update-cache.json` in `%LOCALAPPDATA%\ida-agent\ai` on Windows, `${XDG_CONFIG_HOME:-$HOME/.config}/ida-agent/ai` on Linux, and `~/Library/Application Support/ida-agent/ai` on macOS. These files are separate from IDBs and provider credentials. Drafts and prereleases are ignored. Requests contain the application version, without database or chat contents. The plugin uses its existing system proxy mode; the Web manager follows `HTTPS_PROXY` and `NO_PROXY`. Checks do not require a GitHub account. Headless plugins and stdio/HTTP MCP processes do not run update checks.
 
-For an available update, open the release page, choose your platform package, close IDA, and install the matching plugin and Gateway together. Update checks do not install packages automatically. This feature is included in 0.4.7 and later packages.
+Source builds bring an update prompt to the front of IDA when a newer release is detected, showing the installed and latest versions. Click **Download Update** to open that version's release page in your browser, or **Later** to dismiss it. Automatic checks prompt once per version during the plugin session; a manual check can reopen the prompt using cached release information even during the network cooldown.
+
+On the release page, choose your platform package, close IDA, and install the matching plugin and Gateway together. Update checks do not install packages automatically. Update checking is included in 0.4.7 and later packages.
 
 ## 1. Install and open a database
 

@@ -1,4 +1,5 @@
 #include "ai/update_controller.hpp"
+#include "ai/update_notice.hpp"
 #include "ai/update_store.hpp"
 #include "product_version.hpp"
 
@@ -23,45 +24,30 @@ struct UpdateController::Impl
 {
   void Notify(bool manual)
   {
-    if ( !HasNewerRelease(ida_agent::Version, cache.release_tag)
-        || notified_tag == cache.release_tag ) return;
-    notified_tag = cache.release_tag;
+    if ( !notice.Show(ida_agent::Version, cache, manual, QT::QApplication::activeWindow()) ) return;
     const std::string url = ReleasePagePrefix + cache.release_tag;
     msg("[ida-agent] Update available: %s (installed %s). Download: %s\n",
         cache.release_tag.c_str(), ida_agent::Version, url.c_str());
-    if ( manual ) return;
-    if ( notice ) delete notice.data();
-    auto *dialog = new QT::QDialog(QT::QApplication::activeWindow());
-    notice = dialog;
-    dialog->setObjectName("idaAgentUpdateNotice");
-    dialog->setWindowTitle("IDA Agent Update Available");
-    dialog->setAttribute(QT::Qt::WA_DeleteOnClose);
-    dialog->setAttribute(QT::Qt::WA_ShowWithoutActivating);
-    auto *layout = new QT::QVBoxLayout(dialog);
-    auto *label = new QT::QLabel(QT::QString::fromStdString(
-        UpdateStatusText(ida_agent::Version, cache)), dialog);
-    label->setTextFormat(QT::Qt::PlainText);
-    label->setWordWrap(true);
-    layout->addWidget(label);
-    auto *buttons = new QT::QDialogButtonBox(dialog);
-    auto *download = buttons->addButton("Open Release Page", QT::QDialogButtonBox::ActionRole);
-    buttons->addButton(QT::QDialogButtonBox::Close);
-    QT::QObject::connect(download, &QT::QPushButton::clicked, dialog, [url]()
-    {
-      QT::QDesktopServices::openUrl(QT::QUrl(QT::QString::fromStdString(url)));
-    });
-    QT::QObject::connect(buttons, &QT::QDialogButtonBox::rejected, dialog, &QT::QDialog::close);
-    layout->addWidget(buttons);
-    dialog->show();
   }
 
   void Check(bool manual)
   {
-    if ( !http || request != 0 ) return;
+    if ( !http ) return;
+    if ( request != 0 )
+    {
+      manual_request = manual_request || manual;
+      return;
+    }
     manual_note.clear();
     if ( !UpdateCheckDue(cache, Now(), manual) )
     {
-      if ( manual ) manual_note = " Please wait one minute between manual checks.";
+      if ( manual )
+      {
+        manual_note = " Please wait one minute between manual checks.";
+        // The menu opens Settings immediately after CheckNow. Queue the notice
+        // so it is parented to that dialog and remains the active modal window.
+        QT::QTimer::singleShot(0, timer.get(), [this]() { Notify(true); });
+      }
       return;
     }
     request = http->Submit(MakeUpdateRequest(ida_agent::Version));
@@ -112,10 +98,9 @@ struct UpdateController::Impl
   UpdateCache cache;
   std::unique_ptr<HttpClient> http;
   std::unique_ptr<QT::QTimer> timer;
-  QT::QPointer<QT::QDialog> notice;
+  UpdateNotice notice;
   HttpClient::RequestId request = 0;
   std::chrono::steady_clock::time_point deadline;
-  std::string notified_tag;
   std::string manual_note;
   bool manual_request = false;
 };
@@ -135,7 +120,7 @@ void UpdateController::Start()
 void UpdateController::Stop() noexcept
 {
   impl_->timer.reset();
-  if ( impl_->notice ) delete impl_->notice.data();
+  impl_->notice.Close();
   if ( impl_->http && impl_->request != 0 ) impl_->http->CancelAndForget(impl_->request);
   impl_->request = 0;
   impl_->http.reset();

@@ -257,6 +257,7 @@ if(IDA_AGENT_ENABLE_AI)
         ai/update_check.cpp
         ai/update_store.cpp
         ai/update_controller.cpp
+        ai/update_notice.cpp
         ai/update_settings_widget.cpp
         ai/provider_chat.cpp
         ai/provider_chat_wire.cpp
