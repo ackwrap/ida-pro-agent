@@ -169,6 +169,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
+### Version 0.5.6 / 0.5.6 版本
+
+Version 0.5.6 fixes blank Markdown tables and crashes when clicking or selecting them in AI Chat messages that also contain fenced code blocks. Syntax highlighting now runs after message insertion completes, preserving table layout and code colors. See the [release notes](release/notes/0.5.6.md).
+
+0.5.6 修复 AI Chat 同一条消息同时包含 Markdown 表格和代码块时，表格显示为空白以及点击或选中后崩溃的问题。代码高亮现在等待消息插入完成后再执行，保留正常的表格布局和代码颜色。详见[发布说明](release/notes/0.5.6.md)。
+
 ### Version 0.5.5 / 0.5.5 版本
 
 Version 0.5.5 brings update prompts to the front of IDA and opens the exact version's download page through **Download Update**. Manual checks can reopen cached prompts, and browser failures allow retries. It also includes the Markdown table selection crash protection from 0.5.4. See the [release notes](release/notes/0.5.5.md).
