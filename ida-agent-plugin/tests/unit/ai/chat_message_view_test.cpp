@@ -18,6 +18,108 @@ void Require(bool condition, const char *message)
     throw std::runtime_error(message);
 }
 
+void CheckTableLayout(QT::QTextFrame *frame, ChatMessageView &view, int &tables)
+{
+  for (auto *child : frame->childFrames())
+  {
+    if (auto *table = QT::qobject_cast<QT::QTextTable *>(child))
+    {
+      ++tables;
+      for (int row = 0; row < table->rows(); ++row)
+        for (int column = 0; column < table->columns(); ++column)
+        {
+          const auto block = table->cellAt(row, column).firstCursorPosition().block();
+          // Check before asking for cell geometry: Qt 6.8.2 dereferences empty
+          // table coordinate arrays when highlighting interrupted insertion.
+          Require(block.layout()->lineCount() > 0, "table cells were not laid out after highlighting");
+          const auto bounds = view.document()->documentLayout()->blockBoundingRect(block);
+          Require(bounds.isValid(), "table cell has no visible bounds");
+        }
+      auto cursor = table->cellAt(0, 0).firstCursorPosition();
+      view.setTextCursor(cursor);
+      view.ensureCursorVisible();
+      const auto point = view.cursorRect(cursor).center() + QT::QPoint(2, 0);
+      Require(view.cursorForPosition(point).currentTable() == table,
+          "visible table cannot be hit tested");
+      for (const auto type : {QT::QEvent::MouseButtonPress, QT::QEvent::MouseButtonRelease,
+          QT::QEvent::MouseButtonDblClick, QT::QEvent::MouseButtonRelease})
+      {
+        const bool release = type == QT::QEvent::MouseButtonRelease;
+        QT::QMouseEvent event(type, QT::QPointF(point),
+            QT::QPointF(view.viewport()->mapToGlobal(point)), QT::Qt::LeftButton,
+            release ? QT::Qt::NoButton : QT::Qt::LeftButton, QT::Qt::NoModifier);
+        QT::QApplication::sendEvent(view.viewport(), &event);
+      }
+      QT::QInputMethodQueryEvent query(QT::Qt::ImCursorRectangle | QT::Qt::ImAnchorRectangle);
+      QT::QApplication::sendEvent(&view, &query);
+      Require(query.value(QT::Qt::ImCursorRectangle).isValid(),
+          "table cursor input-method query failed");
+      Require(view.CopyMessageAt(cursor).contains("Name"), "table lost original copy text");
+    }
+    CheckTableLayout(child, view, tables);
+  }
+}
+
+void CheckHighlightedTables(ChatMessageView &view, int expected)
+{
+  view.document()->documentLayout()->documentSize();
+  int tables = 0;
+  CheckTableLayout(view.document()->rootFrame(), view, tables);
+  Require(tables == expected, "highlighting changed the number of tables");
+  int highlighted = 0;
+  for (auto block = view.document()->begin(); block.isValid(); block = block.next())
+    if (block.text().contains("int answer"))
+    {
+      Require(!block.layout()->formats().isEmpty(), "code syntax colors were lost");
+      Require(view.CopyCodeAt(QT::QTextCursor(block)).contains("return answer;"),
+          "syntax highlighting changed code copying");
+      ++highlighted;
+    }
+  Require(highlighted > 0, "highlighted code block missing");
+}
+
+void TestHighlightedTables()
+{
+  const std::string table = "| Name | Value |\n| --- | --- |\n| alpha | `123` |\n| beta | 456 |\n\n";
+  const std::string code = "```cpp\nint answer = 42;\nreturn answer;\n```\n\n";
+  // A plain table does not expose this bug. A fenced code block in the same
+  // message used to invalidate newly inserted tables before the edit ended.
+  const std::vector<std::string> fixtures{table + code, code + table, table + code + table};
+  for (std::size_t index = 0; index < fixtures.size(); ++index)
+  {
+    ChatMessageView view(nullptr);
+    view.setAttribute(QT::Qt::WA_DontShowOnScreen);
+    view.resize(650, 450);
+    view.show();
+    QT::QApplication::processEvents();
+    const int expected = index == 2 ? 2 : 1;
+    view.ResetMessages({{ChatSpeaker::Assistant, fixtures[index]}});
+    CheckHighlightedTables(view, expected);
+    view.ResetMessages({});
+    view.BeginPreview(ChatSpeaker::Assistant);
+    const auto &text = fixtures[index];
+    for (std::size_t end = 10; end < text.size(); end += 10)
+      view.FlushPreviews("", std::string_view(text).substr(0, end));
+    view.FlushPreviews("", text);
+    view.CommitPreview(ChatSpeaker::Assistant, {ChatSpeaker::Assistant, text}, 0);
+    CheckHighlightedTables(view, expected);
+    for (bool dark : {true, false})
+    {
+      auto colors = view.palette();
+      colors.setColor(QT::QPalette::Base, dark ? QT::QColor("#202020") : QT::QColor("#ffffff"));
+      colors.setColor(QT::QPalette::Text, dark ? QT::QColor("#eeeeee") : QT::QColor("#101010"));
+      view.setPalette(colors);
+      view.resize(dark ? 240 : 650, 450);
+      QT::QApplication::processEvents();
+      CheckHighlightedTables(view, expected);
+    }
+    view.AppendMessage({ChatSpeaker::Assistant, text}, 0);
+    CheckHighlightedTables(view, expected * 2);
+    view.AppendMessage({ChatSpeaker::Assistant, text}, 2);
+    CheckHighlightedTables(view, expected);
+  }
+}
+
 void Focus(ChatMessageView &view, QT::QEvent::Type type)
 {
   QT::QFocusEvent event(type, QT::Qt::OtherFocusReason);
@@ -166,9 +268,10 @@ int main(int argc, char **argv)
   QT::QApplication app(argc, argv);
   try
   {
+    TestHighlightedTables();
     TestDeferredFocusLayout();
     TestTableUpdates();
-    std::printf("PASS: table selection and focus/update regression (Qt %s)\n", QT::qVersion());
+    std::printf("PASS: highlighted tables, mouse/input queries and focus/update regression (Qt %s)\n", QT::qVersion());
     return 0;
   }
   catch ( const std::exception &error )

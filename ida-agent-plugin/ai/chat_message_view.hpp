@@ -40,6 +40,7 @@ private:
     bool inline_role = false;
     bool preview = false;
     bool limited = false;
+    bool highlight_pending = false;
   };
   class ViewState;
   Message &InsertMessage(ChatSpeaker speaker, bool preview);

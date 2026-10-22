@@ -174,8 +174,7 @@ void ChatMessageView::StyleMessage(Message &message)
     previous_group = group;
     previous_language = language;
   }
-  if ( !message.preview )
-    ApplyChatCodeHighlighting(message.frame, colors);
+  message.highlight_pending = !message.preview;
 }
 
 QT::QString ChatMessageView::CopyMessageAt(const QT::QTextCursor &cursor) const

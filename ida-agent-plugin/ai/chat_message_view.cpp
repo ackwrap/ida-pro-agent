@@ -1,6 +1,7 @@
 #include "ai/chat_message_view.hpp"
 #include "ai/chat_render_budget.hpp"
 #include "ai/chat_output_view.hpp"
+#include "ai/chat_code_highlight.hpp"
 #include <algorithm>
 
 namespace ida_agent::ai
@@ -42,6 +43,17 @@ public:
   ~ViewState()
   {
     edit_.endEditBlock();
+    // Highlighting calls markContentsDirty(), which notifies Qt's layout
+    // immediately. During a pending Markdown insertion this can consume its
+    // structural change range, leaving tables unlaid even after documentSize().
+    // Apply overlays only after the insertion's complete change was delivered.
+    for (Message &message : view_.messages_)
+      if (message.highlight_pending)
+      {
+        message.highlight_pending = false;
+        if (message.frame && !message.preview)
+          ApplyChatCodeHighlighting(message.frame, view_.palette());
+      }
     // Tracked cursors preserve a selection in older messages across insertions
     // and pruning. Markdown can replace the selected current message: recover
     // an unchanged selected phrase there where possible.
