@@ -2,7 +2,7 @@
 
 [English](USAGE.md) | [简体中文](USAGE.zh-CN.md) | [下载发布版本](https://github.com/ackwrap/ida-pro-agent/releases)
 
-本文说明 0.5.3 版本的使用方式，包括 Linux 图形安装器。插件与 Gateway 请使用同一发布包中的版本。
+本文说明 0.5.5 版本的使用方式，包括 Linux 图形安装器。插件与 Gateway 请使用同一发布包中的版本。
 
 ### 自动更新检测
 
@@ -10,7 +10,7 @@ Qt 插件和本地 Web 管理页默认在后台检测公开仓库 [`ackwrap/ida-
 
 两个界面共享 `update-settings.json` 和 `update-cache.json`：Windows 位于 `%LOCALAPPDATA%\ida-agent\ai`，Linux 位于 `${XDG_CONFIG_HOME:-$HOME/.config}/ida-agent/ai`，macOS 位于 `~/Library/Application Support/ida-agent/ai`。检测请求仅携带软件版本，不携带 IDB、聊天内容或供应商凭据；插件使用已有的系统代理模式，Web 管理器遵循 `HTTPS_PROXY` 和 `NO_PROXY`，无需 GitHub 登录。草稿和预发布版本不参与更新提示。无界面插件、stdio 和 HTTP MCP 进程不执行更新检测。
 
-源码构建版本检测到新版后，会在 IDA 前台弹窗显示当前版本和最新版本。点击 **Download Update**，在浏览器打开该版本的发布下载页；点击 **Later** 可稍后处理。同一插件会话内，自动检测对每个版本只弹窗一次；手动检查可再次打开提示，在网络检查冷却期间也能使用已缓存的新版信息。
+0.5.5 及后续版本检测到新版后，会在 IDA 前台弹窗显示当前版本和最新版本。点击 **Download Update**，在浏览器打开该版本的发布下载页；点击 **Later** 可稍后处理。同一插件会话内，自动检测对每个版本只弹窗一次；手动检查可再次打开提示，在网络检查冷却期间也能使用已缓存的新版信息。
 
 在发布页下载对应平台的软件包，关闭 IDA，再一起更新插件与 Gateway。更新检测不会自动安装软件包。自动检测功能包含在 0.4.7 及后续发布包中。
 

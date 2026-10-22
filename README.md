@@ -169,6 +169,12 @@ Windows 下，管理页也会检查常见 npm/Scoop 安装位置及 Codex 桌面
 - Windows 构建配置使用 MSVC 2022 x64、Windows SDK、CMake 3.25+、Ninja、Go 1.25.0+、Python 3.11 和 Inno Setup 6。编译使用 Qt 6.8.2 头文件与公开 IDA SDK 导入库，运行时使用 IDA 自带 Qt。
 - CI 编译与单元测试通过，不能替代真实 IDA 的 UI 或需要许可的集成测试。
 
+### Version 0.5.5 / 0.5.5 版本
+
+Version 0.5.5 brings update prompts to the front of IDA and opens the exact version's download page through **Download Update**. Manual checks can reopen cached prompts, and browser failures allow retries. It also includes the Markdown table selection crash protection from 0.5.4. See the [release notes](release/notes/0.5.5.md).
+
+0.5.5 检测到新版后会在 IDA 前台主动弹窗，点击 **Download Update** 打开对应版本的下载页；手动检查可重新打开缓存的更新提示，浏览器打开失败时可重试。本版同时包含 0.5.4 的 Markdown 表格选区崩溃防护。详见[发布说明](release/notes/0.5.5.md)。
+
 ### Version 0.5.3 / 0.5.3 版本
 
 Version 0.5.3 fixes a Linux and macOS issue where AI chat history and analysis memory could release SQLite locks held by other connections, which could lose history or corrupt the database when several IDA instances share it. See the [release notes](release/notes/0.5.3.md).
